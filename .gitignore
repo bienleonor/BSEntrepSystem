@@ -1,0 +1,68 @@
+# ==========================
+# Global ignores
+# ==========================
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ==========================
+# React (capstter frontend)
+# ==========================
+capstter/build/
+capstter/node_modules/
+capstter/.env
+capstter/.env.*
+capstter/.cache/
+capstter/.parcel-cache/
+capstter/dist/
+
+# ==========================
+# Node/Express (backend)
+# ==========================
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.*
+backend/tmp/
+backend/logs/
+backend/coverage/
+
+# ==========================
+# Optional - Testing and coverage
+# ==========================
+coverage/
+.nyc_output/
+jest-html-reporters-*
+
+# ==========================
+# Optional - TypeScript
+# ==========================
+*.tsbuildinfo
+
+# ==========================
+# Optional - Docker
+# ==========================
+docker-compose.override.yml
+Dockerfile.*
