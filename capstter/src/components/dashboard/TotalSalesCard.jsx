@@ -13,9 +13,9 @@ export default function TotalSalesCard() {
         const role = getRole();
         setRole(role);
 
-        // ✅ Log them here
+        /*✅ Log them here
         console.log("Token:", token);
-        console.log("Role:", role);
+        console.log("Role:", role);*/
 
         const res = await fetch("http://localhost:5000/api/sales/total_amount", {
           headers: {

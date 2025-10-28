@@ -11,7 +11,7 @@ import Inventory from './pages/Sessionpages/Inventory.jsx'
 import SalesAnalysis from './pages/Sessionpages/SalesAnalysis.jsx'
 import SalesLog from './pages/Sessionpages/SalesLog.jsx'
 import ItemRegistration from './pages/Sessionpages/ItemRegistration.jsx'
-import Dashboard from './pages/Dashboard.jsx'
+import UserDetails from './pages/Userdetails.jsx'
 
 function App() {
 
@@ -21,7 +21,7 @@ function App() {
       <Route path="/Login" element={<Login/>} />
       <Route path="/Register" element={<Register/>} />
       <Route path="/UserDashboard" element={<UserDashboard/>} />
-      <Route path="/Dashboard" element={<Dashboard/>}/>
+      <Route path="/UserDetails" element={<UserDetails/>}/>
       <Route path="/CreateOrder" element={<CreateOrder/>} />
       <Route path="/itemregistration" element={<ItemRegistration/>} />
       <Route path="/inventory" element={<Inventory/>} />

@@ -4,6 +4,8 @@ import { generateToken } from '../utils/generate-token.js';
 import { findRoleById } from '../models/role-model.js';
 import { findRoleByUserId } from '../models/role-model.js';
 import { findBusinessByUserId } from '../models/business-model.js'; 
+import { findRoleByName } from '../models/role-model.js';
+import pool from '../config/pool.js';
 
 
 export const login = async (req, res) => {
@@ -12,23 +14,44 @@ export const login = async (req, res) => {
   try {
     // 🔐 Find user by username
     const user = await findUserByUsername(username);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     // 🔐 Validate password
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
-
-    // 🔍 Get system_role_id from user_sys_role_table
-    // 🔍 Get system_role_id from user_sys_role_table
-    const roleMapping = await findRoleByUserId(user.user_id);
-    console.log('Role mapping:', roleMapping); // ← ✅ Insert here
-    if (!roleMapping || !roleMapping.system_role_id) {
-      return res.status(403).json({ error: 'Role mapping not found' });
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // 🔍 Get system_role_id from user_sys_role_table
+    let roleMapping = await findRoleByUserId(user.user_id);
+    let systemRoleId;
+
+    if (roleMapping && roleMapping.system_role_id) {
+      systemRoleId = roleMapping.system_role_id;
+    } else {
+      // 🛠️ Assign default "user" role
+      const defaultRole = await findRoleByName('user');
+      if (!defaultRole || !defaultRole.system_role_id) {
+        return res.status(500).json({ error: 'Default role not found' });
+      }
+
+      systemRoleId = defaultRole.system_role_id;
+
+      // 🧱 Insert default role mapping
+      const [insertResult] = await pool.query(
+        'INSERT INTO user_sys_role_table (user_id, system_role_id) VALUES (?, ?)',
+        [user.user_id, systemRoleId]
+      );
+
+      if (!insertResult.affectedRows) {
+        return res.status(500).json({ error: 'Failed to assign default role' });
+      }
+    }
 
     // 🔍 Get role name from system_role_table
-    const roleData = await findRoleById(roleMapping.system_role_id);
+    const roleData = await findRoleById(systemRoleId);
     const roleName = roleData?.role || 'unknown';
 
     // 🏢 Get business_id if applicable
@@ -58,8 +81,6 @@ export const login = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-
 
 
 

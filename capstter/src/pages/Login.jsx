@@ -25,7 +25,7 @@ const Login = () => {
       const data = await res.json();
       if (res.ok && data.token) {
         localStorage.setItem('token', data.token);
-        navigate('/Dashboard'); // Change to your desired route
+        navigate('/UserDetails'); // Change to your desired route
         console.log('Stored role:', getRole());
       } else {
         setError(data.error || 'Login failed');
