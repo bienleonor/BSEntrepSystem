@@ -63,6 +63,54 @@ export const updateUser = async (id, data) => {
   return result;
 };
 
+//UserDetails
+export const getUserDetails = async (id, data) => {
+  // Check if a record already exists for this user_id
+  const [existing] = await pool.execute(
+    `SELECT COUNT(*) AS count FROM user_details_table WHERE user_id = ?`,
+    [id]
+  );
+
+  const exists = existing[0].count > 0;
+
+  if (exists) {
+    // Update existing record
+    const [result] = await pool.execute(
+      `UPDATE user_details_table
+       SET first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, date = ?, type_of_user = ?
+       WHERE user_id = ?`,
+      [
+        data.first_name,
+        data.middle_name,
+        data.last_name,
+        data.contact_no,
+        data.birthdate,
+        data.type_of_user,
+        id
+      ]
+    );
+    return result;
+  } else {
+    // Insert new record
+    const [result] = await pool.execute(
+      `INSERT INTO user_details_table 
+       (user_id, first_name, middle_name, last_name, contact_no, date, type_of_user)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        data.first_name,
+        data.middle_name,
+        data.last_name,
+        data.contact_no,
+        data.birthdate,
+        data.type_of_user
+      ]
+    );
+    return result;
+  }
+};
+
+
 export const deleteUser = async (id) => {
   const [result] = await pool.execute(
     `DELETE FROM user_table WHERE user_id = ?`, [id]

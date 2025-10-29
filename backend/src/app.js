@@ -15,6 +15,7 @@ app.use(cors());
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+
 app.use(authenticateToken);
 app.use('/api/sales', salesRoutes);
 

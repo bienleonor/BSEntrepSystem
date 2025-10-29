@@ -4,7 +4,8 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  findUserByUsername
+  findUserByUsername,
+  getUserDetails
 } from '../models/user-models.js';
 
 // Get all users
@@ -64,3 +65,17 @@ export const removeUser = async (req, res) => {
   }
 };
 
+//get user details
+export const insertUserDetailsController = async (req, res) => {
+  try {
+    const result = await getUserDetails(req.params.id, req.body);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Insert or update failed' });
+    }
+
+    res.json({ message: 'User details saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
