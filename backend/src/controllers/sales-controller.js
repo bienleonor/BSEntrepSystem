@@ -1,5 +1,5 @@
 import { getSalesTotal } from '../models/sales-model.js';
-import { findRoleByName } from '../models/role-model.js'; // adjust path as needed
+import { findRoleByName } from '../models/role-model.js'; 
 
 export const GetAllTotalSales = async (req, res) => {
   try {

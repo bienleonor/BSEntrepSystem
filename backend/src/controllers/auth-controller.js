@@ -3,7 +3,7 @@ import { createUser, findUserByUsername } from '../models/user-models.js';
 import { generateToken } from '../utils/generate-token.js';
 import { findRoleById } from '../models/role-model.js';
 import { findRoleByUserId } from '../models/role-model.js';
-import { findBusinessByUserId } from '../models/business-model.js'; 
+import { findBusinessByUserId } from '../models/business/business-model.js'; 
 import { findRoleByName } from '../models/role-model.js';
 import pool from '../config/pool.js';
 

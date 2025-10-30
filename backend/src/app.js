@@ -5,6 +5,7 @@ import userRoutes from './routes/user-route.js';
 import salesRoutes from './routes/sales-route.js';
 import cors from 'cors';
 import { authenticateToken } from './middlewares/auth-middleware.js';
+import  registerBusiness  from './routes/business/business-routes.js';
 
 const app = express();
 
@@ -15,8 +16,8 @@ app.use(cors());
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-
 app.use(authenticateToken);
+app.use('/api/business', registerBusiness);
 app.use('/api/sales', salesRoutes);
 
 // Optionally: error handling middleware

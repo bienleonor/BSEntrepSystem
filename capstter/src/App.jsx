@@ -1,33 +1,26 @@
 import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { publicRoutes } from "../src/routes/PublicRoutes"
+import { privateRoutes } from '../src/routes/PrivateRoutes'
 
-import { Routes, Route } from 'react-router-dom'
-
-import LandingPage from './pages/LandingPage'
-import Login from './pages/Login'
-import Register from './pages/Register.jsx'
-import UserDashboard from './pages/Sessionpages/UserDashboard.jsx'
-import CreateOrder from './pages/Sessionpages/CreateOrder.jsx'
-import Inventory from './pages/Sessionpages/Inventory.jsx'
-import SalesAnalysis from './pages/Sessionpages/SalesAnalysis.jsx'
-import SalesLog from './pages/Sessionpages/SalesLog.jsx'
-import ItemRegistration from './pages/Sessionpages/ItemRegistration.jsx'
-import UserDetails from './pages/Userdetails.jsx'
+// ✅ Auth wrapper
+const ProtectedRoute = ({ element }) => {
+  const isAuthenticated = localStorage.getItem('token') // Replace with real auth logic
+  return isAuthenticated ? element : <Navigate to="/Login" replace />
+}
 
 function App() {
-
   return (
     <Routes>
-      <Route path="/" element={<LandingPage/>} />
-      <Route path="/Login" element={<Login/>} />
-      <Route path="/Register" element={<Register/>} />
-      <Route path="/UserDashboard" element={<UserDashboard/>} />
-      <Route path="/UserDetails" element={<UserDetails/>}/>
-      <Route path="/CreateOrder" element={<CreateOrder/>} />
-      <Route path="/itemregistration" element={<ItemRegistration/>} />
-      <Route path="/inventory" element={<Inventory/>} />
-      <Route path="/salesanalysis" element={<SalesAnalysis/>} />
-      <Route path="/salesLog" element={<SalesLog/>} /> 
+      {/* Public routes */}
+      {publicRoutes.map(({ path, element }) => (
+        <Route key={path} path={path} element={element} />
+      ))}
 
+      {/* Protected routes */}
+      {privateRoutes.map(({ path, element }) => (
+        <Route key={path} path={path} element={<ProtectedRoute element={element} />} />
+      ))}
     </Routes>
   )
 }
