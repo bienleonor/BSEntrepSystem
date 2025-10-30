@@ -42,6 +42,7 @@ export const findUserById = async (id) => {
   return rows[0];
 };
 
+//error here potentially
 export const updateUser = async (id, data) => {
   const [result] = await pool.execute(
     `UPDATE user_table 
@@ -62,6 +63,7 @@ export const updateUser = async (id, data) => {
   );
   return result;
 };
+
 
 //UserDetails
 export const getUserDetails = async (id, data) => {
