@@ -1,6 +1,6 @@
 export default function LoginNavbar() {
   return (
-    <header className="flex justify-between items-center bg-slate-800 text-white px-6 py-4">
+    <header className="flex justify-between items-center bg-slate-800 text-white px-6 py-4 border-b-2  border-b-bronze/50 shadow-2xl ">
       {/* Search */}
       <div className="flex items-center gap-4 w-1/2">
         <input

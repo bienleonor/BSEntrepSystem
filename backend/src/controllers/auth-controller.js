@@ -87,29 +87,47 @@ export const login = async (req, res) => {
 export const register = async (req, res) => {
   console.log('Received registration data:', req.body);
   const { username, email, password } = req.body;
-  try {
-    // Check if username already exists
-    const existing = await findUserByUsername(username);
-    if (existing) return res.status(409).json({ error: 'Username already exists' });
 
-    // Hash password
+  // 🛡️ Required field check
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Username, email, and password are required' });
+  }
+
+  // 🚫 Restrict special characters in username and email
+  const textRegex = /^[a-zA-Z0-9_.@]+$/;
+  if (!textRegex.test(username)) {
+    return res.status(400).json({ error: 'Username contains invalid characters' });
+  }
+  if (!textRegex.test(email)) {
+    return res.status(400).json({ error: 'Email contains invalid characters' });
+  }
+
+  // 🔐 Password strength validation
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      error:
+        'Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one special character'
+    });
+  }
+
+  try {
+    const existing = await findUserByUsername(username);
+    if (existing) {
+      return res.status(409).json({ error: 'Username already exists' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const userId = await createUser({
       username,
       email,
-      password: hashedPassword,
-     
+      password: hashedPassword
     });
 
-    // Optionally, generate token on registration
-    const token = generateToken({ user_id: userId, username});
+    const token = generateToken({ user_id: userId, username });
 
-
-    
-
-    res.status(201).json({ message: 'User registered', userId,  });
+    res.status(201).json({ message: 'User registered', userId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

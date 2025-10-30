@@ -67,6 +67,31 @@ export const removeUser = async (req, res) => {
 
 //get user details
 export const insertUserDetailsController = async (req, res) => {
+  const requiredFields = [
+    'first_name',
+    'middle_name',
+    'last_name',
+    'contact_no',
+    'birthdate',
+    'type_of_user'
+  ];
+
+  const missingFields = requiredFields.filter(field => !req.body[field]);
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      error: `Missing required fields: ${missingFields.join(', ')}`
+    });
+  }
+
+  // 📞 Require exactly 11 digits starting with 09
+  const contactRegex = /^09\d{9}$/;
+  if (!contactRegex.test(req.body.contact_no)) {
+    return res.status(400).json({
+      error: 'contact_no must be exactly 11 digits and start with "09"'
+    });
+  }
+
   try {
     const result = await getUserDetails(req.params.id, req.body);
 

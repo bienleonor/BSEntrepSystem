@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import NavBar from '../components/layout/NavBar';
 import loginImage from '../assets/landing.png';
-import { EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
   const [form, setForm] = useState({ username: '', password: '' });
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = e => {
@@ -15,7 +17,6 @@ const Login = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setError('');
     try {
       const res = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
@@ -25,19 +26,20 @@ const Login = () => {
       const data = await res.json();
       if (res.ok && data.token) {
         localStorage.setItem('token', data.token);
-        navigate('/UserDetails'); // Change to your desired route
-        console.log('Stored role:', getRole());
+        toast.success('✅ Login successful!');
+        setTimeout(() => navigate('/UserDetails'), 1500);
       } else {
-        setError(data.error || 'Login failed');
+        toast.error(data.error || '❌ Login failed');
       }
     } catch (err) {
-      setError('Network error');
+      toast.error('❌ Network error');
     }
   };
 
   return (
     <>
       <NavBar />
+      <ToastContainer position="top-center" autoClose={3000} />
       <div
         className="bg-cover bg-center h-screen w-full flex justify-left items-center px-6"
         style={{ backgroundImage: `url(${loginImage})` }}
@@ -45,7 +47,7 @@ const Login = () => {
         <div className="bg-bronze p-8 rounded-2xl w-full max-w-md">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <h2 className="text-2xl font-bold mb-6 text-center text-white">Login</h2>
-            {error && <div className="text-red-500">{error}</div>}
+
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-white">
                 Username:
@@ -61,13 +63,14 @@ const Login = () => {
                 required
               />
             </div>
-            <div>
+
+            <div className="relative">
               <label htmlFor="password" className="block text-sm font-medium text-white">
                 Password:
               </label>
               <input
                 placeholder="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 id="password"
                 value={form.password}
                 onChange={handleChange}
@@ -75,22 +78,32 @@ const Login = () => {
                            focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
               />
-              <EyeOff className="relative bottom-8 left-70" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                className="absolute right-3 top-9 text-gray-600 hover:text-gray-900"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
-            <div className="relative bottom-10 left-2 text-white">
+
+            <div className="relative bottom-4 left-2 text-white">
               <input type="checkbox" /> Remember me
             </div>
+
             <button
               type="submit"
               className="w-full bg-lightblue hover:bg-blue-700 text-white font-semibold py-2 px-4 
-                         rounded-lg shadow-md transition duration-300 relative bottom-8"
+                         rounded-lg shadow-md transition duration-300 relative bottom-4"
             >
               Login
             </button>
           </form>
+
           <Link to="/register">
-            <span className="block text-center text-white  mt-2 ">Don't have an account?
-              <a className="text-white-600 mx-2">Register</a></span>
+            <span className="block text-center text-white mt-2">
+              Don't have an account? <a className="text-white-600 mx-2">Register</a>
+            </span>
           </Link>
         </div>
       </div>

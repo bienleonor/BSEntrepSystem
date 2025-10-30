@@ -1,97 +1,128 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 function ItemRegistration() {
+  const [itemData, setItemData] = useState({
+    itemName: '',
+    unit: '',
+    productType: '',
+    price: '',
+    image: null,
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setItemData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    setItemData((prev) => ({ ...prev, image: file }));
+  };
+
+  const handleClear = () => {
+    setItemData({
+      itemName: '',
+      unit: '',
+      productType: '',
+      price: '',
+      image: null,
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Submitting:', itemData);
+    // TODO: Add API call or toast feedback
+  };
+
   return (
     <DashboardLayout>
-      <form className="max-w-2xl mx-auto mt-10 p-6 bg-blue-100 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">Register New Item</h1>
-
-        {/* Product Name & Category */}
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Name
+      <div className="flex justify-center items-center py-12 px-4">
+        <div className="bg-bronze p-8 rounded-2xl w-full max-w-4xl shadow-lg">
+          <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">REGISTER NEW ITEM</h2>
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col md:flex-row gap-10 items-start justify-center"
+          >
+            {/* Image Upload Section */}
+            <label className="w-64 h-64 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 cursor-pointer relative rounded-lg overflow-hidden">
+              {itemData.image ? (
+                <img
+                  src={URL.createObjectURL(itemData.image)}
+                  alt="Preview"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm">PICTURE</span>
+              )}
               <input
-                type="text"
-                name="productName"
-                placeholder="Product Name"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
               />
             </label>
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+
+            {/* Input Fields */}
+            <div className="flex flex-col gap-5 w-full max-w-sm">
               <input
                 type="text"
-                name="category"
-                placeholder="Category"
+                name="itemName"
+                placeholder="ITEM NAME"
+                value={itemData.itemName}
+                onChange={handleChange}
                 required
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                className="px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </label>
-          </div>
-        </div>
-
-        {/* Price & Stock Quantity */}
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price
+              <input
+                type="text"
+                name="unit"
+                placeholder="UNIT"
+                value={itemData.unit}
+                onChange={handleChange}
+                required
+                className="px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                name="productType"
+                placeholder="PRODUCT TYPE"
+                value={itemData.productType}
+                onChange={handleChange}
+                required
+                className="px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <input
                 type="number"
                 name="price"
-                placeholder="Price"
+                placeholder="PRICE"
+                value={itemData.price}
+                onChange={handleChange}
                 required
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                className="px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </label>
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Stock Quantity
-              <input
-                type="number"
-                name="quantity"
-                placeholder="Stock Quantity"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              />
-            </label>
-          </div>
-        </div>
 
-        {/* Upload Image */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Upload Image
-            <input
-              type="file"
-              name="productImage"
-              accept="image/jpeg"
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white"
-            />
-          </label>
+              {/* Buttons */}
+              <div className="flex gap-4 mt-6 justify-center">
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
+                >
+                  SAVE
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600 transition"
+                >
+                  CLEAR
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
-
-        {/* Buttons */}
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            SAVE
-          </button>
-          <button
-            type="reset"
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-          >
-            CLEAR FORM
-          </button>
-        </div>
-      </form>
+      </div>
     </DashboardLayout>
   );
 }

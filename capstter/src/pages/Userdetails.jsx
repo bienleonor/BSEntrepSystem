@@ -3,6 +3,9 @@ import { useState } from "react";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import OverviewSection from "../components/dashboard/OverviewSection";
 import { getToken, getUserId } from "../utils/token";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 export default function UserDetails() {
   const [formData, setFormData] = useState({
@@ -26,35 +29,62 @@ export default function UserDetails() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-     const response = await fetch(`http://localhost:5000/api/users/insertUserDetailsController/${userId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(formData),
-    });
+  const {
+    first_name,
+    middle_name,
+    last_name,
+    birthdate,
+    contact_no,
+    type_of_user
+  } = formData;
 
+  // 🔍 Required field check
+  if (!first_name || !middle_name || !last_name || !birthdate || !contact_no || !type_of_user) {
+    toast.warn('⚠️ Please fill out all fields before submitting.');
+    return;
+  }
 
-      const result = await response.json();
+  // 📞 Phone number validation
+  const contactRegex = /^\d{1,11}$/;
+  if (!contactRegex.test(contact_no)) {
+    toast.error('❌ Phone number must be numeric and up to 11 digits.');
+    return;
+  }
 
-      if (!response.ok) {
-        console.error("Error:", result.error);
-        alert("Failed to save user details.");
-      } else {
-        alert("User details saved successfully!");
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/users/insertUserDetailsController/${userId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
       }
-    } catch (error) {
-      console.error("Submit error:", error);
-      alert("An error occurred while saving user details.");
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error:", result.error);
+      toast.error(`❌ Failed to save: ${result.error || 'Unknown error'}`);
+    } else {
+      toast.success("✅ User details saved successfully!");
     }
-  };
+  } catch (error) {
+    console.error("Submit error:", error);
+    toast.error("❌ An error occurred while saving user details.");
+  }
+};
+
+
 
   return (
     <DashboardLayout>
+       <ToastContainer position="top-center" autoClose={3000} />
       <h1 className="text-2xl font-bold mb-4 text-center text-gray-800">User Details</h1>
 
       <form
