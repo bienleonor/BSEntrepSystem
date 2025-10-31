@@ -73,7 +73,7 @@ export const insertUserDetailsController = async (req, res) => {
     'last_name',
     'contact_no',
     'birthdate',
-    'type_of_user'
+    
   ];
 
   const missingFields = requiredFields.filter(field => !req.body[field]);

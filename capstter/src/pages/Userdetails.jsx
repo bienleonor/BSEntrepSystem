@@ -14,7 +14,7 @@ export default function UserDetails() {
     last_name: "",
     birthdate: "",
     contact_no: "",
-    type_of_user: "",
+    
   });
 
   const token = getToken();
@@ -36,12 +36,12 @@ export default function UserDetails() {
     middle_name,
     last_name,
     birthdate,
-    contact_no,
-    type_of_user
+    contact_no
+   
   } = formData;
 
   // 🔍 Required field check
-  if (!first_name || !middle_name || !last_name || !birthdate || !contact_no || !type_of_user) {
+  if (!first_name || !middle_name || !last_name || !birthdate || !contact_no) {
     toast.warn('⚠️ Please fill out all fields before submitting.');
     return;
   }
@@ -85,11 +85,11 @@ export default function UserDetails() {
   return (
     <DashboardLayout>
        <ToastContainer position="top-center" autoClose={3000} />
-      <h1 className="text-2xl font-bold mb-4 text-center text-gray-800">User Details</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center text-white">User Details</h1>
 
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-md shadow-sm"
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-bronze p-4 rounded-md shadow-sm"
       >
         {/* Full Name */}
         <div className="md:col-span-2">
@@ -148,19 +148,7 @@ export default function UserDetails() {
         </div>
 
         {/* Type of User */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type of User</label>
-          <select
-            name="type_of_user"
-            className="form-input w-full"
-            value={formData.type_of_user}
-            onChange={handleChange}
-          >
-            <option value="">Select Type</option>
-            <option value="student">Student</option>
-            <option value="teacher">Teacher</option>
-          </select>
-        </div>
+        
 
         {/* Submit Button */}
         <div className="md:col-span-2 text-center">

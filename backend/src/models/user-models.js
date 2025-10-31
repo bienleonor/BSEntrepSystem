@@ -36,7 +36,7 @@ export const getAllUsers = async () => {
 // Used for fetching user profile (does NOT return password)
 export const findUserById = async (id) => {
   const [rows] = await pool.execute(
-    `SELECT user_id, username, email, first_name, middle_name, last_name, contact_no, birthdate, type_of_user, created_at, updated_at
+    `SELECT user_id, username, email, first_name, middle_name, last_name, contact_no, birthdate, created_at, updated_at
      FROM user_table WHERE user_id = ? LIMIT 1`, [id]
   );
   return rows[0];
@@ -46,7 +46,7 @@ export const findUserById = async (id) => {
 export const updateUser = async (id, data) => {
   const [result] = await pool.execute(
     `UPDATE user_table 
-     SET username = ?, email = ?, password = ?, first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, birthdate = ?, type_of_user = ?, updated_at = NOW()
+     SET username = ?, email = ?, password = ?, first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, birthdate = ?, updated_at = NOW()
      WHERE user_id = ?`,
     [
       data.username,
@@ -57,7 +57,6 @@ export const updateUser = async (id, data) => {
       data.last_name,
       data.contact_no,
       data.birthdate,
-      data.type_of_user,
       id
     ]
   );
@@ -79,7 +78,7 @@ export const getUserDetails = async (id, data) => {
     // Update existing record
     const [result] = await pool.execute(
       `UPDATE user_details_table
-       SET first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, date = ?, type_of_user = ?
+       SET first_name = ?, middle_name = ?, last_name = ?, contact_no = ?, date = ?
        WHERE user_id = ?`,
       [
         data.first_name,
@@ -87,8 +86,8 @@ export const getUserDetails = async (id, data) => {
         data.last_name,
         data.contact_no,
         data.birthdate,
-        data.type_of_user,
         id
+
       ]
     );
     return result;
@@ -96,8 +95,8 @@ export const getUserDetails = async (id, data) => {
     // Insert new record
     const [result] = await pool.execute(
       `INSERT INTO user_details_table 
-       (user_id, first_name, middle_name, last_name, contact_no, date, type_of_user)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, first_name, middle_name, last_name, contact_no, date)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         id,
         data.first_name,
@@ -105,7 +104,7 @@ export const getUserDetails = async (id, data) => {
         data.last_name,
         data.contact_no,
         data.birthdate,
-        data.type_of_user
+        
       ]
     );
     return result;
