@@ -32,7 +32,7 @@ export default function TotalSalesCard() {
     };
 
     fetchData(); // initial fetch
-    const interval = setInterval(fetchData, 5000); // every 5 seconds
+    const interval = setInterval(fetchData, 30000); // every 30 seconds
 
     return () => clearInterval(interval); // cleanup
   }, []);

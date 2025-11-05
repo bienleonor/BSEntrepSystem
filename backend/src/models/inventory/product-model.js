@@ -28,7 +28,7 @@ const [result] = await pool.execute(
   return result;
 };
 
-
+//use in inventory.js
 export const getAllProducts = async () => {
     const [rows] = await pool.execute(`SELECT * FROM products_table`);
     return rows;
