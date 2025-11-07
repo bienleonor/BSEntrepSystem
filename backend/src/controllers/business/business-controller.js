@@ -1,5 +1,4 @@
-import { BusinessRegister, GetBusinessCategories } from "../../models/business/business-model.js"
-
+import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
 
 
 export const registerBusiness = async (req, res) => {
@@ -32,6 +31,21 @@ export const getBusinessCategories = async (req, res) => {
   } catch (error) {
     console.error("Error fetching categories:", error);
     res.status(500).json({ error: "Failed to load business categories." });
+  }
+};
+
+
+
+
+export const getUserBusiness = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const businesses = await findBusinessByUserId(userId);
+
+    res.status(200).json(businesses);
+  } catch (error) {
+    console.error("Error fetching user businesses:", error);
+    res.status(500).json({ error: "Failed to load businesses." });
   }
 };
 

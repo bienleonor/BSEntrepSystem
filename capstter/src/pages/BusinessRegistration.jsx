@@ -3,6 +3,7 @@ import loginImage from '../assets/landing.png';
 import { getToken } from '../utils/token';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 
 export default function BusinessRegistration() {
@@ -11,6 +12,7 @@ export default function BusinessRegistration() {
   const [categories, setCategories] = useState([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Fetch categories from backend
  useEffect(() => {
@@ -70,6 +72,9 @@ export default function BusinessRegistration() {
       toast.success(`✅ Registered! Business ID: ${result.business_id}`);
       setBusinessName('');
       setBusinessCatId('');
+      setTimeout(() => {
+      localStorage.setItem("selectedBusinessId", result.business_id);
+       navigate('/itemregistration');}, 500); 
     } else {
       toast.error(`❌ ${result.error}`);
     }

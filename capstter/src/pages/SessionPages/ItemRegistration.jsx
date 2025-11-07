@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { getToken, getBusinessId } from '../../utils/token';
+import { getToken } from '../../utils/token';
 import { ToastContainer, toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
 function ItemRegistration() {
-  // 🔧 State Definitions
   const [units, setUnits] = useState([]);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [itemData, setItemData] = useState({
@@ -17,9 +17,19 @@ function ItemRegistration() {
     image: null,
   });
 
+  const navigate = useNavigate();
+
   // 📦 Fetch Units on Mount
   useEffect(() => {
     const token = getToken();
+    const businessId = localStorage.getItem("selectedBusinessId");
+
+    if (!businessId) {
+      toast.error("No business selected. Redirecting...");
+      setTimeout(() => navigate("/busmanage"), 1500);
+      return;
+    }
+
     fetch('http://localhost:5000/api/inventory/units', {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -39,7 +49,7 @@ function ItemRegistration() {
         console.error('Error fetching units:', err);
         setUnits([]);
       });
-  }, []);
+  }, [navigate]);
 
   // 🖊️ Input Change Handler
   const handleChange = (e) => {
@@ -70,7 +80,12 @@ function ItemRegistration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = getToken();
-    const businessId = getBusinessId();
+    const businessId = localStorage.getItem("selectedBusinessId");
+
+    if (!businessId) {
+      toast.error("No business selected.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append('name', itemData.itemName);
@@ -97,7 +112,6 @@ function ItemRegistration() {
     }
   };
 
-  // 🧩 Component JSX
   return (
     <DashboardLayout>
       <div className="flex justify-center items-center py-12 px-4">
