@@ -1,4 +1,6 @@
-import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct } from '../../models/inventory/product-model.js';
+import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getInventoryWithProductDetails } from '../../models/inventory/product-model.js';
+import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
+import fs from 'fs';
 
 //create product without cloudinary
 /*export const createProduct = async (req, res) => {
@@ -20,23 +22,45 @@ import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProduct
 };*/
 
 
-
 export const createProduct = async (req, res) => {
   try {
     console.log('BODY:', req.body);
     console.log('FILE:', req.file);
-    const { name, businessId, unit_id, price, product_type } = req.body;
-    const picture = req.file?.path;
 
-    if (!name || !businessId || !unit_id || !price) {
-      return res.status(400).json({ error: "Missing required fields." });
+    const { name, businessId, unit_id, price, product_type } = req.body;
+
+    if (!name || !businessId || !unit_id || !price || !req.file) {
+      return res.status(400).json({ error: "Missing required fields or image." });
     }
 
     if (isNaN(price) || Number(price) < 0) {
       return res.status(400).json({ error: "Price must be a non-negative number." });
     }
 
-    const result = await addProduct({ name, businessId, unit_id, price, picture, product_type });
+    // Upload to Cloudinary
+    const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'products',
+      transformation: [{ width: 800, height: 800, crop: 'limit' }],
+    });
+
+    const picture = cloudinaryResult.secure_url;
+    const localPath = req.file.path; // e.g., 'uploads/1699451234567-image.jpg'
+    // Save product with Cloudinary image URL
+    const result = await addProduct({
+      name,
+      businessId,
+      unit_id,
+      price,
+      picture,
+      product_type,
+      localpath: localPath,
+    });
+
+
+    // Optional: delete local file after upload
+   // fs.unlink(req.file.path, (err) => {
+    //  if (err) console.warn('Failed to delete local file:', err.message);
+   // });
 
     res.status(201).json({
       message: "Product added successfully.",
@@ -131,7 +155,52 @@ export const removeProduct = async (req, res) => {
 
 
 
+export const toggleProductStatus = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { is_active } = req.body;
 
-export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct };
+    if (typeof is_active !== 'boolean') {
+      return res.status(400).json({ error: "Invalid status value." });
+    }
+
+    await updateProductStatus(productId, is_active);
+    res.status(200).json({ message: "Product status updated." });
+  } catch (error) {
+    console.error("Error updating product status:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
+export const fetchProductWithInventoryDetails = async (req, res) => {
+  try {
+    const products = await getInventoryWithProductDetails();  
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching inventory with product details:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+}
+
+export const addInventoryStock = async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    if (!productId || isNaN(quantity) || Number(quantity) <= 0) {
+      return res.status(400).json({ error: "Invalid product ID or quantity." });
+    }
+
+    await addStockToInventory(productId, quantity);
+    res.status(200).json({ message: "Stock added successfully." });
+  } catch (error) {
+    console.error("Error adding stock to inventory:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
+
+
+export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchProductWithInventoryDetails };
 
 

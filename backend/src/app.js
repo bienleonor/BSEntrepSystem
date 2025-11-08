@@ -21,6 +21,7 @@ app.use(authenticateToken);
 app.use('/api/business', registerBusiness);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', productroutes);
+app.use('/uploads', express.static('uploads'));
 
 // Optionally: error handling middleware
 app.use((err, req, res, next) => {

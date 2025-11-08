@@ -9,6 +9,7 @@ import OrderList from '../pages/SessionPages/OrderList.jsx'
 import Recipes from '../pages/SessionPages/Recipe.jsx'
 import BusinessRegistration from '../pages/BusinessRegistration.jsx'
 import Busmanage from '../pages/BusManage.jsx'
+import ProductList from '../pages/SessionPages/ProductList.jsx'
 
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
@@ -22,5 +23,5 @@ export const privateRoutes = [
   { path: '/orderlist', element: <OrderList /> },
   { path: '/recipes', element: <Recipes /> },
   {path: '/busmanage', element: <Busmanage />},
-
+  {path: '/productlist', element: <ProductList />},
 ]

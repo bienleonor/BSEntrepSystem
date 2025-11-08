@@ -19,7 +19,7 @@ function ItemRegistration() {
 
   const navigate = useNavigate();
 
-  // 📦 Fetch Units on Mount
+  // 📦 Fetch Units
   useEffect(() => {
     const token = getToken();
     const businessId = localStorage.getItem("selectedBusinessId");
@@ -33,31 +33,21 @@ function ItemRegistration() {
     fetch('http://localhost:5000/api/inventory/units', {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(res => {
-        if (!res.ok) throw new Error(`Failed to fetch units: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) {
-          setUnits(data);
-        } else {
-          console.warn('Unexpected units format:', data);
-          setUnits([]);
-        }
-      })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => Array.isArray(data) ? setUnits(data) : setUnits([]))
       .catch(err => {
         console.error('Error fetching units:', err);
         setUnits([]);
       });
   }, [navigate]);
 
-  // 🖊️ Input Change Handler
+  // 🖊️ Input Change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setItemData(prev => ({ ...prev, [name]: value }));
   };
 
-  // 🖼️ Image Upload Handler
+  // 🖼️ Image Upload
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     setItemData(prev => ({ ...prev, image: file }));
@@ -76,6 +66,51 @@ function ItemRegistration() {
     setShowUnitDropdown(false);
   };
 
+  // 🔄 Convert image to base64
+  const toBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+  });
+
+  // 🔄 Convert base64 to File
+  const dataURLtoFile = (dataurl, filename) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  // 📤 Send to backend
+  const sendProductToServer = async (product, token) => {
+    const formData = new FormData();
+    formData.append('name', product.name);
+    formData.append('unit_id', product.unit_id);
+    formData.append('product_type', product.product_type);
+    formData.append('price', product.price);
+    formData.append('businessId', product.businessId);
+    formData.append('picture', dataURLtoFile(product.image, 'offline-image.jpg'));
+
+    try {
+      const res = await fetch('http://localhost:5000/api/inventory/products', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Failed to save product');
+      await res.json();
+      toast.success('Product synced successfully!');
+    } catch (error) {
+      console.error('Error syncing product:', error);
+      toast.error('Sync failed.');
+    }
+  };
+
   // 📤 Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -87,31 +122,43 @@ function ItemRegistration() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('name', itemData.itemName);
-    formData.append('unit_id', itemData.unit_id);
-    formData.append('product_type', itemData.productType);
-    formData.append('price', itemData.price);
-    formData.append('picture', itemData.image);
-    formData.append('businessId', businessId);
+    const product = {
+      name: itemData.itemName,
+      unit_id: itemData.unit_id,
+      product_type: itemData.productType,
+      price: itemData.price,
+      businessId,
+      image: await toBase64(itemData.image),
+    };
 
-    try {
-      const res = await fetch('http://localhost:5000/api/inventory/products', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('Failed to save product');
-      await res.json();
-      toast.success('Product saved successfully!');
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem('offlineProducts') || '[]');
+      queue.push(product);
+      localStorage.setItem('offlineProducts', JSON.stringify(queue));
+      toast.info('Saved locally. Will sync when online.');
       handleClear();
-    } catch (error) {
-      console.error('Error saving product:', error);
-      toast.error('Failed to save product.');
+      return;
     }
+
+    await sendProductToServer(product, token);
+    handleClear();
   };
 
+  // 🔄 Sync on reconnect
+  useEffect(() => {
+    const syncOfflineProducts = async () => {
+      const token = getToken();
+      const queue = JSON.parse(localStorage.getItem('offlineProducts') || '[]');
+      for (const product of queue) {
+        await sendProductToServer(product, token);
+      }
+      localStorage.removeItem('offlineProducts');
+    };
+
+    window.addEventListener('online', syncOfflineProducts);
+    return () => window.removeEventListener('online', syncOfflineProducts);
+  }, []);
+  
   return (
     <DashboardLayout>
       <div className="flex justify-center items-center py-12 px-4">

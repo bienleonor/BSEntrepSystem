@@ -1,4 +1,6 @@
 import express from 'express';
+import multer from 'multer';
+import { cloudinaryStorage, localStorage } from '../../config/storage.js'; // Adjust path if needed
 import {
   createProduct,
   fetchProductsByBusiness,
@@ -6,28 +8,31 @@ import {
   fetchAllProducts,
   fetchProductById,
   modifyProduct,
-  removeProduct
+  removeProduct,
+  toggleProductStatus,
+  fetchProductWithInventoryDetails,
+  
 } from '../../controllers/inventory/product-controller.js';
-import multer from 'multer';
-import storage from '../../config/storage.js'; // adjust path if needed
-
-export const upload = multer({ storage });
-
 
 const router = express.Router();
 
+// Upload middleware
+const uploadLocal = multer({ storage: localStorage });
+const uploadCloud = multer({ storage: cloudinaryStorage });
+
+// Use one of these depending on your strategy:
+//router.post('/products', uploadCloud.single('picture'), createProduct);
+// OR
+ router.post('/products', uploadLocal.single('picture'), createProduct);
+
 // Product routes
-router.post('/products', upload.single('picture'), createProduct);
- // POST /products
-router.get('/products', fetchAllProducts); // GET /products
-router.get('/products/:productId', fetchProductById); // GET /products/:productId
-router.put('/products/:productId', modifyProduct); // PUT /products/:productId
-router.delete('/products/:productId', removeProduct); // DELETE /products/:productId
-
-// Business-specific products
-router.get('/businesses/:businessId/products', fetchProductsByBusiness); // GET /businesses/:businessId/products
-
-// Units
-router.get('/units', fetchUnits); // GET /units
+router.get('/products', fetchAllProducts);
+router.get('/products/:productId', fetchProductById);
+router.put('/products/:productId', modifyProduct);
+router.delete('/products/:productId', removeProduct);
+router.get('/businesses/:businessId/products', fetchProductsByBusiness);
+router.get('/units', fetchUnits);
+router.patch('/products/:productId/status', toggleProductStatus);
+router.get('/inventory-with-products', fetchProductWithInventoryDetails);
 
 export default router;

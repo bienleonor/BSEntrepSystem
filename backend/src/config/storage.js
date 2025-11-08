@@ -1,7 +1,10 @@
+// storage.js
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import multer from 'multer';
 import cloudinary from './cloudinary.js';
 
-const storage = new CloudinaryStorage({
+// 🌩️ Cloudinary storage
+const cloudinaryStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'products',
@@ -10,6 +13,16 @@ const storage = new CloudinaryStorage({
   },
 });
 
+// 💾 Local disk storage
+const localStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
 
-
-export default storage;
+// ✅ Named exports
+export { cloudinaryStorage, localStorage };
