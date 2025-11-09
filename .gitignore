@@ -48,6 +48,7 @@ backend/.env.*
 backend/tmp/
 backend/logs/
 backend/coverage/
+backend/uploads/
 
 # ==========================
 # Optional - Testing and coverage

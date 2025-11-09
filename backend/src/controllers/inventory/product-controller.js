@@ -58,9 +58,9 @@ export const createProduct = async (req, res) => {
 
 
     // Optional: delete local file after upload
-   // fs.unlink(req.file.path, (err) => {
-    //  if (err) console.warn('Failed to delete local file:', err.message);
-   // });
+   fs.unlink(req.file.path, (err) => {
+      if (err) console.warn('Failed to delete local file:', err.message);
+    });
 
     res.status(201).json({
       message: "Product added successfully.",
