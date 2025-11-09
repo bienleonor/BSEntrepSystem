@@ -18,14 +18,24 @@ export const addProduct = async (productData) => {
     localpath = null,
   } = productData;
 
-  const [result] = await pool.execute(
+  // ✅ Insert product
+  const [productResult] = await pool.execute(
     `INSERT INTO product_table (name, business_id, unit_id, price, picture, product_type, localpath) 
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [name, businessId, unit_id, price, picture, product_type, localpath]
   );
 
-  return result;
+  const productId = productResult.insertId;
+
+  // ✅ Insert empty inventory row
+  await pool.execute(
+    `INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())`,
+    [productId, 0]
+  );
+
+  return productResult;
 };
+
 
 
 export const getAllProducts = async () => {
@@ -48,7 +58,7 @@ export const getAllProducts = async () => {
 
 export const getProductById = async (productId) => {
     const [rows] = await pool.execute(
-      `SELECT * FROM product_table WHERE id = ?`,
+      `SELECT * FROM product_table WHERE product_id = ?`,
         [productId]
     );
     return rows[0];
@@ -90,30 +100,79 @@ export const updateProductStatus = async (productId, isActive) => {
   return result;
 };
 
-//every products in product table to inventory table
-export const getInventoryWithProductDetails = async () => {
-  const [rows] = await pool.execute(`
-    SELECT
-      i.inventory_id,
-      i.product_id,
-      p.name AS product_name,
-      p.business_id,
-      p.unit_id,
-      p.price,
-      p.picture,
-      p.product_type,
-      i.quantity,
-      i.reorder_level
-    FROM inventory_table i
-    JOIN product_table p ON i.product_id = p.product_id
-  `);
+//every active products in product table to inventory table
+export const getactiveProducts = async () => {
+  const [rows] = await pool.execute(
+    `SELECT * FROM product_table WHERE is_active = 1`
+  );
   return rows;
 }
+//fetch products with inventory details
+export const getActiveInventoryWithProductDetails = async () => {
+  const [rows] = await pool.execute(
+    `SELECT 
+       p.product_id,
+       p.name,
+       p.business_id,
+       p.unit_id,
+       p.price,
+       p.picture,
+       i.quantity,
+       i.updated_at AS last_restocked
+     FROM product_table p
+     LEFT JOIN inventory_table i ON p.product_id = i.product_id
+     WHERE p.is_active = 1`
+  );
+  return rows;
+};
+
+
+export const getActiveInventoryWithProductDetailsByBusiness = async (businessId) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 
+         p.product_id, 
+         p.name, 
+         p.business_id, 
+         p.unit_id, 
+         p.price, 
+         p.picture, 
+         i.quantity, 
+         i.updated_at AS last_restocked
+       FROM product_table p
+       LEFT JOIN inventory_table i ON p.product_id = i.product_id
+       WHERE p.is_active = 1 AND p.business_id = ?`,
+      [businessId]
+    );
+    console.log("📦 DB query result:", rows);
+    return rows;
+  } catch (err) {
+    console.error("🔥 SQL error:", err.message);
+    throw err;
+  }
+};
+
+
+
+
+
+
 
 //add stock to inventory table
+export const addInventoryStock = async (inventoryData) => {
+  const { productId, quantity } = inventoryData;
+  const [result] = await pool.execute(
+    `INSERT INTO inventory_table (product_id, quantity, updated_at) 
+     VALUES (?, ?, now())`,
+    [productId, quantity,]
+  );
+  return result;
+}
 
 
 
-export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getInventoryWithProductDetails };
+
+
+export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getActiveInventoryWithProductDetails, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, };
 
     

@@ -1,4 +1,4 @@
-import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getInventoryWithProductDetails } from '../../models/inventory/product-model.js';
+import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness } from '../../models/inventory/product-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
 import fs from 'fs';
 
@@ -22,6 +22,7 @@ import fs from 'fs';
 };*/
 
 
+
 export const createProduct = async (req, res) => {
   try {
     console.log('BODY:', req.body);
@@ -29,6 +30,7 @@ export const createProduct = async (req, res) => {
 
     const { name, businessId, unit_id, price, product_type } = req.body;
 
+    // Validate required fields
     if (!name || !businessId || !unit_id || !price || !req.file) {
       return res.status(400).json({ error: "Missing required fields or image." });
     }
@@ -37,15 +39,16 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ error: "Price must be a non-negative number." });
     }
 
-    // Upload to Cloudinary
+    // Upload image to Cloudinary
     const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
       folder: 'products',
       transformation: [{ width: 800, height: 800, crop: 'limit' }],
     });
 
     const picture = cloudinaryResult.secure_url;
-    const localPath = req.file.path; // e.g., 'uploads/1699451234567-image.jpg'
-    // Save product with Cloudinary image URL
+    const localPath = req.file.path;
+
+    // Insert product and initialize inventory
     const result = await addProduct({
       name,
       businessId,
@@ -56,9 +59,8 @@ export const createProduct = async (req, res) => {
       localpath: localPath,
     });
 
-
-    // Optional: delete local file after upload
-   fs.unlink(req.file.path, (err) => {
+    // Clean up local file
+    fs.unlink(req.file.path, (err) => {
       if (err) console.warn('Failed to delete local file:', err.message);
     });
 
@@ -67,7 +69,7 @@ export const createProduct = async (req, res) => {
       productId: result.insertId,
     });
   } catch (error) {
-    console.error("Error adding product:", error.message);
+    console.error("🔥 Error adding product:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
@@ -172,35 +174,77 @@ export const toggleProductStatus = async (req, res) => {
   }
 };
 
+//product with inventory details
 
 export const fetchProductWithInventoryDetails = async (req, res) => {
   try {
-    const products = await getInventoryWithProductDetails();  
-    res.status(200).json(products);
-  } catch (error) {
-    console.error("Error fetching inventory with product details:", error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-}
-
-export const addInventoryStock = async (req, res) => {
-  try {
-    const { productId, quantity } = req.body;
-    if (!productId || isNaN(quantity) || Number(quantity) <= 0) {
-      return res.status(400).json({ error: "Invalid product ID or quantity." });
+    const { businessId } = req.query;
+    if (!businessId) {
+      return res.status(400).json({ error: "Business ID is required." });
     }
 
-    await addStockToInventory(productId, quantity);
-    res.status(200).json({ message: "Stock added successfully." });
+    const parsedBusinessId = Number(businessId);
+    if (isNaN(parsedBusinessId)) {
+      return res.status(400).json({ error: "Business ID must be a number." });
+    }
+
+    const products = await getActiveInventoryWithProductDetail(parsedBusinessId);
+
+    res.status(200).json(products);
   } catch (error) {
-    console.error("Error adding stock to inventory:", error);
+    console.error("Error fetching inventory details:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const fetchProductWithInventoryDetailsByBusiness = async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    if (!businessId) {
+      return res.status(400).json({ error: "Business ID is required." });
+    }
+    const products = await getActiveInventoryWithProductDetailsByBusiness(businessId);
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching inventory details by business:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const fetchActiveProducts = async (req, res) => {
+  try {
+    const products = await getactiveProducts();
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching active products:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
 
 
 
+export const insertInventoryStock = async (req, res) => {
+  try {
+    const { productId, quantity } = req.body; 
+    if (!productId || quantity == null ) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
 
-export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchProductWithInventoryDetails };
+
+
+    const result = await addInventoryStock({ productId, quantity });
+    res.status(201).json({
+      message: "Inventory stock added successfully.",
+      inventoryId: result.insertId,
+    });
+  }
+  catch (error) {
+    console.error("Error adding inventory stock:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
+export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchProductWithInventoryDetails, insertInventoryStock,};
 
 

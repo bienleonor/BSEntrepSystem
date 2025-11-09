@@ -10,8 +10,10 @@ import {
   modifyProduct,
   removeProduct,
   toggleProductStatus,
+  fetchActiveProducts,
+  fetchProductWithInventoryDetailsByBusiness,
   fetchProductWithInventoryDetails,
-  
+  insertInventoryStock,
 } from '../../controllers/inventory/product-controller.js';
 
 const router = express.Router();
@@ -33,6 +35,10 @@ router.delete('/products/:productId', removeProduct);
 router.get('/businesses/:businessId/products', fetchProductsByBusiness);
 router.get('/units', fetchUnits);
 router.patch('/products/:productId/status', toggleProductStatus);
-router.get('/inventory-with-products', fetchProductWithInventoryDetails);
+router.get('/products/active', fetchActiveProducts);
+router.get('/products/inventory-details', fetchProductWithInventoryDetails);
+router.get('/products/active/inventory-details/:businessId', fetchProductWithInventoryDetailsByBusiness);
+router.post('/inventory', insertInventoryStock);
+
 
 export default router;

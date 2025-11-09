@@ -10,6 +10,7 @@ import Recipes from '../pages/SessionPages/Recipe.jsx'
 import BusinessRegistration from '../pages/BusinessRegistration.jsx'
 import Busmanage from '../pages/BusManage.jsx'
 import ProductList from '../pages/SessionPages/ProductList.jsx'
+import ProductListComponent from '../components/inventory/ProductListComponent.jsx'
 
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
@@ -24,4 +25,5 @@ export const privateRoutes = [
   { path: '/recipes', element: <Recipes /> },
   {path: '/busmanage', element: <Busmanage />},
   {path: '/productlist', element: <ProductList />},
+  {path: '/productlistcomponent', element: <ProductListComponent />},
 ]
