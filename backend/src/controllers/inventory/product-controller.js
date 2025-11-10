@@ -1,4 +1,4 @@
-import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness } from '../../models/inventory/product-model.js';
+import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock } from '../../models/inventory/product-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
 import fs from 'fs';
 
@@ -231,15 +231,35 @@ export const insertInventoryStock = async (req, res) => {
     }
 
 
-
     const result = await addInventoryStock({ productId, quantity });
     res.status(201).json({
       message: "Inventory stock added successfully.",
       inventoryId: result.insertId,
     });
+    console.log("Adding inventory stock:", { productId, quantity });
   }
   catch (error) {
     console.error("Error adding inventory stock:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+//wrong
+export const modifyInventoryStock = async (req, res) => {
+  try {
+    const { productId, quantity } = req.body; 
+    if (!productId || quantity == null ) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+    const result = await updateinventoryStock({ productId, quantity });
+    res.status(201).json({
+      message: "Inventory stock updated successfully.",
+      inventoryId: result.insertId,
+    });
+    console.log("Updating inventory stock:", { productId, quantity });
+  }
+  catch (error) {
+    console.error("Error updating inventory stock:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };

@@ -37,7 +37,6 @@ function Inventory() {
         const productsData = await productsRes.json();
         const unitsData = await unitsRes.json();
 
-        // Create a map: { 1: 'Kilogram', 2: 'Liter', ... }
         const unitMap = {};
         unitsData.forEach(unit => {
           unitMap[unit.unit_id] = unit.name;
@@ -47,14 +46,58 @@ function Inventory() {
         setProducts(productsData);
       } catch (error) {
         console.error('Error fetching inventory:', error);
+        toast.error("Error loading inventory.");
       }
     };
 
     fetchData();
   }, [navigate]);
 
-  const getStatusColor = (isActive) => {
-    return isActive ? 'text-green-600' : 'text-red-500';
+  const handleStatusToggle = async (product) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/inventory/products/${product.product_id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ is_active: !product.is_active }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update status");
+
+      setProducts(prev =>
+        prev.map(p =>
+          p.product_id === product.product_id ? { ...p, is_active: !p.is_active } : p
+        )
+      );
+      toast.success("Status updated.");
+    } catch (err) {
+      console.error("Status update failed:", err);
+      toast.error("Failed to update status.");
+    }
+  };
+
+  const handleDelete = async (productId, productName) => {
+    const confirmDelete = window.confirm(`Delete "${productName}" permanently?`);
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/inventory/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete product");
+
+      setProducts(prev => prev.filter(p => p.product_id !== productId));
+      toast.success("Product deleted.");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete product.");
+    }
   };
 
   return (
@@ -71,6 +114,7 @@ function Inventory() {
                 <th className="px-4 py-2">Unit</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Created At</th>
+                <th className="px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -79,46 +123,33 @@ function Inventory() {
                   <td className="px-4 py-2">{product.name}</td>
                   <td className="px-4 py-2">{product.product_type}</td>
                   <td className="px-4 py-2">₱{product.price}</td>
-
                   <td className="px-4 py-2">{unitsMap[product.unit_id] || '—'}</td>
-
                   <td className="px-4 py-2">
-                  <button
-                    onClick={async () => {
-                      try {
-                        const response = await fetch(`http://localhost:5000/api/inventory/products/${product.product_id}/status`, {
-                          method: 'PATCH',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${getToken()}`,
-                          },
-                          body: JSON.stringify({ is_active: !product.is_active }),
-                        });
-
-                        if (!response.ok) throw new Error("Failed to update status");
-
-                        // Refresh products after update
-                        setProducts(prev =>
-                          prev.map(p =>
-                            p.product_id === product.product_id ? { ...p, is_active: !p.is_active } : p
-                          )
-                        );
-                      } catch (err) {
-                        console.error("Status update failed:", err);
-                        toast.error("Failed to update status.");
-                      }
-                    }}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    {product.is_active ? 'Active' : 'Deactivate'}
-                  </button>
-                </td>
-
-                  
-
+                    <button
+                      onClick={() => handleStatusToggle(product)}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      {product.is_active ? 'Active' : 'Deactivate'}
+                    </button>
+                  </td>
                   <td className="px-4 py-2">{new Date(product.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => handleDelete(product.product_id, product.name)}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
+              {products.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="px-4 py-6 text-center text-gray-500">
+                    No products found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

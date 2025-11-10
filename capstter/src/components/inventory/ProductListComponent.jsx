@@ -8,6 +8,7 @@ const REFRESH_INTERVAL = 30000; // 30 seconds
 const ProductListComponent = () => {
   const [products, setProducts] = useState([]);
   const [unitsMap, setUnitsMap] = useState({});
+  const [stockInputs, setStockInputs] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -56,6 +57,34 @@ const ProductListComponent = () => {
     }
   };
 
+  const handleAddStock = async (productId) => {
+    const quantity = parseInt(stockInputs[productId], 10);
+    if (!quantity || quantity <= 0) {
+      toast.error("Enter a valid quantity.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/api/inventory/inventory", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ productId, quantity }),
+      });
+
+      if (!response.ok) throw new Error("Failed to add stock");
+
+      toast.success("Stock added successfully.");
+      setStockInputs((prev) => ({ ...prev, [productId]: "" }));
+      fetchData(); // refresh inventory
+    } catch (err) {
+      console.error("Error adding stock:", err);
+      toast.error("Failed to add stock.");
+    }
+  };
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, REFRESH_INTERVAL);
@@ -80,6 +109,7 @@ const ProductListComponent = () => {
               <th style={thStyle}>Quantity</th>
               <th style={thStyle}>Last Restocked</th>
               <th style={thStyle}>Image</th>
+              <th style={thStyle}>Add Stock</th>
             </tr>
           </thead>
           <tbody>
@@ -100,6 +130,34 @@ const ProductListComponent = () => {
                   ) : (
                     "No image"
                   )}
+                </td>
+                <td style={tdStyle}>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Qty"
+                    style={{ width: "60px", marginRight: "6px", padding: "4px" }}
+                    value={stockInputs[p.product_id] || ""}
+                    onChange={(e) =>
+                      setStockInputs((prev) => ({
+                        ...prev,
+                        [p.product_id]: e.target.value,
+                      }))
+                    }
+                  />
+                  <button
+                    onClick={() => handleAddStock(p.product_id)}
+                    style={{
+                      padding: "4px 8px",
+                      backgroundColor: "#4CAF50",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Add
+                  </button>
                 </td>
               </tr>
             ))}

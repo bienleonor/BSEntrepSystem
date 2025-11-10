@@ -77,7 +77,7 @@ await pool.execute(
 
 export const deleteProduct = async (productId) => {
     const [result] = await pool.execute(
-      `DELETE FROM product_table WHERE id = ?`,
+      `DELETE FROM product_table WHERE product_id = ?`,
         [productId]
     );
     return result;
@@ -144,7 +144,7 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
        WHERE p.is_active = 1 AND p.business_id = ?`,
       [businessId]
     );
-    console.log("📦 DB query result:", rows);
+    
     return rows;
   } catch (err) {
     console.error("🔥 SQL error:", err.message);
@@ -152,22 +152,27 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
   }
 };
 
-
-
-
-
-
-
 //add stock to inventory table
-export const addInventoryStock = async (inventoryData) => {
-  const { productId, quantity } = inventoryData;
+export const addInventoryStock = async ({ productId, quantity }) => {
   const [result] = await pool.execute(
-    `INSERT INTO inventory_table (product_id, quantity, updated_at) 
-     VALUES (?, ?, now())`,
-    [productId, quantity,]
+    `INSERT INTO inventory_table (product_id, quantity, updated_at)
+     VALUES (?, ?, NOW())
+     ON DUPLICATE KEY UPDATE quantity = ?, updated_at = NOW()`,
+    [productId, quantity, quantity]
+  );
+  return result;
+};
+
+//wrong
+export const updateinventoryStock = async (productId, quantity) => {
+  const [result] = await pool.execute(
+    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE product_id = ?`,
+    [quantity, productId]
   );
   return result;
 }
+
+
 
 
 

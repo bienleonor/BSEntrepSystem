@@ -14,6 +14,8 @@ import {
   fetchProductWithInventoryDetailsByBusiness,
   fetchProductWithInventoryDetails,
   insertInventoryStock,
+  modifyInventoryStock,
+  
 } from '../../controllers/inventory/product-controller.js';
 
 const router = express.Router();
@@ -39,6 +41,9 @@ router.get('/products/active', fetchActiveProducts);
 router.get('/products/inventory-details', fetchProductWithInventoryDetails);
 router.get('/products/active/inventory-details/:businessId', fetchProductWithInventoryDetailsByBusiness);
 router.post('/inventory', insertInventoryStock);
+//wrong
+router.post('/inventory/update', modifyInventoryStock);
+
 
 
 export default router;
