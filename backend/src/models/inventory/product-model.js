@@ -76,12 +76,32 @@ await pool.execute(
 };
 
 export const deleteProduct = async (productId) => {
-    const [result] = await pool.execute(
-      `DELETE FROM product_table WHERE product_id = ?`,
-        [productId]
+  // Start a transaction to keep things consistent
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Delete dependent rows in inventory_table first
+    await connection.execute(
+      `DELETE FROM inventory_table WHERE product_id = ?`,
+      [productId]
     );
+
+    // Now delete the product itself
+    const [result] = await connection.execute(
+      `DELETE FROM product_table WHERE product_id = ?`,
+      [productId]
+    );
+
+    await connection.commit();
     return result;
-}
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
 
 export const getProductsByBusiness = async (businessId) => {
     const [rows] = await pool.execute(
@@ -154,19 +174,39 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
 
 //add stock to inventory table
 export const addInventoryStock = async ({ productId, quantity }) => {
-  const [result] = await pool.execute(
-    `INSERT INTO inventory_table (product_id, quantity, updated_at)
-     VALUES (?, ?, NOW())
-     ON DUPLICATE KEY UPDATE quantity = ?, updated_at = NOW()`,
-    [productId, quantity, quantity]
+  // First check if a row exists for this product_id
+  const [rows] = await pool.execute(
+    `SELECT inventory_id FROM inventory_table WHERE product_id = ?`,
+    [productId]
   );
+
+  let result;
+
+  if (rows.length > 0) {
+    // Row exists → increment quantity instead of replacing
+    [result] = await pool.execute(
+      `UPDATE inventory_table 
+       SET quantity = quantity + ?, updated_at = NOW() 
+       WHERE product_id = ?`,
+      [quantity, productId]
+    );
+  } else {
+    // Row does not exist → insert new
+    [result] = await pool.execute(
+      `INSERT INTO inventory_table (product_id, quantity, updated_at)
+       VALUES (?, ?, NOW())`,
+      [productId, quantity]
+    );
+  }
+
   return result;
 };
+
 
 //wrong
 export const updateinventoryStock = async (productId, quantity) => {
   const [result] = await pool.execute(
-    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE product_id = ?`,
+    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE inventory_id = ?`,
     [quantity, productId]
   );
   return result;

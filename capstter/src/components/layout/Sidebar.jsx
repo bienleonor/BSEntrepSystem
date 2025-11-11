@@ -8,6 +8,7 @@ const menuItems = [
   { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
   { label: "Sales Log", icon: <List size={18} /> },
   { label: "Inventory", icon: <Package size={18} /> },
+  { label: "ProductList", icon: <Package size={18} /> },
 ];
 
 export default function Sidebar() {

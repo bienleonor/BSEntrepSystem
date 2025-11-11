@@ -84,11 +84,14 @@ function Inventory() {
 
     try {
       const response = await fetch(`http://localhost:5000/api/inventory/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
+  method: 'DELETE',
+  headers: {
+    Authorization: `Bearer ${getToken()}`,
+    },
+
+     });
+
+      
 
       if (!response.ok) throw new Error("Failed to delete product");
 
