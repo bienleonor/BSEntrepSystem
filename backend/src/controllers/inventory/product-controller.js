@@ -140,6 +140,7 @@ export const modifyProduct = async (req, res) => {
         res.status(500).json({ error: "Internal server error." });
     }
 };
+
 export const removeProduct = async (req, res) => {
     try {
         const { productId } = req.params;

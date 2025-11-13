@@ -14,6 +14,8 @@ const menuItems = [
 export default function Sidebar() {
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('selectedBusinessId');
+    localStorage.removeItem('role');
     window.location.href = '/login'; // Redirect to login page
   };
   return (

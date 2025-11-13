@@ -1,4 +1,4 @@
-export const Popup = ({ isOpen, onClose, title, children }) => {
+export const ModifyProductPopup = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm z-50">
@@ -15,5 +15,3 @@ export const Popup = ({ isOpen, onClose, title, children }) => {
     </div>
   );
 };
-
-export default Popup;

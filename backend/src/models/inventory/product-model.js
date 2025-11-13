@@ -70,7 +70,7 @@ export const updateProduct = async (productId, productData) => {
 await pool.execute(
   `UPDATE product_table
    SET name = ?, business_id = ?, unit_id = ?, price = ?, picture = ?
-   WHERE id = ?`,
+   WHERE product_id = ?`,
   [name, businessId, unit_id, price, picture, productId]
 );
 };
