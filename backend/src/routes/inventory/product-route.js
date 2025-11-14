@@ -32,7 +32,12 @@ const uploadCloud = multer({ storage: cloudinaryStorage });
 // Product routes
 router.get('/products', fetchAllProducts);
 router.get('/products/:productId', fetchProductById);
-router.put('/products/:productId', modifyProduct);
+// Use the same storage middleware you used for POST
+router.put('/products/:productId', uploadLocal.single('picture'), modifyProduct);
+
+// If you configured cloudinaryStorage and prefer it for updates:
+//router.put('/products/:productId', uploadCloud.single('picture'), modifyProduct);
+
 router.delete('/products/:productId', removeProduct);
 router.get('/businesses/:businessId/products', fetchProductsByBusiness);
 router.get('/units', fetchUnits);

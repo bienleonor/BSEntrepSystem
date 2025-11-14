@@ -124,21 +124,27 @@ export const fetchProductById = async (req, res) => {
     }
 };
 export const modifyProduct = async (req, res) => {
-    try {
-        const { productId } = req.params;
-        const { name, businessId, unit_id, price, picture } = req.body;
-        if (!productId || !name || !businessId || !unit_id || !price || !picture) {
-            return res.status(400).json({ error: "Missing required fields." });
-        }
-        if (isNaN(price) || Number(price) < 0) {
-            return res.status(400).json({ error: "Price must be a non-negative number." });
-        }      
-        await updateProduct(productId, { name, businessId, unit_id, price, picture });
-        res.status(200).json({ message: "Product updated successfully." });
-    } catch (error) {
-        console.error("Error updating product:", error);
-        res.status(500).json({ error: "Internal server error." });
+  try {
+    const { productId } = req.params;
+    const { name, businessId, unit_id, price, product_type, picture: pictureFallback } = req.body;
+
+    // basic validation...
+    // handle uploaded file
+    let pictureValue = pictureFallback || null;
+    if (req.file) {
+      // if using local storage: upload file to cloudinary
+      const cloudRes = await cloudinary.uploader.upload(req.file.path, { folder: 'products', transformation: [{ width:800, height:800, crop:'limit' }] });
+      pictureValue = cloudRes.secure_url;
+      // cleanup local file
+      fs.unlink(req.file.path, (err) => { if (err) console.warn('unlink err', err); });
     }
+
+    await updateProduct(productId, { name, businessId, unit_id, price, picture: pictureValue, product_type });
+    res.status(200).json({ message: 'Product updated successfully.' });
+  } catch (err) {
+    console.error('Error updating product:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
 };
 
 export const removeProduct = async (req, res) => {
