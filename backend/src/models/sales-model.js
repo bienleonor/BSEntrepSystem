@@ -1,4 +1,5 @@
 import pool from '../config/pool.js';
+import getAllProducts from './inventory/product-model.js';
 
 
 
@@ -11,10 +12,6 @@ export const createSale = async (saleData) => {
     [business_id, total_amount, sale_date]
   );
   return result.insertId;
-
-  
-
-  
 }
 
 
@@ -31,4 +28,4 @@ export const getSalesTotal = async (businessId) => {
 };
 
 
-export default getSalesTotal;
+export default  { createSale, getSalesTotal }; ;

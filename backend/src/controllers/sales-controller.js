@@ -1,5 +1,18 @@
-import { getSalesTotal } from '../models/sales-model.js';
+import { getSalesTotal,createSale } from '../models/sales-model.js';
 import { findRoleByName } from '../models/role-model.js'; 
+
+
+
+export const makesale = async (req, res) => {
+  try {
+    const saleData = req.body;
+    const newSaleId = await createSale(saleData);
+    res.status(201).json({ sale_id: newSaleId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 export const GetAllTotalSales = async (req, res) => {
   try {
