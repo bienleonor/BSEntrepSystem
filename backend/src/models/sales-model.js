@@ -1,5 +1,24 @@
 import pool from '../config/pool.js';
+
+
+
+
+export const createSale = async (saleData) => {
+  const { business_id, total_amount, sale_date } = saleData;
+  const [result] = await pool.execute(
+    `INSERT INTO sales_table (business_id, total_amount, created_at) 
+     VALUES (?, ?, ?)`,
+    [business_id, total_amount, sale_date]
+  );
+  return result.insertId;
+
   
+
+  
+}
+
+
+
 
 export const getSalesTotal = async (businessId) => {
   const [rows] = await pool.execute(
