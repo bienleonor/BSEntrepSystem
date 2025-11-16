@@ -1,10 +1,9 @@
-import React from 'react'
-import Sidebar from '../../components/layout/Sidebar'
-import LoginNavbar from '../../components/layout/LoginNavbar'
-import DashboardLayout from '../../components/layout/DashboardLayout'
-import { CirclePlus } from 'lucide-react'
-import OrderCard from '../../components/createorder/ordercard'
-import OrderSection from '../../components/createorder/OrderSection'
+import React from 'react';
+import Sidebar from '../../components/layout/Sidebar';
+import LoginNavbar from '../../components/layout/LoginNavbar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { CirclePlus } from 'lucide-react';
+import OrderSection from '../../components/createorder/OrderSection';
 
 function CreateOrder() {
   return (
@@ -15,9 +14,7 @@ function CreateOrder() {
       <OrderSection/>
 
 
-
      </div>
-
 
 
 

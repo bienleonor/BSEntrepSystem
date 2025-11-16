@@ -1,8 +1,5 @@
 import {jwtDecode} from 'jwt-decode';
 
-// src/utils/token.js
-
-
 export function getToken() {
   return localStorage.getItem('token');
 }
@@ -33,9 +30,6 @@ export function getUserId() {
     return null;
   }
 }
-
-
-
 
 export function getRole() {
   const token = localStorage.getItem('token');

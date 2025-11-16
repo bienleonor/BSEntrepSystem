@@ -1,6 +1,7 @@
 import pool from '../config/pool.js';
 import { Router } from 'express';
-import { GetAllTotalSales, makesale } from '../controllers/sales-controller.js';
+import { GetAllTotalSales, makesale,getAllOrdersController,getOrderByIdController,getAllOrdersByBusinessController} from '../controllers/sales-controller.js';
+ 
 
 
 const router = Router();
@@ -16,5 +17,14 @@ const requireBusinessAccess = (req, res, next) => {
 // Get total sales for the user's business only
 router.get('/total_amount', requireBusinessAccess, GetAllTotalSales);
 router.post('/create', requireBusinessAccess, makesale);
+router.get('/orders', requireBusinessAccess, getAllOrdersController);
+router.get('/orders/:orderId', requireBusinessAccess, getOrderByIdController);
+router.get('/businesses/:businessId/orders', requireBusinessAccess, getAllOrdersByBusinessController);
+
+
+
+
+
+
 
 export default router;

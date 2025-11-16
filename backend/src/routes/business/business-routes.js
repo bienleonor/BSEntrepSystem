@@ -10,4 +10,5 @@ router.post("/registerbusiness", registerBusiness);
 router.get("/mybusinesses", getUserBusiness); // new route
 
 
+
 export default router;

@@ -1,5 +1,5 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
-
+import { generateToken } from "../../utils/generate-token.js";
 
 export const registerBusiness = async (req, res) => {
   try {
@@ -47,5 +47,26 @@ export const getUserBusiness = async (req, res) => {
     console.error("Error fetching user businesses:", error);
     res.status(500).json({ error: "Failed to load businesses." });
   }
+};
+
+export const selectBusiness = async (req, res) => {
+  const { businessId } = req.body;
+  const userId = req.user.user_id;
+
+  const businesses = await findBusinessByUserId(userId);
+  const ownsBusiness = businesses.some(b => b.business_id === parseInt(businessId));
+
+  if (!ownsBusiness) {
+    return res.status(403).json({ error: "Not authorized for this business" });
+  }
+
+  const token = generateToken({
+    user_id: userId,
+    username: req.user.username,
+    role: req.user.role,
+    business_id: businessId
+  });
+
+  res.json({ token });
 };
 

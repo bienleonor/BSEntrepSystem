@@ -24,8 +24,6 @@ export const findUserByUsername = async (username) => {
   return rows[0];
 };
 
-
-
 export const getAllUsers = async () => {
   const [rows] = await pool.execute(
     `SELECT * FROM user_table`
@@ -62,7 +60,6 @@ export const updateUser = async (id, data) => {
   );
   return result;
 };
-
 
 //UserDetails
 export const getUserDetails = async (id, data) => {

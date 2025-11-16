@@ -13,3 +13,12 @@
 .button-primary {
   @apply bg-blue-500 text-white font-semibold py-2 px-4 rounded hover:bg-blue-600;
 }
+
+/* src/index.css or tailwind.css */
+.hidden-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+.hidden-scrollbar {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;     /* Firefox */
+}

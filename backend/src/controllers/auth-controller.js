@@ -12,75 +12,43 @@ export const login = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // 🔐 Find user by username
     const user = await findUserByUsername(username);
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // 🔐 Validate password
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // 🔍 Get system_role_id from user_sys_role_table
+    // Get role
     let roleMapping = await findRoleByUserId(user.user_id);
-    let systemRoleId;
-
-    if (roleMapping && roleMapping.system_role_id) {
-      systemRoleId = roleMapping.system_role_id;
-    } else {
-      // 🛠️ Assign default "user" role
-      const defaultRole = await findRoleByName('user');
-      if (!defaultRole || !defaultRole.system_role_id) {
-        return res.status(500).json({ error: 'Default role not found' });
-      }
-
-      systemRoleId = defaultRole.system_role_id;
-
-      // 🧱 Insert default role mapping
-      const [insertResult] = await pool.query(
-        'INSERT INTO user_sys_role_table (user_id, system_role_id) VALUES (?, ?)',
-        [user.user_id, systemRoleId]
-      );
-
-      if (!insertResult.affectedRows) {
-        return res.status(500).json({ error: 'Failed to assign default role' });
-      }
-    }
-
-    // 🔍 Get role name from system_role_table
+    let systemRoleId = roleMapping?.system_role_id ?? (await assignDefaultRole(user.user_id));
     const roleData = await findRoleById(systemRoleId);
     const roleName = roleData?.role || 'unknown';
 
-    // 🏢 Get business_id if applicable
-    const businessMapping = await findBusinessByUserId(user.user_id);
-    const businessId = businessMapping?.business_id || null;
+    // Get businesses
+    const businesses = await findBusinessByUserId(user.user_id);
 
-    // 🎟️ Generate JWT token
+    // Generate token WITHOUT business_id
     const token = generateToken({
       user_id: user.user_id,
       username: user.username,
-      role: roleName,
-     // business_id: businessId
+      role: roleName
     });
 
-    // ✅ Send response
     res.json({
       token,
       user: {
         user_id: user.user_id,
         username: user.username,
-        role: roleName,
-        business_id: businessId
-      }
+        role: roleName
+      },
+      businesses // array of businesses for selection
     });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 
 

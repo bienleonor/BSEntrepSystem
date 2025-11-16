@@ -1,5 +1,5 @@
 import UserDashboard from '../pages/Sessionpages/UserDashboard.jsx'
-import CreateOrder from '../pages/Sessionpages/CreateOrder.jsx'
+import CreateOrder from '../pages/SessionPages/CreateOrder.jsx'
 import Inventory from '../pages/Sessionpages/Inventory.jsx'
 import SalesAnalysis from '../pages/Sessionpages/SalesAnalysis.jsx'
 import SalesLog from '../pages/Sessionpages/SalesLog.jsx'
@@ -11,6 +11,7 @@ import BusinessRegistration from '../pages/BusinessRegistration.jsx'
 import Busmanage from '../pages/BusManage.jsx'
 import ProductList from '../pages/SessionPages/ProductList.jsx'
 import ProductListComponent from '../components/inventory/ProductListComponent.jsx'
+import PointofSales from '../pages/SessionPages/PointofSales.jsx'
 
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
@@ -26,4 +27,6 @@ export const privateRoutes = [
   {path: '/busmanage', element: <Busmanage />},
   {path: '/productlist', element: <ProductList />},
   {path: '/productlistcomponent', element: <ProductListComponent />},
+  {path: '/pointofsales', element: <PointofSales />},
+
 ]

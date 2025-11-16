@@ -1,10 +1,10 @@
 import pool from '../../config/pool.js'
 
 
-export const findBusinessByUserId = async (userId) => {
+export const findBusinessByUserId = async (user_id) => {
   const [rows] = await pool.execute(
     `SELECT business_id, business_name FROM business_table WHERE owner_id = ?`,
-    [userId]
+    [user_id]
   );
   return rows; // returns array of businesses
 };

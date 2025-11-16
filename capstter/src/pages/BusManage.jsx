@@ -51,15 +51,34 @@ function Busmanage() {
     fetchBusinesses();
   }, []);
 
-  const handleSelect = (businessId, businessName) => {
-    setSelectedBusinessId(businessId);
-    localStorage.setItem("selectedBusinessId", businessId);
-    toast.success(`Selected: ${businessName}`);
-    setTimeout(() => {
-    navigate('/itemregistration');
-    }, 500); 
+  const handleSelect = async (businessId, businessName) => {
+        setSelectedBusinessId(businessId);
+        localStorage.setItem("selectedBusinessId", businessId);
 
-  };
+        const token = getToken();
+        const response = await fetch("http://localhost:5000/api/auth/selectbusiness", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ businessId }),
+        });
+
+        const data = await response.json();
+        if (data.token) {
+          localStorage.setItem("token", data.token); // replace old token
+          toast.success(`Selected: ${businessName}`);
+          setTimeout(() => navigate("/UserDashboard"),1500);
+          console.log("select-business response:", data);
+
+        } else {
+          toast.error("Failed to select business");
+          console.log("select-business response:", data);
+
+        }
+      };
+
 
   return (
     <div
