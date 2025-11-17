@@ -1,4 +1,4 @@
-import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale } from '../models/sales-model.js';
+import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder } from '../models/sales-model.js';
 import { findRoleByName } from '../models/role-model.js'; 
 
 

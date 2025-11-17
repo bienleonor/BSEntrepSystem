@@ -213,8 +213,9 @@ export default function POS1() {
               onClick={() => addToCart(item, 1)}
               disabled={item.quantity <= 0}
             >
-              Add to Cart
+              {item.quantity > 0 ? "Add to Cart" : "Out of Stock"}
             </button>
+
           </div>
         ))}
       </div>

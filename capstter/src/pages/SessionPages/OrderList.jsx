@@ -128,7 +128,6 @@ export default function OrderList() {
       return { success: false, error: "Network or unexpected error" };
     }
   };
-
   const onCancelClick = async (order) => {
     if (!order?.id) return;
     setCancelingId(order.id);
@@ -143,6 +142,46 @@ export default function OrderList() {
       alert(`Error: ${result.error}`);
     }
   };
+
+ const handleFinishOrder = async (businessId, purchaseId) => {
+  if (!token) return { success: false, error: "Missing auth token" };
+
+  try {
+    const response = await fetch(
+      `${SERVER}/api/sales/businesses/${businessId}/orders/${purchaseId}/finish`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,   // 🔑 include token here
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to finish order');
+    }
+
+    return { success: true, message: data.message };
+  } catch (err) {
+    console.error('Error finishing order:', err.message);
+    return { success: false, error: err.message };
+  }
+};
+
+const onFinishClick = async (order) => {
+  const result = await handleFinishOrder(businessId, order.id);
+  if (result.success) {
+    alert(result.message);
+    fetchOrders(); // reload orders
+  } else {
+    alert(`Error: ${result.error}`);
+  }
+};
+
+
 
   return (
     <DashboardLayout>
@@ -212,9 +251,14 @@ export default function OrderList() {
                 📋 View Details
               </button>
 
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded transition">
-                ✅ Finish Order
-              </button>
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded transition"
+                  onClick={() => onFinishClick(order)}
+                >
+                  ✅ Finish Order
+                </button>
+
+
 
               <button
                 className={`${

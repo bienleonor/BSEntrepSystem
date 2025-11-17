@@ -58,24 +58,24 @@ export const getAllOrdersByBusiness = async (businessId) => {
   const [rows] = await pool.execute(
     `
     SELECT 
-  p.purchase_id AS purchaseId,
-  p.business_id,
-  p.purchase_date,
-  p.total_amount,
-  i.purchase_item_id AS itemId,
-  i.product_id,
-  pr.name AS product_name,
-  i.quantity,
-  i.price,
-  pr.picture
-FROM purchases_table p
-JOIN purchase_items_table i 
-  ON p.purchase_id = i.purchase_id
-JOIN product_table pr
-  ON i.product_id = pr.product_id
-WHERE p.business_id = ?
-ORDER BY p.purchase_id ASC;
-
+      p.purchase_id AS purchaseId,
+      p.business_id,
+      p.purchase_date,
+      p.total_amount,
+      i.purchase_item_id AS itemId,
+      i.product_id,
+      pr.name AS product_name,
+      i.quantity,
+      i.price,
+      pr.picture
+    FROM purchases_table p
+    JOIN purchase_items_table i 
+      ON p.purchase_id = i.purchase_id
+    JOIN product_table pr
+      ON i.product_id = pr.product_id
+    WHERE p.business_id = ?
+      AND p.status_id = 2
+    ORDER BY p.purchase_id ASC;
     `,
     [businessId]
   );
@@ -105,6 +105,7 @@ ORDER BY p.purchase_id ASC;
 
   return orders;
 };
+
 
 
 export const getAllOrders = async () => {
@@ -207,15 +208,15 @@ export const cancelSale = async (purchaseId) => {
 };
 
 export const finishOrder = async (purchaseId) => {
-  if (!purchaseId) throw new Error('purchaseId is required');
+  if (!purchaseId) throw new Error("purchaseId is required");
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    // Lock the purchase row to avoid race conditions
+    // Lock the purchase row and get current status
     const [purchaseRows] = await conn.execute(
-      `SELECT purchase_id, status FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
+      `SELECT purchase_id, status_id FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
       [purchaseId]
     );
 
@@ -223,28 +224,30 @@ export const finishOrder = async (purchaseId) => {
       throw new Error(`Purchase ${purchaseId} not found`);
     }
 
-    const currentStatus = purchaseRows[0].status;
-    if (currentStatus === 'FINISHED') {
-      throw new Error(`Purchase ${purchaseId} is already finished`);
+    const currentStatusId = purchaseRows[0].status_id;
+
+    if (currentStatusId === 1) {
+      throw new Error(`Purchase ${purchaseId} is already marked successful`);
     }
-    if (currentStatus === 'CANCELED') {
-      throw new Error(`Purchase ${purchaseId} was canceled and cannot be finished`);
+    if (currentStatusId === 3) {
+      throw new Error(`Purchase ${purchaseId} was cancelled and cannot be finished`);
     }
 
-    // Update status to finished
+    // Update to successful
     await conn.execute(
-      `UPDATE purchases_table SET status = 'FINISHED', finished_at = NOW() WHERE purchase_id = ?`,
+      `UPDATE purchases_table SET status_id = 1, finished_at = NOW() WHERE purchase_id = ?`,
       [purchaseId]
     );
 
     await conn.commit();
   } catch (err) {
-    try { await conn.rollback(); } catch (e) { /* log rollback error */ }
+    try { await conn.rollback(); } catch (e) {}
     throw err;
   } finally {
     conn.release();
   }
 };
+
 
 
 export const getSalesTotal = async (businessId) => {
