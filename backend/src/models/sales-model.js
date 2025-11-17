@@ -151,68 +151,101 @@ export const getAllOrders = async () => {
   return Object.values(grouped);
 };
 
-export const cancelSale = async (saleId) => {
-  if (!saleId) throw new Error('saleId is required');
+export const cancelSale = async (purchaseId) => {
+    if (!purchaseId) throw new Error('purchaseId is required');
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [purchaseRows] = await conn.execute(
+        `SELECT purchase_id FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
+        [purchaseId]
+      );
+      if (purchaseRows.length === 0) {
+        throw new Error(`Purchase ${purchaseId} not found`);
+      }
+
+      const [items] = await conn.execute(
+        `SELECT product_id, quantity FROM purchase_items_table WHERE purchase_id = ?`,
+        [purchaseId]
+      );
+
+      for (const item of items) {
+        const qty = Number(item.quantity) || 0;
+        if (qty <= 0) continue;
+
+        const [res] = await conn.execute(
+          `UPDATE inventory_table SET quantity = quantity + ? WHERE product_id = ?`,
+          [qty, item.product_id]
+        );
+
+        if (res.affectedRows === 0) {
+          throw new Error(`Inventory update failed for product ${item.product_id}`);
+        }
+      }
+
+      await conn.execute(
+       `DELETE FROM purchases_table WHERE purchase_id = ?`,
+      [purchaseId]
+     );
+    // purchase_items_table rows will be deleted automatically
+
+
+      await conn.execute(
+        `DELETE FROM purchases_table WHERE purchase_id = ?`,
+        [purchaseId]
+      );
+
+      await conn.commit();
+    } catch (err) {
+      try { await conn.rollback(); } catch (e) { /* log rollback error */ }
+      throw err;
+    } finally {
+      conn.release();
+    }
+};
+
+export const finishOrder = async (purchaseId) => {
+  if (!purchaseId) throw new Error('purchaseId is required');
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    // Lock the purchase row to avoid concurrent cancels/updates
+    // Lock the purchase row to avoid race conditions
     const [purchaseRows] = await conn.execute(
-      `SELECT purchase_id FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
-      [saleId]
+      `SELECT purchase_id, status FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
+      [purchaseId]
     );
+
     if (purchaseRows.length === 0) {
-      await conn.rollback();
-      throw new Error(`Purchase ${saleId} not found`);
+      throw new Error(`Purchase ${purchaseId} not found`);
     }
 
-    // Get sale items to restore inventory
-    const [items] = await conn.execute(
-      `SELECT product_id, quantity FROM purchase_items_table WHERE purchase_id = ?`,
-      [saleId]
-    );
-
-    // Restore inventory. Perform updates in a single prepared statement inside a loop.
-    for (const item of items) {
-      // Optionally validate item fields
-      const qty = Number(item.quantity) || 0;
-      if (qty <= 0) continue;
-
-      const [res] = await conn.execute(
-        `UPDATE inventory_table SET quantity = quantity + ? WHERE product_id = ?`,
-        [qty, item.product_id]
-      );
-      // Optionally ensure the update affected a row
-      if (res.affectedRows === 0) {
-        // Decide whether to create an inventory row or treat as error.
-        // For now, treat as error to avoid silent inventory loss
-        await conn.rollback();
-        throw new Error(`Inventory update failed for product ${item.product_id}`);
-      }
+    const currentStatus = purchaseRows[0].status;
+    if (currentStatus === 'FINISHED') {
+      throw new Error(`Purchase ${purchaseId} is already finished`);
+    }
+    if (currentStatus === 'CANCELED') {
+      throw new Error(`Purchase ${purchaseId} was canceled and cannot be finished`);
     }
 
-    // Delete sale items
+    // Update status to finished
     await conn.execute(
-      `DELETE FROM purchase_items_table WHERE purchase_id = ?`,
-      [saleId]
-    );
-
-    // Delete sale
-    await conn.execute(
-      `DELETE FROM purchases_table WHERE purchase_id = ?`,
-      [saleId]
+      `UPDATE purchases_table SET status = 'FINISHED', finished_at = NOW() WHERE purchase_id = ?`,
+      [purchaseId]
     );
 
     await conn.commit();
   } catch (err) {
-    try { await conn.rollback(); } catch (e) { /* log rollback error if needed */ }
+    try { await conn.rollback(); } catch (e) { /* log rollback error */ }
     throw err;
   } finally {
     conn.release();
   }
 };
+
 
 export const getSalesTotal = async (businessId) => {
   const [rows] = await pool.execute(
@@ -225,4 +258,4 @@ export const getSalesTotal = async (businessId) => {
 };
 
 
-export default  { createSale, getSalesTotal,getAllOrders,getOrderById,getAllOrdersByBusiness }; 
+export default  { createSale, getSalesTotal,getAllOrders,getOrderById,getAllOrdersByBusiness,cancelSale  }; 

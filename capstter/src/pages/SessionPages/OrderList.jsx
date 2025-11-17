@@ -1,5 +1,5 @@
 // src/pages/OrderList.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import OverviewSection from "../../components/dashboard/OverviewSection";
 import { OrderPopup } from "../../components/common/OrderPopup";
@@ -13,82 +13,84 @@ function normalizeImagePath(raw) {
   return s.startsWith("http") ? s : `${SERVER}/${s.replace(/^\/+/, "")}`;
 }
 
-export default function Orderlist() {
+export default function OrderList() {
   const [orders, setOrders] = useState([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [cancelingId, setCancelingId] = useState(null);
 
   const businessId = localStorage.getItem("selectedBusinessId") || "";
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchOrdersAndInventory = async () => {
-      if (!token) {
-        setError("Missing auth token");
-        return;
-      }
-      setLoading(true);
-      setError(null);
+  const fetchOrders = useCallback(async () => {
+    if (!token) {
+      setError("Missing auth token");
+      setOrders([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
 
-      try {
-        // fetch grouped orders (your controller returns groups by purchase_id)
-        const ordersRes = await fetch(`${SERVER}/api/sales/businesses/${businessId}/orders`, {
+    try {
+      const ordersRes = await fetch(
+        `${SERVER}/api/sales/businesses/${businessId}/orders`,
+        {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        });
-        if (!ordersRes.ok) {
-          const body = await ordersRes.json().catch(() => ({}));
-          throw new Error(body.error || `Orders fetch failed (${ordersRes.status})`);
         }
-        const ordersData = await ordersRes.json();
+      );
 
-        // If your backend already returns items with picture field, we only need to normalize paths.
-        const normalizedOrders = (Array.isArray(ordersData) ? ordersData : []).map((order) => {
-          // backend model uses purchaseId, items[].picture, items[].price, items[].quantity
-          const purchaseId = order.purchaseId ?? order.purchase_id ?? order.id ?? "UNKNOWN";
-
-          const itemsArray = Array.isArray(order.items) ? order.items : [];
-
-          const enrichedItems = itemsArray.map((it) => ({
-            product_purchase_item_id: it.id,
-            name: it.name ?? it.product_name ?? "Unknown Item",
-            quantity: Number(it.quantity ?? 0),
-            price: Number(it.price ?? it.item_price ?? 0),
-            image: normalizeImagePath(it.picture ?? it.localpath ?? it.picture_url ?? it.image ?? null),
-            product_id: it.product_id ?? null,
-          }));
-
-          const totalFromServer = order.total ?? order.purchase_total ?? order.total_amount ?? null;
-          const computedTotal =
-            totalFromServer != null
-              ? Number(totalFromServer)
-              : enrichedItems.reduce((s, it) => s + it.quantity * it.price, 0);
-
-          return {
-            id: purchaseId,
-            items: enrichedItems,
-            total: computedTotal,
-            image: enrichedItems[0]?.image || FALLBACK,
-            raw: order,
-          };
-        });
-
-        setOrders(normalizedOrders);
-      } catch (err) {
-        console.error("OrderList fetch error:", err);
-        setError(err.message || "Failed to load orders");
-        setOrders([]);
-      } finally {
-        setLoading(false);
+      if (!ordersRes.ok) {
+        const body = await ordersRes.json().catch(() => ({}));
+        throw new Error(body.error || `Orders fetch failed (${ordersRes.status})`);
       }
-    };
 
-    fetchOrdersAndInventory();
+      const ordersData = await ordersRes.json();
+      const normalizedOrders = (Array.isArray(ordersData) ? ordersData : []).map((order) => {
+        const purchaseId = order.purchaseId ?? order.purchase_id ?? order.id ?? "UNKNOWN";
+        const itemsArray = Array.isArray(order.items) ? order.items : [];
+
+        const enrichedItems = itemsArray.map((it) => ({
+          product_purchase_item_id: it.id,
+          name: it.name ?? it.product_name ?? "Unknown Item",
+          quantity: Number(it.quantity ?? 0),
+          price: Number(it.price ?? it.item_price ?? 0),
+          image: normalizeImagePath(it.picture ?? it.localpath ?? it.picture_url ?? it.image ?? null),
+          product_id: it.product_id ?? null,
+        }));
+
+        const totalFromServer = order.total ?? order.purchase_total ?? order.total_amount ?? null;
+        const computedTotal =
+          totalFromServer != null
+            ? Number(totalFromServer)
+            : enrichedItems.reduce((s, it) => s + it.quantity * it.price, 0);
+
+        return {
+          id: purchaseId,
+          items: enrichedItems,
+          total: computedTotal,
+          image: enrichedItems[0]?.image || FALLBACK,
+          raw: order,
+        };
+      });
+
+      setOrders(normalizedOrders);
+    } catch (err) {
+      console.error("OrderList fetch error:", err);
+      setError(err.message || "Failed to load orders");
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   }, [token, businessId]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleOpenPopup = (order) => {
     setSelectedOrder(order);
@@ -100,9 +102,51 @@ export default function Orderlist() {
     setSelectedOrder(null);
   };
 
+  const handleCancelOrder = async (businessId, purchaseId) => {
+    if (!token) return { success: false, error: "Missing auth token" };
+    try {
+      const response = await fetch(
+        `${SERVER}/api/sales/businesses/${businessId}/orders/${purchaseId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || `Request failed (${response.status})` };
+      }
+    } catch (err) {
+      console.error("Cancel order error:", err);
+      return { success: false, error: "Network or unexpected error" };
+    }
+  };
+
+  const onCancelClick = async (order) => {
+    if (!order?.id) return;
+    setCancelingId(order.id);
+    const result = await handleCancelOrder(businessId, order.id);
+    setCancelingId(null);
+
+    if (result.success) {
+      alert(result.message);
+      // Refresh the list after successful cancel
+      fetchOrders();
+    } else {
+      alert(`Error: ${result.error}`);
+    }
+  };
+
   return (
     <DashboardLayout>
-      <h1 className="text-4xl font-extrabold text-center text-gray-800 mb-10">🧾 Order List</h1>
+      <h1 className="text-4xl font-extrabold text-center text-white mb-10">🧾 Order List</h1>
 
       {loading && (
         <div className="mb-4 rounded border border-blue-100 bg-blue-50 px-4 py-3 text-blue-700">
@@ -125,36 +169,36 @@ export default function Orderlist() {
           <div key={String(order.id)} className="w-full max-w-3xl bg-bronze shadow-lg rounded-lg p-6 space-y-6">
             <div className="border-b pb-4">
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-gray-700">Order ID:</h2>
-                <span className="text-gray-600">{order.id}</span>
+                <h2 className="text-lg font-semibold text-black-700">Order ID:</h2>
+                <span className="text-red-600">{order.id}</span>
               </div>
 
               <div className="flex-col items-center mb-2">
-                <div className="flex-1 mb-1 flex items-center ">
-                  <h2 className="text-lg font-semibold text-gray-700 text-center">Items</h2>
-                </div>
-                <div >
-                <div className="flex gap-2 flex-wrap">
-                  {order.items.map((item, idx) => (
-                    <img
-                      key={`${order.id}-img-${idx}`}
-                      src={item.image || FALLBACK}
-                      alt={item.name}
-                      className="w-16 h-16 rounded object-cover"
-                    />
-                  ))}
+                <div className="flex-1 mb-1 flex items-center">
+                  <h2 className="text-lg font-semibold text-black-700 text-center">Items</h2>
                 </div>
 
+                <div>
+                  <div className="flex gap-2 flex-wrap">
+                    {order.items.map((item, idx) => (
+                      <img
+                        key={`${order.id}-img-${idx}`}
+                        src={item.image || FALLBACK}
+                        alt={item.name}
+                        className="w-16 h-16 rounded object-cover"
+                      />
+                    ))}
+                  </div>
 
-                <span className="text-gray-600">
-                  {order.items.map((i) => i.name).join(", ")}
-                </span>
+                  <span className="text-black-700">
+                    {order.items.map((i) => i.name).join(", ")}
+                  </span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-700">Total Amount:</h2>
-                <span className="text-green-600 font-bold text-xl">
+                <h2 className="text-lg font-semibold text-black-700">Total Amount:</h2>
+                <span className="text-green-500 font-bold text-xl">
                   ₱{Number(order.total || 0).toLocaleString()}
                 </span>
               </div>
@@ -167,11 +211,19 @@ export default function Orderlist() {
               >
                 📋 View Details
               </button>
+
               <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded transition">
                 ✅ Finish Order
               </button>
-              <button className="bg-red-500 hover:bg-red-600 text-white font-medium px-5 py-2 rounded transition">
-                ❌ Cancel Order
+
+              <button
+                className={`${
+                  cancelingId === order.id ? "bg-red-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600"
+                } text-white font-medium px-5 py-2 rounded transition`}
+                onClick={() => onCancelClick(order)}
+                disabled={cancelingId === order.id}
+              >
+                {cancelingId === order.id ? "⏳ Canceling..." : "❌ Cancel Order"}
               </button>
             </div>
           </div>

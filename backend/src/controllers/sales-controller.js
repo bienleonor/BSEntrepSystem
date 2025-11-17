@@ -1,4 +1,4 @@
-import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness} from '../models/sales-model.js';
+import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale } from '../models/sales-model.js';
 import { findRoleByName } from '../models/role-model.js'; 
 
 
@@ -71,27 +71,52 @@ export const getAllOrdersByBusinessController = async (req, res) => {
   }
 };
 
+export const cancelSaleController = async (req, res) => {
+    const { purchaseId } = req.params; // route: /sales/:purchaseId/cancel
 
-/*
-export const getOrderByIdController = async (req, res) => {
+    try {
+      await cancelSale(purchaseId);
+      return res.status(200).json({
+        success: true,
+        message: `Sale ${purchaseId} canceled successfully`
+      });
+    } catch (err) {
+      if (err.message.includes('not found')) {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      if (err.message.includes('Inventory update failed')) {
+        return res.status(409).json({ success: false, error: err.message });
+      }
+
+      console.error('Cancel sale error:', err);
+      return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+};
+
+export const finishOrderController = async (req, res) => {
+  const { purchaseId } = req.params; // route: /sales/:purchaseId/finish
+
   try {
-    const businessId = req.user?.business_id;
-    if (!businessId) return res.status(403).json({ error: "Business access required" });
-
-    const { orderId } = req.params;
-    if (!orderId) return res.status(400).json({ error: "Missing orderId" });
-
-    const orders = await getAllOrdersByBusiness(businessId);
-    const order = orders.find(o => String(o.purchaseId) === String(orderId));
-    if (!order) return res.status(404).json({ error: "Order not found" });
-
-    return res.json(order);
+    await finishOrder(purchaseId);
+    return res.status(200).json({
+      success: true,
+      message: `Order ${purchaseId} finished successfully`
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    if (err.message.includes('not found')) {
+      return res.status(404).json({ success: false, error: err.message });
+    }
+    if (err.message.includes('already finished')) {
+      return res.status(409).json({ success: false, error: err.message });
+    }
+    if (err.message.includes('canceled')) {
+      return res.status(409).json({ success: false, error: err.message });
+    }
+
+    console.error('Finish order error:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
-*/
 
 
 export const GetAllTotalSales = async (req, res) => {

@@ -1,6 +1,6 @@
 import pool from '../config/pool.js';
 import { Router } from 'express';
-import { GetAllTotalSales, makesale,getAllOrdersController,getOrderByIdController,getAllOrdersByBusinessController} from '../controllers/sales-controller.js';
+import { GetAllTotalSales, makesale,getAllOrdersController,getOrderByIdController,getAllOrdersByBusinessController, cancelSaleController} from '../controllers/sales-controller.js';
  
 
 
@@ -20,6 +20,8 @@ router.post('/create', requireBusinessAccess, makesale);
 router.get('/orders', requireBusinessAccess, getAllOrdersController);
 router.get('/orders/:orderId', requireBusinessAccess, getOrderByIdController);
 router.get('/businesses/:businessId/orders', requireBusinessAccess, getAllOrdersByBusinessController);
+router.delete('/businesses/:businessId/orders/:purchaseId',requireBusinessAccess,cancelSaleController);
+
 
 
 
