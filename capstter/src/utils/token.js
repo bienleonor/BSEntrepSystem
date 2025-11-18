@@ -4,6 +4,26 @@ export function getToken() {
   return localStorage.getItem('token');
 }
 
+export function decodeToken() {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    return jwtDecode(token);
+  } catch (err) {
+    console.error("Failed to decode token:", err);
+    return null;
+  }
+}
+
+export function removeToken() {
+  localStorage.removeItem("token");
+}
+
+export function isAuthenticated() {
+  return !! decodeToken();
+}
+
 export function getBusinessId() {
   const token = getToken();
   if (!token) return null;
