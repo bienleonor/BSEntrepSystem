@@ -214,9 +214,11 @@ export const finishOrder = async (purchaseId) => {
   try {
     await conn.beginTransaction();
 
-    // Lock the purchase row and get current status
+    // Lock the purchase row
     const [purchaseRows] = await conn.execute(
-      `SELECT purchase_id, status_id FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
+      `SELECT purchase_id, status_id 
+       FROM purchases_table 
+       WHERE purchase_id = ? FOR UPDATE`,
       [purchaseId]
     );
 
@@ -233,11 +235,57 @@ export const finishOrder = async (purchaseId) => {
       throw new Error(`Purchase ${purchaseId} was cancelled and cannot be finished`);
     }
 
-    // Update to successful
+    // Update purchase status
     await conn.execute(
-      `UPDATE purchases_table SET status_id = 1, finished_at = NOW() WHERE purchase_id = ?`,
+      `UPDATE purchases_table 
+       SET status_id = 1, finished_at = NOW() 
+       WHERE purchase_id = ?`,
       [purchaseId]
     );
+
+    // Fetch metadata
+    const [purchaseMeta] = await conn.execute(
+      `SELECT total_amount, business_id 
+       FROM purchases_table 
+       WHERE purchase_id = ?`,
+      [purchaseId]
+    );
+
+    if (purchaseMeta.length === 0) {
+      throw new Error(`Purchase ${purchaseId} metadata not found`);
+    }
+
+    const { total_amount, business_id } = purchaseMeta[0];
+
+    // Insert into sales_table and capture sales_id
+    const [salesResult] = await conn.execute(
+      `INSERT INTO sales_table (business_id, total_amount, created_at) 
+       VALUES (?, ?, NOW())`,
+      [business_id, total_amount]
+    );
+
+    const sales_id = salesResult.insertId;
+
+    // Fetch purchase items
+    const [purchaseItems] = await conn.execute(
+      `SELECT product_id, quantity 
+       FROM purchase_items_table 
+       WHERE purchase_id = ?`,
+      [purchaseId]
+    );
+
+    if (purchaseItems.length === 0) {
+      throw new Error(`Purchase ${purchaseId} has no items`);
+    }
+
+    // Insert each item into sales_item_table
+    for (const item of purchaseItems) {
+      await conn.execute(
+        `INSERT INTO sales_item_table (sales_id, product_id, quantity) 
+         VALUES (?, ?, ?)`,
+        [sales_id, item.product_id, item.quantity]
+      );
+    }
 
     await conn.commit();
   } catch (err) {
