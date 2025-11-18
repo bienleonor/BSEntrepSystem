@@ -12,6 +12,7 @@ import Busmanage from '../pages/BusManage.jsx'
 import ProductList from '../pages/SessionPages/ProductList.jsx'
 import ProductListComponent from '../components/inventory/ProductListComponent.jsx'
 import PointofSales from '../pages/SessionPages/PointofSales.jsx'
+import SuperAdminDashboard from '../pages/SuperAdminPages/SuperAdminDashboard.jsx'
 
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
@@ -24,9 +25,9 @@ export const privateRoutes = [
   { path: '/salesLog', element: <SalesLog /> },
   { path: '/orderlist', element: <OrderList /> },
   { path: '/recipes', element: <Recipes /> },
-  {path: '/busmanage', element: <Busmanage />},
-  {path: '/productlist', element: <ProductList />},
-  {path: '/productlistcomponent', element: <ProductListComponent />},
-  {path: '/pointofsales', element: <PointofSales />},
-
+  { path: '/busmanage', element: <Busmanage />},
+  { path: '/productlist', element: <ProductList />},
+  { path: '/productlistcomponent', element: <ProductListComponent />},
+  { path: '/pointofsales', element: <PointofSales />},
+  { path: '/superadmin/dashboard', element: <SuperAdminDashboard />}
 ]
