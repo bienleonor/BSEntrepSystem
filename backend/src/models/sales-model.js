@@ -370,7 +370,8 @@ export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
   }
 
   return {
-    orders: Array.from(ordersMap.values()).sort((a, b) => a.id - b.id),
+    orders: Array.from(ordersMap.values()).sort((a, b) => b.id - a.id),
+
     meta: { page, pageSize, totalRows }
   };
 };

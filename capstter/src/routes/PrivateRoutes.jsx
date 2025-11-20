@@ -13,12 +13,12 @@ import ProductList from '../pages/SessionPages/ProductList.jsx'
 import ProductListComponent from '../components/inventory/ProductListComponent.jsx'
 import PointofSales from '../pages/SessionPages/PointofSales.jsx'
 import SuperAdminDashboard from '../pages/SuperAdminPages/SuperAdminDashboard.jsx'
-
+import StockOut from '../pages/SessionPages/StockOut.jsx'
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
   { path: '/UserDetails', element: <UserDetails /> },
   { path: '/businessregistration', element: <BusinessRegistration /> },
-  
+    { path: '/StockOut', element: <StockOut /> },
   { path: '/itemregistration', element: <ItemRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },
