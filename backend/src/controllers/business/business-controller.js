@@ -35,8 +35,6 @@ export const getBusinessCategories = async (req, res) => {
 };
 
 
-
-
 export const getUserBusiness = async (req, res) => {
   try {
     const userId = req.user.user_id;
@@ -49,24 +47,24 @@ export const getUserBusiness = async (req, res) => {
   }
 };
 
-export const selectBusiness = async (req, res) => {
-  const { businessId } = req.body;
-  const userId = req.user.user_id;
+// export const selectBusiness = async (req, res) => {
+//   const { businessId } = req.body;
+//   const userId = req.user.user_id;
 
-  const businesses = await findBusinessByUserId(userId);
-  const ownsBusiness = businesses.some(b => b.business_id === parseInt(businessId));
+//   const businesses = await findBusinessByUserId(userId);
+//   const ownsBusiness = businesses.some(b => b.business_id === parseInt(businessId));
 
-  if (!ownsBusiness) {
-    return res.status(403).json({ error: "Not authorized for this business" });
-  }
+//   if (!ownsBusiness) {
+//     return res.status(403).json({ error: "Not authorized for this business" });
+//   }
 
-  const token = generateToken({
-    user_id: userId,
-    username: req.user.username,
-    role: req.user.role,
-    business_id: businessId
-  });
+//   const token = generateToken({
+//     user_id: userId,
+//     username: req.user.username,
+//     role: req.user.role,
+//     business_id: businessId
+//   });
 
-  res.json({ token });
-};
+//   res.json({ token });
+// };
 

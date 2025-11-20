@@ -1,6 +1,7 @@
-const jsonHeaders = (token) => ({
+const jsonHeaders = (token, businessId) => ({
   "Content-Type": "application/json",
-  ...(token ? { Authorization: `Bearer ${token}` } : {})
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  ...(businessId ? { "X-Business-ID": businessId } : {})
 });
 
 export default {
@@ -41,11 +42,18 @@ export const getInventory = async (businessId, token) => {
 };
 
 export const createSale = async (saleData, token) => {
+  const businessId = localStorage.getItem("selectedBusinessId"); // Get business ID
+  
   const res = await fetch("http://localhost:5000/api/sales/create", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { 
+      "Content-Type": "application/json", 
+      Authorization: `Bearer ${token}`,
+      "X-Business-ID": businessId  // ✅ Add this header!
+    },
     body: JSON.stringify(saleData),
   });
+  
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || `Status ${res.status}`);

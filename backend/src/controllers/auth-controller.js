@@ -1,12 +1,9 @@
+// controllers/auth-controller.js
 import bcrypt from 'bcryptjs';
 import { createUser, findUserByUsername } from '../models/user-models.js';
 import { generateToken } from '../utils/generate-token.js';
-import { findRoleById } from '../models/role-model.js';
-import { findRoleByUserId } from '../models/role-model.js';
-import { findBusinessByUserId } from '../models/business/business-model.js'; 
-import { findRoleByName } from '../models/role-model.js';
-import pool from '../config/pool.js';
-
+import { findRoleById, findRoleByUserId } from '../models/role-model.js';
+import { findBusinessByUserId } from '../models/business/business-model.js';
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -20,14 +17,14 @@ export const login = async (req, res) => {
 
     // Get role
     let roleMapping = await findRoleByUserId(user.user_id);
-    let systemRoleId = roleMapping?.system_role_id ?? (await assignDefaultRole(user.user_id));
+    const systemRoleId = roleMapping?.system_role_id ?? 4;
     const roleData = await findRoleById(systemRoleId);
-    const roleName = roleData?.role || 'unknown';
+    const roleName = roleData?.role || "unknown";
 
-    // Get businesses
+    // Find linked businesses
     const businesses = await findBusinessByUserId(user.user_id);
 
-    // Generate token WITHOUT business_id
+    // Token WITHOUT business_id
     const token = generateToken({
       user_id: user.user_id,
       username: user.username,
@@ -41,62 +38,58 @@ export const login = async (req, res) => {
         username: user.username,
         role: roleName
       },
-      businesses // array of businesses for selection
+      businesses
     });
+
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
-
-
 export const register = async (req, res) => {
-  console.log('Received registration data:', req.body);
   const { username, email, password } = req.body;
 
-  // 🛡️ Required field check
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: 'Username, email, and password are required' });
-  }
+  if (!username || !email || !password)
+    return res.status(400).json({ error: 'Username, email and password required' });
 
-  // 🚫 Restrict special characters in username and email
   const textRegex = /^[a-zA-Z0-9_.@]+$/;
-  if (!textRegex.test(username)) {
-    return res.status(400).json({ error: 'Username contains invalid characters' });
-  }
-  if (!textRegex.test(email)) {
-    return res.status(400).json({ error: 'Email contains invalid characters' });
-  }
 
-  // 🔐 Password strength validation
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-  if (!passwordRegex.test(password)) {
+  if (!textRegex.test(username))
+    return res.status(400).json({ error: "Invalid characters in username" });
+
+  if (!textRegex.test(email))
+    return res.status(400).json({ error: "Invalid characters in email" });
+
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+  if (!passwordRegex.test(password))
     return res.status(400).json({
       error:
-        'Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one special character'
+        "Password must be at least 8 chars and include uppercase, lowercase, number, special char"
     });
-  }
 
   try {
     const existing = await findUserByUsername(username);
-    if (existing) {
-      return res.status(409).json({ error: 'Username already exists' });
-    }
+    if (existing)
+      return res.status(409).json({ error: "Username already exists" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
     const userId = await createUser({
       username,
       email,
-      password: hashedPassword
+      password: hashed
     });
 
-    const token = generateToken({ user_id: userId, username });
+    return res.status(201).json({
+      message: "User registered successfully",
+      userId
+    });
 
-    res.status(201).json({ message: 'User registered', userId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Registration error:", err);
+    return res.status(500).json({ error: err.message });
   }
 };

@@ -1,7 +1,5 @@
 // src/pages/UserDetails.jsx
 import { useState } from "react";
-import DashboardLayout from "../components/layout/DashboardLayout";
-import OverviewSection from "../components/dashboard/OverviewSection";
 import { getToken, getUserId } from "../utils/token";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -83,7 +81,7 @@ export default function UserDetails() {
 
 
   return (
-    <DashboardLayout>
+    <div>
        <ToastContainer position="top-center" autoClose={3000} />
       <h1 className="text-2xl font-bold mb-4 text-center text-white">User Details</h1>
 
@@ -160,10 +158,6 @@ export default function UserDetails() {
           </button>
         </div>
       </form>
-
-      <div className="mt-8">
-        <OverviewSection />
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

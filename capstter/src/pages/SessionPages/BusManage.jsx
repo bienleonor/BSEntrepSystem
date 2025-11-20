@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import { getToken, getUserId, getRole } from "../utils/token";
+import { getToken, getUserId, getRole } from "../../utils/token";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-
+import axiosInstance from "../../utils/axiosInstance";
 
 import { toast, ToastContainer } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
 
-import landingImage from '../assets/Landing.png';
+import landingImage from '../../assets/landing.png';
 
 function Busmanage() {
   const [businesses, setBusinesses] = useState([]);
@@ -20,28 +20,15 @@ function Busmanage() {
       const userId = getUserId();
       const role = getRole();
       
-
-
       if (!token || !userId) {
         toast.error("Missing or invalid token.");
         return;
       }
 
       try {
-        const response = await fetch("http://localhost:5000/api/business/mybusinesses", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch businesses");
-        }
-
-        const data = await response.json();
-        setBusinesses(data);
+        const response = await axiosInstance.get("/business/mybusinesses");
+        setBusinesses(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error("Error fetching businesses:", error);
         toast.error("Failed to load your businesses.");
@@ -51,33 +38,14 @@ function Busmanage() {
     fetchBusinesses();
   }, []);
 
-  const handleSelect = async (businessId, businessName) => {
-        setSelectedBusinessId(businessId);
-        localStorage.setItem("selectedBusinessId", businessId);
+  const handleSelect = (businessId, businessName) => {
+    setSelectedBusinessId(businessId);
+    localStorage.setItem("selectedBusinessId", businessId);
 
-        const token = getToken();
-        const response = await fetch("http://localhost:5000/api/auth/selectbusiness", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({ businessId }),
-        });
+    toast.success(`Selected: ${businessName}`);
 
-        const data = await response.json();
-        if (data.token) {
-          localStorage.setItem("token", data.token); // replace old token
-          toast.success(`Selected: ${businessName}`);
-          setTimeout(() => navigate("/UserDashboard"),1500);
-          console.log("select-business response:", data);
-
-        } else {
-          toast.error("Failed to select business");
-          console.log("select-business response:", data);
-
-        }
-      };
+    setTimeout(() => navigate("/UserDashboard"), 1200);
+  };
 
 
   return (
