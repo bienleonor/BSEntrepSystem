@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
 const menuItems = [
-  { label: "Create Order", icon: <FilePlus size={18} /> },
+  { label: "Point of Sales", icon: <FilePlus size={18} /> },
   { label: "Item Registration", icon: <ClipboardList size={18} /> },
   { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
   { label: "Sales Log", icon: <List size={18} /> },

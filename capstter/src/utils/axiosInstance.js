@@ -12,7 +12,7 @@ axiosInstance.interceptors.request.use((config) => {
 
   console.log('sending request, businessId=', localStorage.getItem('selectedBusinessId'), 'token=', getToken());
 
-  if (token) {
+  if (token) {  
     config.headers["Authorization"] = `Bearer ${token}`;
   }
 

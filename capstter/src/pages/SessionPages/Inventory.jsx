@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { getToken } from '../../utils/token';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Popup from '../../components/common/Popup';
+import axiosInstance from '../../utils/axiosInstance'; // Import configured axios instance
 
 function Inventory() {
   const [products, setProducts] = useState([]);
-  const [units, setUnits] = useState([]);           // keep full units for dropdown
+  const [units, setUnits] = useState([]);
   const [unitsMap, setUnitsMap] = useState({});
-  
+  const [loading, setLoading] = useState(true);
 
   // Edit modal state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -20,15 +20,14 @@ function Inventory() {
     unitSearch: '',
     product_type: '',
     price: '',
-    imageFile: null,    // local file for preview/upload
-    picture: '',        // existing / new picture URL/base64 to send
+    imageFile: null,
+    picture: '',
   });
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = getToken();
     const businessId = localStorage.getItem("selectedBusinessId");
 
     if (!businessId) {
@@ -37,98 +36,78 @@ function Inventory() {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        const [productsRes, unitsRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/inventory/businesses/${businessId}/products`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`http://localhost:5000/api/inventory/units`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        if (!productsRes.ok || !unitsRes.ok) {
-          throw new Error("Failed to fetch data.");
-        }
-
-        const productsData = await productsRes.json();
-        const unitsData = await unitsRes.json();
-
-        const unitMap = {};
-        unitsData.forEach(unit => {
-          unitMap[unit.unit_id] = unit.name;
-        });
-
-        setUnits(unitsData);
-        setUnitsMap(unitMap);
-        setProducts(productsData);
-      } catch (error) {
-        console.error('Error fetching inventory:', error);
-        toast.error("Error loading inventory.");
-      }
-    };
-
-    fetchData();
+    fetchData(businessId);
   }, [navigate]);
 
-  const handleStatusToggle = async (product) => {
+  // Fetch products and units
+  const fetchData = async (businessId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/inventory/products/${product.product_id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ is_active: !product.is_active }),
+      setLoading(true);
+
+      // Parallel requests using Promise.all
+      const [productsRes, unitsRes] = await Promise.all([
+        axiosInstance.get(`/inventory/businesses/${businessId}/products`),
+        axiosInstance.get('/inventory/units'),
+      ]);
+
+      // Build units map for easy lookup
+      const unitMap = {};
+      unitsRes.data.forEach(unit => {
+        unitMap[unit.unit_id] = unit.name;
       });
 
-      if (!response.ok) throw new Error("Failed to update status");
-
-      setProducts(prev =>
-        prev.map(p =>
-          p.product_id === product.product_id ? { ...p, is_active: !p.is_active } : p
-        )
-      );
-      toast.success("Status updated.");
-    } catch (err) {
-      console.error("Status update failed:", err);
-      toast.error("Failed to update status.");
+      setUnits(unitsRes.data);
+      setUnitsMap(unitMap);
+      setProducts(productsRes.data);
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+      toast.error(error.response?.data?.message || "Error loading inventory.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Toggle product active status
+  const handleStatusToggle = async (product) => {
+    try {
+      await axiosInstance.patch(`/inventory/products/${product.product_id}/status`, {
+        is_active: !product.is_active
+      });
+
+      // Update local state
+      setProducts(prev =>
+        prev.map(p =>
+          p.product_id === product.product_id 
+            ? { ...p, is_active: !p.is_active } 
+            : p
+        )
+      );
+
+      toast.success("Status updated successfully.");
+    } catch (error) {
+      console.error("Status update failed:", error);
+      toast.error(error.response?.data?.message || "Failed to update status.");
+    }
+  };
+
+  // Delete product
   const handleDelete = async (productId, productName) => {
     const confirmDelete = window.confirm(`Delete "${productName}" permanently?`);
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/inventory/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
+      await axiosInstance.delete(`/inventory/products/${productId}`);
 
-      if (!response.ok) throw new Error("Failed to delete product");
-
+      // Remove from local state
       setProducts(prev => prev.filter(p => p.product_id !== productId));
-      toast.success("Product deleted.");
-    } catch (err) {
-      console.error("Delete failed:", err);
-      toast.error("Failed to delete product.");
+      toast.success("Product deleted successfully.");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error(error.response?.data?.message || "Failed to delete product.");
     }
   };
 
-  // Helpers
-  const toBase64 = (file) => new Promise((resolve, reject) => {
-    if (!file) return resolve(null);
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-  });
-
-  // Open edit modal with product data
+  // Open edit modal
   const handleEditOpen = (product) => {
     setEditProduct(product);
     setEditForm({
@@ -138,7 +117,7 @@ function Inventory() {
       product_type: product.product_type || '',
       price: product.price || '',
       imageFile: null,
-      picture: product.picture || '', // preserve existing picture
+      picture: product.picture || '',
     });
     setIsEditOpen(true);
   };
@@ -159,102 +138,104 @@ function Inventory() {
     setShowUnitDropdown(false);
   };
 
+  // Submit edit form
   const handleEditSubmit = async (e) => {
-  e.preventDefault();
-  if (!editProduct) return;
+    e.preventDefault();
+    if (!editProduct) return;
 
-  const token = getToken();
-  const businessId = localStorage.getItem("selectedBusinessId");
-  if (!businessId) {
-    toast.error("No business selected.");
-    return;
-  }
-
-  try {
-    // Basic client-side validation
-    if (!editForm.name || !editForm.unit_id || editForm.price === '') {
-      toast.error("Please complete all required fields.");
-      return;
-    }
-    if (isNaN(Number(editForm.price)) || Number(editForm.price) < 0) {
-      toast.error("Price must be a non-negative number.");
+    const businessId = localStorage.getItem("selectedBusinessId");
+    if (!businessId) {
+      toast.error("No business selected.");
       return;
     }
 
-    let res;
+    try {
+      // Client-side validation
+      if (!editForm.name || !editForm.unit_id || editForm.price === '') {
+        toast.error("Please complete all required fields.");
+        return;
+      }
+      if (isNaN(Number(editForm.price)) || Number(editForm.price) < 0) {
+        toast.error("Price must be a non-negative number.");
+        return;
+      }
 
-    // If a new file selected => send multipart/form-data
-    if (editForm.imageFile) {
-      const formData = new FormData();
-      formData.append('name', editForm.name);
-      formData.append('businessId', businessId);
-      formData.append('unit_id', editForm.unit_id);
-      formData.append('price', editForm.price);
-      formData.append('product_type', editForm.product_type || '');
-      formData.append('picture', editForm.imageFile); // must match multer upload.single('picture')
+      let response;
 
-      res = await fetch(`http://localhost:5000/api/inventory/products/${editProduct.product_id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`, // don't set Content-Type
-        },
-        body: formData,
-      });
-    } else {
-      // No new file => preserve existing picture string and send JSON
-      const payload = {
-        name: editForm.name,
-        businessId,
-        unit_id: editForm.unit_id,
-        price: editForm.price,
-        picture: editForm.picture || '', // existing URL/string
-        product_type: editForm.product_type || '',
-      };
+      // If new image file selected => send multipart/form-data
+      if (editForm.imageFile) {
+        const formData = new FormData();
+        formData.append('name', editForm.name);
+        formData.append('businessId', businessId);
+        formData.append('unit_id', editForm.unit_id);
+        formData.append('price', editForm.price);
+        formData.append('product_type', editForm.product_type || '');
+        formData.append('picture', editForm.imageFile);
 
-      res = await fetch(`http://localhost:5000/api/inventory/products/${editProduct.product_id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+        response = await axiosInstance.put(
+          `/inventory/products/${editProduct.product_id}`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+      } else {
+        // No new file => send JSON with existing picture
+        const payload = {
+          name: editForm.name,
+          businessId,
+          unit_id: editForm.unit_id,
+          price: editForm.price,
+          picture: editForm.picture || '',
+          product_type: editForm.product_type || '',
+        };
+
+        response = await axiosInstance.put(
+          `/inventory/products/${editProduct.product_id}`,
+          payload
+        );
+      }
+
+      // Update local state
+      setProducts(prev =>
+        prev.map(p =>
+          p.product_id === editProduct.product_id
+            ? {
+                ...p,
+                name: editForm.name,
+                unit_id: editForm.unit_id,
+                product_type: editForm.product_type,
+                price: editForm.price,
+                picture: editForm.imageFile 
+                  ? URL.createObjectURL(editForm.imageFile) 
+                  : editForm.picture,
+              }
+            : p
+        )
+      );
+
+      toast.success("Product updated successfully.");
+      handleEditCancel();
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast.error(error.response?.data?.error || error.response?.data?.message || "Failed to update product.");
     }
+  };
 
-    if (!res || !res.ok) {
-      // Try to surface server error message when available
-      let errText = 'Failed to update product';
-      try {
-        const errBody = await res.json();
-        if (errBody && errBody.error) errText = errBody.error;
-      } catch (_) {}
-      throw new Error(errText);
-    }
-
-    // Update local list (use picture preview if new file chosen)
-    setProducts(prev =>
-      prev.map(p =>
-        p.product_id === editProduct.product_id
-          ? {
-              ...p,
-              name: editForm.name,
-              unit_id: editForm.unit_id,
-              product_type: editForm.product_type,
-              price: editForm.price,
-              picture: editForm.imageFile ? URL.createObjectURL(editForm.imageFile) : editForm.picture,
-            }
-          : p
-      )
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading inventory...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     );
-
-    toast.success("Product updated successfully.");
-    handleEditCancel();
-  } catch (error) {
-    console.error("Update failed:", error);
-    toast.error(error.message || "Failed to update product.");
   }
-};
-
 
   return (
     <DashboardLayout>
@@ -285,7 +266,7 @@ function Inventory() {
                       onClick={() => handleStatusToggle(product)}
                       className="text-sm text-blue-600 hover:underline"
                     >
-                      {product.is_active ? 'Active' : 'Deactivate'}
+                      {product.is_active ? 'Active' : 'Inactive'}
                     </button>
                   </td>
                   <td className="px-4 py-2">{new Date(product.created_at).toLocaleDateString()}</td>
@@ -318,10 +299,9 @@ function Inventory() {
       </div>
 
       {/* Edit Modal */}
-           {/* Edit Modal using reusable Popup */}
       <Popup isOpen={isEditOpen} onClose={handleEditCancel} title="Modify Product">
         <form onSubmit={handleEditSubmit} className="flex flex-col md:flex-row gap-10 items-start justify-center">
-          {/* 📸 Image Upload */}
+          {/* Image Upload */}
           <label className="w-64 h-64 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 cursor-pointer relative rounded-lg overflow-hidden">
             {editForm.imageFile ? (
               <img
@@ -338,11 +318,15 @@ function Inventory() {
             ) : (
               <span className="text-sm">PICTURE</span>
             )}
-            {/* NOTE: input must be inside label so clicking preview opens picker */}
-            <input type="file" accept="image/*" onChange={handleEditImageUpload} className="hidden" />
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleEditImageUpload} 
+              className="hidden" 
+            />
           </label>
 
-          {/* 📝 Input Fields */}
+          {/* Input Fields */}
           <div className="flex flex-col gap-5 w-full max-w-sm">
             {/* Name */}
             <label className="block text-sm font-medium text-gray-700">
@@ -358,7 +342,7 @@ function Inventory() {
               />
             </label>
 
-            {/* 🔍 Unit Search Dropdown */}
+            {/* Unit Search Dropdown */}
             <label className="block text-sm font-medium text-gray-700 relative">
               Unit
               <input
@@ -431,6 +415,7 @@ function Inventory() {
                 onChange={handleEditChange}
                 required
                 min="0"
+                step="0.01"
                 className="mt-1 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </label>
@@ -454,7 +439,6 @@ function Inventory() {
           </div>
         </form>
       </Popup>
-
     </DashboardLayout>
   );
 }
