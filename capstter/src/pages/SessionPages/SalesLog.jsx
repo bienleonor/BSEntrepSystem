@@ -7,34 +7,33 @@ function SalesLog() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchSalesLog = async () => {
-      try {
-        const res = await AxiosInstance.get('/sales/saleslog'); 
-        console.log('SalesLog API response:', res.data);
+useEffect(() => {
+  const fetchSalesLog = async () => {
+    try {
+      const res = await AxiosInstance.get('/sales/saleslog'); 
+      console.log('SalesLog API response:', res.data);
 
-        const { orders = [] } = res.data || {};
+      const { orders = [] } = res.data || {};
+      
+      const txs = orders.map(order => ({
+        name: `Purchase #${order.id}`,
+        item: (order.items || []).map(item => item.productName).join(', '),
+        date: order.purchaseDate ? new Date(order.purchaseDate).toLocaleDateString() : '',
+        time: order.purchaseDate ? new Date(order.purchaseDate).toLocaleTimeString() : '',
+        status: order.finishedAt ? 'Complete' : 'Pending'
+      }));
 
-        const txs = orders.flatMap(order =>
-          (order.items || []).map(item => ({
-            name: `Purchase #${order.id}`,
-            item: item.productName,
-            date: order.purchaseDate ? new Date(order.purchaseDate).toLocaleDateString() : '',
-            time: order.purchaseDate ? new Date(order.purchaseDate).toLocaleTimeString() : '',
-            status: order.finishedAt ? 'Complete' : 'Pending'
-          }))
-        );
+      setTransactions(txs);
+    } catch (err) {
+      console.error('Failed to fetch sales log:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setTransactions(txs);
-      } catch (err) {
-        console.error('Failed to fetch sales log:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  fetchSalesLog();
+}, []);
 
-    fetchSalesLog();
-  }, []);
 
   // 👇 Add this function back
   const renderStatusIcon = (status) => {
@@ -53,14 +52,14 @@ function SalesLog() {
   return (
     <DashboardLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">Latest Transactions</h1>
-        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+        <h1 className="text-2xl font-bold mb-4 text-white">Latest Transactions</h1>
+        <div className="bg-bronze rounded-lg shadow-md overflow-x-auto">
           {loading ? (
-            <p className="p-4 text-gray-500">Loading...</p>
+            <p className="p-4 text-white">Loading...</p>
           ) : (
             <table className="min-w-full table-auto">
-              <thead className="bg-gray-100">
-                <tr className="text-left text-sm text-gray-600">
+              <thead className="bg-bronze-100">
+                <tr className="text-left text-sm text-white">
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Item</th>

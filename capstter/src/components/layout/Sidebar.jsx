@@ -1,4 +1,4 @@
-import { Home, FilePlus, ClipboardList, BarChart2, List, Package,ShoppingCart } from "lucide-react";
+import { Home, FilePlus, ClipboardList, BarChart2, List, Package,ShoppingCart,PackageOpen,NotebookText   } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
@@ -8,8 +8,9 @@ const menuItems = [
   { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
   { label: "Sales Log", icon: <List size={18} /> },
   { label: "Inventory", icon: <Package size={18} /> },
-  { label: "ProductList", icon: <Package size={18} /> },
-  
+  { label: "ProductList", icon: <PackageOpen  size={18} /> },
+  { label: "orderList", icon: <NotebookText   size={18} /> },
+  { label: "Stockout", icon: <PackageOpen  size={18} /> },
 ];
 
 export default function Sidebar() {
@@ -20,6 +21,7 @@ export default function Sidebar() {
     window.location.href = '/login'; // Redirect to login page
   };
   return (
+    
     <aside className="w-60 bg-slate-900 text-white flex flex-col justify-between min-h-screen p-4">
       <div>
         <div className="flex items-center gap-2 mb-8">
