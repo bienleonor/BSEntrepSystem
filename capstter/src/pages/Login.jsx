@@ -13,7 +13,8 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleChange = (e) => setForm({ ...form, [e.target.id]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.id]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,9 +27,28 @@ const Login = () => {
         return;
       }
 
-      // Save token via context
+      // Save token
       login(data.token);
 
+      // Save user info
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Save businesses for selection
+      localStorage.setItem("businesses", JSON.stringify(data.businesses));
+
+      // IMPORTANT: clear previous selected business
+      localStorage.removeItem("selectedBusinessId");
+
+      // Auto-select business if only one exists
+      if (data.businesses.length === 1) {
+        const onlyBiz = data.businesses[0].business_id;
+        localStorage.setItem("selectedBusinessId", onlyBiz);
+
+        toast.success("Login successful!");
+        return setTimeout(() => navigate("/UserDashboard"), 1000);
+      }
+
+      // Otherwise send to business selector page
       toast.success("Login successful!");
       setTimeout(() => navigate("/busmanage"), 1000);
     } catch (err) {

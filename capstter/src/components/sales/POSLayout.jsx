@@ -7,7 +7,9 @@ import "react-toastify/dist/ReactToastify.css";
 import { CartProvider, useCart } from "./CartContext";
 import InventoryGrid from "./InventoryGrid";
 import Cart from "./Cart";
-import { getInventory, createSale } from "../../utils/api";
+import { getInventory } from "../../services/inventoryApi";
+import { createSale } from "../../services/salesApi";
+
 
 const REFRESH_INTERVAL = 10000;
 
