@@ -1,3 +1,4 @@
+// sales-route.js
 import { Router } from 'express';
 import {
   GetAllTotalSales,

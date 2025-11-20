@@ -25,16 +25,8 @@ export function isAuthenticated() {
 }
 
 export function getBusinessId() {
-  const token = getToken();
-  if (!token) return null;
-
-  try {
-    const decoded = jwtDecode(token);
-    return decoded.business_id || null; // adjust key if needed
-  } catch (err) {
-    console.error('Failed to decode token:', err);
-    return null;
-  }
+  const id = localStorage.getItem("selectedBusinessId");
+  return (!id || id === "null" || id === "undefined") ? null : id;
 }
 
 

@@ -1,3 +1,4 @@
+//sales-controller.js
 import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder } from '../models/sales-model.js';
 import { findRoleByName } from '../models/role-model.js'; 
 
@@ -53,23 +54,43 @@ export const getOrderByIdController = async (req, res) => {
 
 
 
-// Controller that uses your helper
+// controllers/sales-controller.js
+
+// make sure you have the helper imported at top of file, for example:
+// import { getAllOrdersByBusiness } from '../models/sales/sales-model.js';
+
 export const getAllOrdersByBusinessController = async (req, res) => {
   try {
-    const businessId = req.user?.business_id;
-    if (!businessId) {
-      return res.status(403).json({ error: "Business access required" });
+    console.log('getAllOrdersByBusinessController start', {
+      params: req.params,
+      businessId_from_middleware: req.businessId,
+      user: req.user
+    });
+
+    // Prefer middleware value to avoid mismatches
+    const bizId = req.businessId ?? (req.params?.businessId ? Number(req.params.businessId) : null);
+    if (!bizId) {
+      console.log('getAllOrdersByBusinessController: missing bizId');
+      return res.status(400).json({ error: 'Missing business id' });
     }
 
-    // ✅ Use the helper with JOIN
-    const orders = await getAllOrdersByBusiness(businessId);
+    // Replace this call with your actual model/ORM function.
+    // NOTE: pass bizId (not businessId or other undefined var).
+    const orders = await getAllOrdersByBusiness(bizId);
+
+    console.log('getAllOrdersByBusinessController: orders count', Array.isArray(orders) ? orders.length : null);
+
+    if (!orders || (Array.isArray(orders) && orders.length === 0)) {
+      return res.status(404).json({ error: 'Orders not found' });
+    }
 
     return res.json(orders);
   } catch (err) {
-    console.error("Error fetching orders:", err.message);
-    return res.status(500).json({ error: err.message });
+    console.error('getAllOrdersByBusinessController error', err);
+    return res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 export const cancelSaleController = async (req, res) => {
     const { purchaseId } = req.params; // route: /sales/:purchaseId/cancel

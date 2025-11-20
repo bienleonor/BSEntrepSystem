@@ -10,6 +10,8 @@ axiosInstance.interceptors.request.use((config) => {
   const token = getToken();
   const businessId = localStorage.getItem("selectedBusinessId");
 
+  console.log('sending request, businessId=', localStorage.getItem('selectedBusinessId'), 'token=', getToken());
+
   if (token) {
     config.headers["Authorization"] = `Bearer ${token}`;
   }
@@ -17,6 +19,8 @@ axiosInstance.interceptors.request.use((config) => {
   if (businessId) {
     config.headers["X-Business-ID"] = businessId;
   }
+
+ console.log('sending request, businessId=', localStorage.getItem('selectedBusinessId'), 'token=', getToken());
 
   return config;
 });

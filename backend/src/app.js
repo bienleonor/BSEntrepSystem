@@ -19,7 +19,12 @@ import summaryAnalysisRoutes from './routes/analysis/summary.js';
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // or '*' if you want to allow all
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Business-Id'],
+  credentials: true
+}));
 
 
 // Register routes
@@ -32,10 +37,10 @@ app.use('/uploads', express.static('uploads'));
 app.use("/api/access-code", accessCodeRoute);
 
 // KPI routes
-app.use('/api/sales', salesAnalysisRoutes);
-app.use('/api/profit', profitAnalysisRoutes);
-app.use('/api/inventory', inventoryAnalysisRoutes);
-app.use('/api/summary', summaryAnalysisRoutes);
+app.use('/api/analysis/sales', salesAnalysisRoutes);
+app.use('/api/analysis/profit', profitAnalysisRoutes);
+app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
+app.use('/api/analysis/summary', summaryAnalysisRoutes);
 
 
 // Optionally: error handling middleware

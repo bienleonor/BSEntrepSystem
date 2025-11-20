@@ -26,7 +26,7 @@ ChartJS.register(
   Legend
 );
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'http://localhost:5000/api/analysis';
 
 function SalesAnalysis() {
   const [salesData, setSalesData] = useState([]);

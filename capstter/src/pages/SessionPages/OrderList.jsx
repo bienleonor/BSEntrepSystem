@@ -11,6 +11,7 @@ const FALLBACK = "/fallback.png";
 export default function OrderList() {
   const {
     orders,
+    meta,
     loading,
     error,
     cancelingId,
@@ -22,11 +23,15 @@ export default function OrderList() {
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Load orders on mount
+  const list = Array.isArray(orders) ? orders : [];
+  const totalPages = meta?.totalRows ? Math.ceil(meta.totalRows / meta.pageSize) : 1;
+
+  // Load orders when page changes
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    fetchOrders(currentPage);
+  }, [fetchOrders, currentPage]);
 
   const openPopup = (order) => {
     setSelectedOrder(order);
@@ -37,7 +42,7 @@ export default function OrderList() {
     setIsPopupOpen(false);
     setSelectedOrder(null);
   };
-  
+
   return (
     <DashboardLayout>
       <h1 className="text-4xl text-center text-white font-extrabold mb-10">
@@ -57,13 +62,13 @@ export default function OrderList() {
       )}
 
       <div className="max-h-[700px] overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-6 p-2">
-        {orders.length === 0 && !loading && !error && (
+        {list.length === 0 && !loading && !error && (
           <div className="col-span-3 text-center text-gray-500">
             No orders found
           </div>
         )}
 
-        {orders.map((order) => (
+        {list.map((order) => (
           <div
             key={order.id}
             className="w-full bg-bronze rounded-lg shadow-lg p-6 space-y-6"
@@ -77,25 +82,28 @@ export default function OrderList() {
               <div className="mt-3">
                 <h2 className="font-semibold text-black text-lg">Items</h2>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {order.items.map((item, i) => (
+                  {(Array.isArray(order.items) ? order.items : []).map((item) => (
                     <img
-                      key={i}
-                      src={item.image || FALLBACK}
-                      alt={item.name}
+                      key={item.id ?? item.productId ?? `${order.id}-${Math.random()}`}
+                      src={item.picture || item.image || FALLBACK}
+                      alt={item.productName || item.name || "product"}
                       className="w-16 h-16 object-cover rounded"
                     />
                   ))}
                 </div>
 
                 <span className="text-black">
-                  {order.items.map((i) => i.name).join(", ")}
+                  {(Array.isArray(order.items) ? order.items : [])
+                    .map((i) => i.productName ?? i.name ?? "")
+                    .filter(Boolean)
+                    .join(", ")}
                 </span>
               </div>
 
               <div className="flex justify-between mt-4">
                 <h2 className="font-semibold text-black text-lg">Total:</h2>
                 <span className="text-green-500 font-bold text-xl">
-                  ₱{order.total.toLocaleString()}
+                  ₱{Number(order.total ?? order.total_amount ?? 0).toLocaleString()}
                 </span>
               </div>
             </div>
@@ -132,26 +140,52 @@ export default function OrderList() {
         ))}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-4 mt-6">
+          <button
+            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </button>
+
+          <span className="px-2 py-2">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <button
+            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
       {/* Popup */}
       <OrderPopup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={`Order Details: ${selectedOrder?.id}`}
+        title={`Order Details: ${selectedOrder?.id ?? ""}`}
       >
         {selectedOrder && (
           <div className="space-y-4">
-            {selectedOrder.items.map((item, i) => (
-              <div key={i} className="flex items-center gap-4">
+            {(Array.isArray(selectedOrder.items) ? selectedOrder.items : []).map((item) => (
+              <div key={item.id ?? item.productId} className="flex items-center gap-4">
                 <img
-                  src={item.image || FALLBACK}
+                  src={item.picture || item.image || FALLBACK}
                   className="w-24 h-24 object-cover rounded"
+                  alt={item.productName || item.name || "product"}
                 />
                 <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p>Qty: {item.quantity}</p>
-                  <p>₱{item.price.toLocaleString()}</p>
+                  <p className="font-semibold">{item.productName ?? item.name}</p>
+                  <p>Qty: {Number(item.quantity ?? 0)}</p>
+                  <p>₱{Number(item.price ?? 0).toLocaleString()}</p>
                   <p className="font-medium">
-                    Total: ₱{(item.quantity * item.price).toLocaleString()}
+                    Total: ₱{Number((item.quantity ?? 0) * (item.price ?? 0)).toLocaleString()}
                   </p>
                 </div>
               </div>
