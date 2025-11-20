@@ -1,14 +1,15 @@
-import { Home, FilePlus, ClipboardList, BarChart2, List, Package } from "lucide-react";
+import { Home, FilePlus, ClipboardList, BarChart2, List, Package,ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
 const menuItems = [
-  { label: "Create Order", icon: <FilePlus size={18} /> },
+  { label: "PointofSales", icon: <ShoppingCart  size={18} /> },
   { label: "Item Registration", icon: <ClipboardList size={18} /> },
   { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
   { label: "Sales Log", icon: <List size={18} /> },
   { label: "Inventory", icon: <Package size={18} /> },
   { label: "ProductList", icon: <Package size={18} /> },
+  
 ];
 
 export default function Sidebar() {

@@ -1,8 +1,8 @@
 import UserDashboard from '../pages/Sessionpages/UserDashboard.jsx'
-import CreateOrder from '../pages/SessionPages/CreateOrder.jsx'
+
 import Inventory from '../pages/Sessionpages/Inventory.jsx'
 import SalesAnalysis from '../pages/Sessionpages/SalesAnalysis.jsx'
-import SalesLog from '../pages/Sessionpages/SalesLog.jsx'
+import SalesLog from ' ../pages/Sessionpages/SalesLog.jsx'
 import ItemRegistration from '../pages/SessionPages/ItemRegistration.jsx'
 import UserDetails from '../pages/Userdetails.jsx'
 import OrderList from '../pages/SessionPages/OrderList.jsx'
@@ -18,7 +18,7 @@ export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
   { path: '/UserDetails', element: <UserDetails /> },
   { path: '/businessregistration', element: <BusinessRegistration /> },
-  { path: '/CreateOrder', element: <CreateOrder /> },
+  
   { path: '/itemregistration', element: <ItemRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },

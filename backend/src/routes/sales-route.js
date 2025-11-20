@@ -7,7 +7,7 @@ import {
   getOrderByIdController,
   getAllOrdersByBusinessController,
   cancelSaleController,
-  finishOrderController
+  finishOrderController,GetFinishOrderByBusiness,
 } from '../controllers/sales-controller.js';
 import { authenticateToken } from '../middlewares/auth-middleware.js';
 import { requireBusinessAccess } from '../middlewares/business-access.js'; // ✅ Import the real middleware
@@ -31,6 +31,8 @@ router.get('/total_amount', authenticateToken, requireBusinessAccess, GetAllTota
 router.post('/create', authenticateToken, requireBusinessAccess, makesale);
 router.get('/orders', authenticateToken, requireBusinessAccess, getAllOrdersController);
 router.get('/orders/:orderId', authenticateToken, requireBusinessAccess, getOrderByIdController);
+router.get('/saleslog',authenticateToken,requireBusinessAccess,GetFinishOrderByBusiness);
+
 
 // If businesses/:businessId still needed:
 router.get('/businesses/:businessId/orders', authenticateToken, requireBusinessAccess, getAllOrdersByBusinessController);

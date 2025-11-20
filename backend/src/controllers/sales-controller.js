@@ -1,5 +1,5 @@
 //sales-controller.js
-import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder } from '../models/sales-model.js';
+import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder,getFinishOrderByBusiness } from '../models/sales-model.js';
 import { findRoleByName } from '../models/role-model.js'; 
 
 
@@ -139,6 +139,30 @@ export const finishOrderController = async (req, res) => {
   }
 };
 
+export const GetFinishOrderByBusiness = async (req, res) => {
+  try {
+    const businessId = req.businessId; // ✅ comes from middleware
+    if (!businessId) {
+      return res.status(400).json({ error: "Missing business context" });
+    }
+
+    // Extract pagination options from query params
+    const opts = {
+      page: req.query.page ? Number(req.query.page) : 1,
+      pageSize: req.query.pageSize ? Number(req.query.pageSize) : 25
+    };
+
+    const result = await getFinishOrderByBusiness(businessId, opts);
+
+    res.json({
+      orders: result.orders,
+      meta: result.meta
+    });
+  } catch (err) {
+    console.error("Error in GetFinishOrderByBusiness:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 export const GetAllTotalSales = async (req, res) => {
   try {

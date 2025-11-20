@@ -264,7 +264,7 @@ export const finishOrder = async (purchaseId) => {
       `UPDATE purchases_table SET status_id = 1, finished_at = NOW() WHERE purchase_id = ?`,
       [pid]
     );
-
+      //to be deleted
     const [purchaseMeta] = await conn.execute(
       `SELECT total_amount, business_id FROM purchases_table WHERE purchase_id = ?`,
       [pid]
@@ -301,6 +301,80 @@ export const finishOrder = async (purchaseId) => {
   }
 };
 
+export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
+  const bizId = Number(businessId);
+  const page = Math.max(1, Number(opts.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 25));
+  const offset = (page - 1) * pageSize;
+
+  // 1️⃣ Count total finished orders
+  const [countRows] = await pool.execute(
+    `SELECT COUNT(DISTINCT purchase_id) AS total
+     FROM purchases_table
+     WHERE business_id = ? AND status_id = 1`,
+    [bizId]
+  );
+  const totalRows = Number(countRows[0]?.total || 0);
+
+  if (totalRows === 0) {
+    return { orders: [], meta: { page, pageSize, totalRows: 0 } };
+  }
+
+  // 2️⃣ Fetch paginated finished orders with items
+  const [rows] = await pool.execute(
+    `SELECT 
+      p.purchase_id AS purchaseId,
+      p.business_id,
+      p.purchase_date,
+      p.finished_at,
+      p.total_amount,
+      i.purchase_item_id AS itemId,
+      i.product_id,
+      pr.name AS product_name,
+      i.quantity,
+      i.price,
+      pr.picture
+    FROM purchases_table p
+    JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
+    JOIN product_table pr ON i.product_id = pr.product_id
+    WHERE p.business_id = ? AND p.status_id = 1
+    ORDER BY p.purchase_id ASC
+    LIMIT ? OFFSET ?`,
+    [bizId, pageSize, offset]
+  );
+
+  // 3️⃣ Group items by purchaseId
+  const ordersMap = new Map();
+  for (const r of rows) {
+    const pid = Number(r.purchaseId);
+    if (!ordersMap.has(pid)) {
+      ordersMap.set(pid, {
+        id: pid,
+        businessId: Number(r.business_id),
+        purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
+        finishedAt: r.finished_at ? new Date(r.finished_at).toISOString() : null,
+        total: r.total_amount !== null ? Number(r.total_amount) : 0,
+        items: []
+      });
+    }
+
+    const order = ordersMap.get(pid);
+    order.items.push({
+      id: r.itemId !== null ? Number(r.itemId) : null,
+      productId: r.product_id !== null ? Number(r.product_id) : null,
+      productName: r.product_name ?? null,
+      quantity: r.quantity !== null ? Number(r.quantity) : 0,
+      price: r.price !== null ? Number(r.price) : 0,
+      picture: r.picture ?? null
+    });
+  }
+
+  return {
+    orders: Array.from(ordersMap.values()).sort((a, b) => a.id - b.id),
+    meta: { page, pageSize, totalRows }
+  };
+};
+
 export const getSalesTotal = async (businessId) => {
   const bizId = Number(businessId);
   const [rows] = await pool.execute(
@@ -311,6 +385,9 @@ export const getSalesTotal = async (businessId) => {
   );
   return rows[0];
 };
+
+
+
 export default {
   createSale,
   getSalesTotal,
