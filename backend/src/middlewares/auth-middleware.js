@@ -14,9 +14,11 @@ export const authenticateToken = (req, res, next) => {
     }
 
     // Log decoded user for debugging (remove in production)
-    console.log('authenticateToken decoded user:', user);
+    //console.log('authenticateToken decoded user:', user);
+   
 
-    req.user = user; // contains user_id, username, role as in your token
+    req.user = user; // contains user_id, username, role as in your token 
+    //console.log(req.user)
     next();
   });
 };

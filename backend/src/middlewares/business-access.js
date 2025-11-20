@@ -39,7 +39,8 @@ export const requireBusinessAccess = async (req, res, next) => {
 
     // 5️⃣ Attach numeric businessId to request
     req.businessId = bizId;
-    console.log('requireBusinessAccess: success', { userId, bizId });
+   // console.log('requireBusinessAccess: success', { userId, bizId });
+    //console.log(req.user)
 
     next();
   } catch (err) {

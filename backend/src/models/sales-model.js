@@ -304,12 +304,13 @@ export const finishOrder = async (purchaseId) => {
 export const getSalesTotal = async (businessId) => {
   const bizId = Number(businessId);
   const [rows] = await pool.execute(
-    `SELECT SUM(total_amount) AS total_sales FROM sales_table WHERE business_id = ?`,
+    `SELECT COALESCE(SUM(total_amount),0) AS total_sales 
+     FROM purchases_table 
+     WHERE business_id = ? AND status_id = 1 `,
     [bizId]
   );
   return rows[0];
 };
-
 export default {
   createSale,
   getSalesTotal,

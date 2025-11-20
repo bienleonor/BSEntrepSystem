@@ -142,16 +142,13 @@ export const finishOrderController = async (req, res) => {
 
 export const GetAllTotalSales = async (req, res) => {
   try {
-    const businessId = req.user.business_id;
-    const roleName = req.user.role;
+    const businessId = req.businessId;   // ✅ comes from middleware
+    if (!businessId) {
+      return res.status(400).json({ error: "Missing business context" });
+    }
 
     const result = await getSalesTotal(businessId);
-    const roleDetails = await findRoleByName(roleName);
-
-    res.json({
-      total_sales: result.total_sales,
-      role: roleDetails // or roleDetails.role_name, depending on what you want to expose
-    });
+    res.json({ total_sales: result.total_sales });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
