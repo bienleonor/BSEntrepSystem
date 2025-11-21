@@ -87,7 +87,7 @@ export const addEmployeeToBusiness = (user_id, business_id) => {
 export const findCode = (code) => {
   return new Promise((resolve, reject) => {
     pool.query(
-      `SELECT * FROM access_code_table WHERE code = ? AND is_active = 1`,
+      `SELECT * FROM access_codes_table WHERE code = ? AND is_active = 1`,
       [code],
       (err, result) => {
         if (err) return reject(err);

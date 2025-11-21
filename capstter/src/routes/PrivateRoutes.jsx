@@ -13,6 +13,7 @@ import ProductListComponent from '../components/inventory/ProductListComponent.j
 import PointofSales from '../pages/SessionPages/PointofSales.jsx'
 import SuperAdminDashboard from '../pages/SuperAdminPages/SuperAdminDashboard.jsx'
 import StockOut from '../pages/SessionPages/StockOut.jsx'
+import AccessCode from '../pages/SessionPages/AccessCode.jsx'
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
   { path: '/UserDetails', element: <UserDetails /> },
@@ -22,6 +23,7 @@ export const privateRoutes = [
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },
   { path: '/salesLog', element: <SalesLog /> },
+  { path: '/accesscode', element: <AccessCode /> },
   { path: '/orderlist', element: <OrderList /> },
   { path: '/recipes', element: <Recipes /> },
   { path: '/busmanage', element: <Busmanage />},
