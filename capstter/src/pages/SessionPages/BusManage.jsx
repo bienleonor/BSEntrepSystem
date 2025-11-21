@@ -48,15 +48,19 @@ function Busmanage() {
   };
 
 
-  return (
-    <div
-      className="min-h-screen w-full bg-cover bg-center bg-fixed flex flex-col items-center justify-center"
-      style={{ backgroundImage: `url(${landingImage})` }}
-    >
-      <ToastContainer />
-      <div className="bg-bronze  max-w-md bg-opacity-80 p-6 rounded shadow-md w-96">
-        <h2 className="text-xl font-bold mb-4 text-center text-white">Select a Business to Manage</h2>
-        {businesses.length > 0 ? (
+ return (
+  <div
+    className="min-h-screen w-full bg-cover bg-center bg-fixed flex flex-col items-center justify-center"
+    style={{ backgroundImage: `url(${landingImage})` }}
+  >
+    <ToastContainer />
+    <div className="bg-bronze max-w-md bg-opacity-80 p-6 rounded shadow-md w-96">
+      <h2 className="text-xl font-bold mb-4 text-center text-white">
+        Select a Business to Manage
+      </h2>
+
+      {businesses.length > 0 ? (
+        <>
           <ul className="space-y-2">
             {businesses.map((biz) => (
               <li
@@ -72,15 +76,27 @@ function Busmanage() {
               </li>
             ))}
           </ul>
-        ) : (
-          <Link to="/businessregistration">
-              <p className="text-center text-blue-600 hover:underline">No businesses found. Register one here.</p>
-         </Link>
 
-        )}
-      </div>
+          {/* Show only when businesses exist */}
+          <div className="mt-4 text-center">
+            <Link to="/businessregistration">
+              <p className="text-blue-600 hover:underline font-semibold">
+                Register another business
+              </p>
+            </Link>
+          </div>
+        </>
+      ) : (
+        <Link to="/businessregistration">
+          <p className="text-center text-blue-600 hover:underline">
+            No businesses found. Register one here.
+          </p>
+        </Link>
+      )}
     </div>
-  );
+  </div>
+);
+
 }
 
 export default Busmanage;

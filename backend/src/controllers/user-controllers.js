@@ -72,6 +72,7 @@ export const insertUserDetailsController = async (req, res) => {
     'middle_name',
     'last_name',
     'contact_no',
+    'section_id',
     'birthdate',
     
   ];

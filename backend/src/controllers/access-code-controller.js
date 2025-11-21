@@ -6,6 +6,7 @@ import {
   findCode,
   addEmployeeToBusiness
 } from "../models/access-code-model.js";
+import pool from "../config/pool.js";
 
 export const generateAccessCode = async (req, res) => {
   try {
@@ -67,3 +68,15 @@ export const enterAccessCode = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// controllers/sectionController.js
+export const getAllSections = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`SELECT sec_id, sec_name FROM section_table`);
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ DB error in getAllSections:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+

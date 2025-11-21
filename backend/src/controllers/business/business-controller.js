@@ -10,6 +10,7 @@ export const registerBusiness = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
+    // Register business
     const insertedId = await BusinessRegister({ business_name, business_cat_id, owner_id });
 
     res.status(201).json({

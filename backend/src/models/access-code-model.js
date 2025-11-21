@@ -44,7 +44,7 @@ export const insertAccessCode = (business_id, code, year_created) => {
 export const getSy = (sy_id) => {
   return new Promise((resolve, reject) => {
     pool.query(
-      `SELECT school_year FROM sy_table WHERE sy_id = ?`,
+      `SELECT school_year FROM year_table WHERE year_id = ?`,
       [sy_id],
       (err, result) => {
         if (err) return reject(err);

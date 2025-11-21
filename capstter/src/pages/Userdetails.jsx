@@ -1,9 +1,9 @@
 // src/pages/UserDetails.jsx
-import { useState } from "react";
-import { getToken, getUserId } from "../utils/token";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
+import { useState, useEffect } from "react";
+import { getUserId } from "../utils/token";
+import { toast, ToastContainer } from "react-toastify";
+import axiosInstance from "../utils/axiosInstance";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function UserDetails() {
   const [formData, setFormData] = useState({
@@ -12,12 +12,27 @@ export default function UserDetails() {
     last_name: "",
     birthdate: "",
     contact_no: "",
-    
+    section_id: "", // ✅ new field
   });
 
-  const token = getToken();
+  const [sections, setSections] = useState([]); // ✅ dropdown options
   const userId = getUserId();
 
+  // 🔄 Fetch sections from backend
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const response = await axiosInstance.get("/access-code/sections"); // ✅ axios call
+        setSections(response.data);
+      } catch (error) {
+        console.error("Error fetching sections:", error);
+        toast.error("❌ Failed to load sections.");
+      }
+    };
+    fetchSections();
+  }, []);
+
+  // 📝 Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -26,64 +41,62 @@ export default function UserDetails() {
     }));
   };
 
+  // 🚀 Handle form submit
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const {
-    first_name,
-    middle_name,
-    last_name,
-    birthdate,
-    contact_no
-   
-  } = formData;
+    const {
+      first_name,
+      middle_name,
+      last_name,
+      birthdate,
+      contact_no,
+      section_id,
+    } = formData;
 
-  // 🔍 Required field check
-  if (!first_name || !middle_name || !last_name || !birthdate || !contact_no) {
-    toast.warn('⚠️ Please fill out all fields before submitting.');
-    return;
-  }
-
-  // 📞 Phone number validation
-  const contactRegex = /^\d{1,11}$/;
-  if (!contactRegex.test(contact_no)) {
-    toast.error('❌ Phone number must be numeric and up to 11 digits.');
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/users/insertUserDetailsController/${userId}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Error:", result.error);
-      toast.error(`❌ Failed to save: ${result.error || 'Unknown error'}`);
-    } else {
-      toast.success("✅ User details saved successfully!");
+    // 🔍 Required field check
+    if (
+      !first_name ||
+      !middle_name ||
+      !last_name ||
+      !birthdate ||
+      !contact_no ||
+      !section_id
+    ) {
+      toast.warn("⚠️ Please fill out all fields before submitting.");
+      return;
     }
-  } catch (error) {
-    console.error("Submit error:", error);
-    toast.error("❌ An error occurred while saving user details.");
-  }
-};
 
+    // 📞 Phone number validation
+    const contactRegex = /^\d{1,11}$/;
+    if (!contactRegex.test(contact_no)) {
+      toast.error("❌ Phone number must be numeric and up to 11 digits.");
+      return;
+    }
 
+    try {
+      await axiosInstance.post(
+        `/users/insertUserDetailsController/${userId}`, // ✅ axios call
+        formData
+      );
+
+      toast.success("✅ User details saved successfully!");
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.error(
+        `❌ Failed to save: ${
+          error.response?.data?.error || "Unknown error occurred"
+        }`
+      );
+    }
+  };
 
   return (
     <div>
-       <ToastContainer position="top-center" autoClose={3000} />
-      <h1 className="text-2xl font-bold mb-4 text-center text-white">User Details</h1>
+      <ToastContainer position="top-center" autoClose={3000} />
+      <h1 className="text-2xl font-bold mb-4 text-center text-white">
+        User Details
+      </h1>
 
       <form
         onSubmit={handleSubmit}
@@ -91,7 +104,9 @@ export default function UserDetails() {
       >
         {/* Full Name */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Full Name
+          </label>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <input
               type="text"
@@ -122,7 +137,9 @@ export default function UserDetails() {
 
         {/* Birthdate */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Birthdate</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Birthdate
+          </label>
           <input
             type="date"
             name="birthdate"
@@ -134,7 +151,9 @@ export default function UserDetails() {
 
         {/* Phone Number */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Phone Number
+          </label>
           <input
             type="text"
             name="contact_no"
@@ -145,8 +164,25 @@ export default function UserDetails() {
           />
         </div>
 
-        {/* Type of User */}
-        
+        {/* Section Dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Section
+          </label>
+          <select
+            name="section_id"
+            className="form-input w-full"
+            value={formData.section_id}
+            onChange={handleChange}
+          >
+            <option value="">Select Section</option>
+            {sections.map((sec) => (
+              <option key={sec.sec_id} value={sec.sec_id}>
+                {sec.sec_name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Submit Button */}
         <div className="md:col-span-2 text-center">
