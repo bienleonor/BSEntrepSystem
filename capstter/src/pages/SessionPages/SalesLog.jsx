@@ -69,7 +69,7 @@ useEffect(() => {
               </thead>
               <tbody>
                 {transactions.map((tx, index) => (
-                  <tr key={index} className="border-t text-sm text-gray-700 hover:bg-gray-50">
+                  <tr key={index} className="border-t text-sm bg-white text-gray-700 hover:bg-gray-50">
                     <td className="px-4 py-2">{renderStatusIcon(tx.status)}</td>
                     <td className="px-4 py-2">{tx.name}</td>
                     <td className="px-4 py-2">{tx.item}</td>
