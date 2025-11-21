@@ -20,10 +20,10 @@ export default function TotalSalesCard() {
         }
 
        const res = await fetch("http://localhost:5000/api/sales/total_amount", {
-      headers: {
-    'Authorization': `Bearer ${token}`,
-    'X-Business-Id': businessId   // ✅ send business id in header
-        }
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-Business-Id': businessId   // ✅ send business id in header
+          }
       });
 
 
