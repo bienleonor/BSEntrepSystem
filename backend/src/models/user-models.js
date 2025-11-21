@@ -34,7 +34,7 @@ export const getAllUsers = async () => {
 // Used for fetching user profile (does NOT return password)
 export const findUserById = async (id) => {
   const [rows] = await pool.execute(
-    `SELECT user_id, username, email, first_name, middle_name, last_name, contact_no, birthdate, created_at, updated_at
+    `SELECT user_id, username
      FROM user_table WHERE user_id = ? LIMIT 1`, [id]
   );
   return rows[0];

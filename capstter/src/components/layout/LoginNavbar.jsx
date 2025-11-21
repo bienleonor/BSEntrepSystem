@@ -1,6 +1,21 @@
+import { useEffect, useState } from "react";
+import { getUserId, getRole, decodeToken } from "../../utils/token";
+
 export default function LoginNavbar() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const decoded = decodeToken();
+    if (decoded) {
+      setUser({
+        username: decoded.username, // must exist in token payload
+        role: decoded.role,
+      });
+    }
+  }, []);
+
   return (
-    <header className="flex justify-between items-center bg-slate-800 text-white px-6 py-4 border-b-2  border-b-bronze/50 shadow-2xl ">
+    <header className="flex justify-between items-center bg-slate-800 text-white px-6 py-4 border-b-2 border-b-bronze/50 shadow-2xl">
       {/* Search */}
       <div className="flex items-center gap-4 w-1/2">
         <input
@@ -14,8 +29,10 @@ export default function LoginNavbar() {
       <div className="flex items-center gap-3">
         <div className="bg-gray-600 rounded-full w-9 h-9"></div>
         <div>
-          <p className="font-bold text-sm">NAME PLACEHOLDER</p>
-          <p className="text-xs text-gray-300">Admin</p>
+          <p className="font-bold text-sm">
+            {user ? user.username : "Loading..."}
+          </p>
+          <p className="text-xs text-gray-300">{user ? user.role : "Admin"}</p>
         </div>
       </div>
     </header>
