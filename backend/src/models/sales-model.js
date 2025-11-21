@@ -237,62 +237,47 @@ export const cancelSale = async (purchaseId) => {
   }
 };
 
-/**
- * Finish order (transactional).
- * Marks purchase finished and inserts into sales tables.
- * Returns sales_id.
- */
+
 export const finishOrder = async (purchaseId) => {
   const pid = Number(purchaseId);
-  if (!pid) throw new Error('purchaseId is required');
+  if (!pid) throw new Error("purchaseId is required");
 
   const conn = await pool.getConnection();
+
   try {
     await conn.beginTransaction();
 
+    // Lock purchase row
     const [purchaseRows] = await conn.execute(
-      `SELECT purchase_id, status_id FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
+      `SELECT purchase_id, status_id 
+       FROM purchases_table 
+       WHERE purchase_id = ? 
+       FOR UPDATE`,
       [pid]
     );
-    if (purchaseRows.length === 0) throw new Error(`Purchase ${pid} not found`);
 
-    const currentStatusId = purchaseRows[0].status_id;
-    if (currentStatusId === 1) throw new Error(`Purchase ${pid} is already finished`);
-    if (currentStatusId === 3) throw new Error(`Purchase ${pid} was cancelled`);
-
-    await conn.execute(
-      `UPDATE purchases_table SET status_id = 1, finished_at = NOW() WHERE purchase_id = ?`,
-      [pid]
-    );
-      //to be deleted
-    const [purchaseMeta] = await conn.execute(
-      `SELECT total_amount, business_id FROM purchases_table WHERE purchase_id = ?`,
-      [pid]
-    );
-    if (purchaseMeta.length === 0) throw new Error(`Purchase ${pid} metadata not found`);
-    const { total_amount, business_id } = purchaseMeta[0];
-
-    const [salesResult] = await conn.execute(
-      `INSERT INTO sales_table (business_id, total_amount, created_at) VALUES (?, ?, NOW())`,
-      [business_id, total_amount]
-    );
-    const sales_id = salesResult.insertId;
-
-    const [purchaseItems] = await conn.execute(
-      `SELECT product_id, quantity FROM purchase_items_table WHERE purchase_id = ?`,
-      [pid]
-    );
-    if (purchaseItems.length === 0) throw new Error(`Purchase ${pid} has no items`);
-
-    for (const item of purchaseItems) {
-      await conn.execute(
-        `INSERT INTO sales_item_table (sales_id, product_id, quantity) VALUES (?, ?, ?)`,
-        [sales_id, item.product_id, item.quantity]
-      );
+    if (purchaseRows.length === 0) {
+      throw new Error(`Purchase ${pid} not found`);
     }
 
+    const status = purchaseRows[0].status_id;
+
+    if (status === 1) throw new Error(`Purchase ${pid} is already finished`);
+    if (status === 3) throw new Error(`Purchase ${pid} was cancelled`);
+
+    // Mark purchase as finished
+    await conn.execute(
+      `UPDATE purchases_table 
+       SET status_id = 1, finished_at = NOW()
+       WHERE purchase_id = ?`,
+      [pid]
+    );
+
     await conn.commit();
-    return sales_id;
+
+    // We now treat purchase_id itself as the sales_id
+    return pid;
+
   } catch (err) {
     await conn.rollback();
     throw err;
