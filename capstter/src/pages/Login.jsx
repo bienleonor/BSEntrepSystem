@@ -140,7 +140,7 @@ const Login = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-
+          <div>
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
@@ -150,7 +150,6 @@ const Login = () => {
             </button>
           </div>
 
-<<<<<<< HEAD
           <button
             type="submit"
             className="w-full bg-blue-500 hover:bg-blue-600 transition text-white py-2 rounded-xl mt-3"
@@ -165,15 +164,6 @@ const Login = () => {
             <span className="underline cursor-pointer">Register</span>
           </p>
         </Link>
-=======
-          <Link to="/register">
-            <p className="text-center text-white mt-3">
-              Don't have an account?{" "}
-              <span className="underline cursor-pointer">Register</span>
-            </p>
-          </Link>
-        </div>
->>>>>>> cf8d1013839449ec0e50aa947669eff7bc50d041
       </div>
     </div>
   </>
