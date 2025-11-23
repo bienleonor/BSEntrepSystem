@@ -161,7 +161,8 @@ function ItemRegistration() {
   
   return (
   <DashboardLayout>
-    <div className="flex justify-center items-start md:items-center min-h-screen px-4 py-12">
+    {/* Make the form sit a little above center */}
+    <div className="flex justify-center items-start md:items-start min-h-screen px-4 pt-20 pb-12">
       <div className="bg-sky-100 p-6 sm:p-8 rounded-2xl w-full max-w-4xl shadow-lg border border-blue-200">
         <h2 className="text-3xl sm:text-4xl font-bold mb-8 text-center text-gray-800">
           REGISTER NEW ITEM
@@ -169,10 +170,13 @@ function ItemRegistration() {
 
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col md:flex-row gap-6 md:gap-10 items-center justify-center"
+          className="flex flex-col md:flex-row gap-6 md:gap-10 items-center md:items-start justify-center"
         >
-          {/* 📸 Image Upload */}
-          <label className="w-48 sm:w-64 h-48 sm:h-64 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 cursor-pointer relative rounded-lg overflow-hidden bg-white/60 backdrop-blur">
+          {/* IMAGE UPLOAD */}
+          <label className="w-40 xs:w-48 sm:w-56 md:w-64 h-40 xs:h-48 sm:h-56 md:h-64 
+                            border-2 border-dashed border-gray-400 flex items-center justify-center 
+                            text-gray-500 cursor-pointer relative rounded-lg overflow-hidden 
+                            bg-white/60 backdrop-blur">
             {itemData.image ? (
               <img
                 src={URL.createObjectURL(itemData.image)}
@@ -185,7 +189,7 @@ function ItemRegistration() {
             <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
           </label>
 
-          {/* 📝 Input Fields */}
+          {/* INPUT SECTION */}
           <div className="flex flex-col gap-4 sm:gap-5 w-full max-w-sm">
             {/* Item Name */}
             <label className="block text-sm sm:text-base font-medium text-gray-700">
@@ -197,53 +201,57 @@ function ItemRegistration() {
                 value={itemData.itemName}
                 onChange={handleChange}
                 required
-                className="mt-1 px-3 sm:px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 px-3 sm:px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:ring-2 focus:ring-blue-500"
               />
             </label>
-                        {/* 🔍 Unit Search Dropdown */}
-              <label className="block text-sm font-medium text-gray-700 relative">
-                Unit
-                <input
-                  type="text"
-                  name="unitSearch"
-                  placeholder="SEARCH UNIT"
-                  value={
-                    itemData.unit_id
-                      ? units.find(u => u.unit_id === itemData.unit_id)?.name || ''
-                      : itemData.unitSearch
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setItemData(prev => ({ ...prev, unitSearch: value, unit_id: '' }));
-                    setShowUnitDropdown(true);
-                  }}
-                  onBlur={() => setTimeout(() => setShowUnitDropdown(false), 100)}
-                  className="mt-1 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  autoComplete="off"
-                />
-                {showUnitDropdown && itemData.unitSearch && (
-                  <ul className="absolute z-10 bg-white border border-gray-300 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
-                    {units
-                      .filter(unit => unit.name.toLowerCase().includes(itemData.unitSearch.toLowerCase()))
-                      .map(unit => (
-                        <li
-                          key={unit.unit_id}
-                          onMouseDown={() => {
-                            setItemData(prev => ({
-                              ...prev,
-                              unit_id: unit.unit_id,
-                              unitSearch: unit.name,
-                            }));
-                            setShowUnitDropdown(false);
-                          }}
-                          className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                        >
-                          {unit.name}
-                        </li>
-                      ))}
-                  </ul>
-                )}
-              </label>
+
+            {/* Unit Search Dropdown */}
+            <label className="block text-sm sm:text-base font-medium text-gray-700 relative">
+              Unit
+              <input
+                type="text"
+                name="unitSearch"
+                placeholder="SEARCH UNIT"
+                value={
+                  itemData.unit_id
+                    ? units.find(u => u.unit_id === itemData.unit_id)?.name || ""
+                    : itemData.unitSearch
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setItemData(prev => ({ ...prev, unitSearch: value, unit_id: "" }));
+                  setShowUnitDropdown(true);
+                }}
+                onBlur={() => setTimeout(() => setShowUnitDropdown(false), 100)}
+                className="mt-1 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:ring-2 focus:ring-blue-500"
+                autoComplete="off"
+              />
+
+              {showUnitDropdown && itemData.unitSearch && (
+                <ul className="absolute z-10 bg-white border border-gray-300 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
+                  {units
+                    .filter(unit =>
+                      unit.name.toLowerCase().includes(itemData.unitSearch.toLowerCase())
+                    )
+                    .map(unit => (
+                      <li
+                        key={unit.unit_id}
+                        onMouseDown={() => {
+                          setItemData(prev => ({
+                            ...prev,
+                            unit_id: unit.unit_id,
+                            unitSearch: unit.name,
+                          }));
+                          setShowUnitDropdown(false);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                      >
+                        {unit.name}
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </label>
 
             {/* Product Type */}
             <label className="block text-sm sm:text-base font-medium text-gray-700">
@@ -253,7 +261,7 @@ function ItemRegistration() {
                 value={itemData.productType}
                 onChange={handleChange}
                 required
-                className="mt-1 px-3 sm:px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 px-3 sm:px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select Product Type</option>
                 <option value="simple">Simple</option>
@@ -272,11 +280,11 @@ function ItemRegistration() {
                 onChange={handleChange}
                 required
                 min="0"
-                className="mt-1 px-3 sm:px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-1 px-3 sm:px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full focus:ring-2 focus:ring-blue-500"
               />
             </label>
 
-            {/* 🧵 Buttons */}
+            {/* BUTTONS */}
             <div className="flex flex-col sm:flex-row gap-4 mt-6 justify-center">
               <button
                 type="submit"
@@ -296,6 +304,7 @@ function ItemRegistration() {
         </form>
       </div>
     </div>
+
     <ToastContainer position="top-center" autoClose={3000} />
   </DashboardLayout>
 );

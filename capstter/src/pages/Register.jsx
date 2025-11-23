@@ -81,7 +81,8 @@ const Register = () => {
         className="min-h-screen w-full bg-cover bg-center flex justify-center items-center px-4 sm:px-6 md:px-10 py-10"
         style={{ backgroundImage: `url(${loginImage})` }}
       >
-        <div className="bg-bronze p-8 rounded-2xl w-full max-w-md shadow-lg">
+     <div className="bg-bronze p-8 rounded-2xl w-full max-w-md 
+                      lg:-translate-x-70 md:-translate-x-16 sm:translate-x-0 transform transition-transform duration-300">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <h2 className="text-4xl font-bold text-center text-white mb-4">
               Register
