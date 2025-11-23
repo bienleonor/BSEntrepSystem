@@ -14,11 +14,16 @@ import PointofSales from '../pages/SessionPages/PointofSales.jsx'
 import SuperAdminDashboard from '../pages/SuperAdminPages/SuperAdminDashboard.jsx'
 import StockOut from '../pages/SessionPages/StockOut.jsx'
 import AccessCode from '../pages/SessionPages/AccessCode.jsx'
+import EmployeeManagement from '../pages/SessionPages/EmployeeManagement.jsx'
+import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
+import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
+
+
 export const privateRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
   { path: '/UserDetails', element: <UserDetails /> },
   { path: '/businessregistration', element: <BusinessRegistration /> },
-    { path: '/StockOut', element: <StockOut /> },
+  { path: '/StockOut', element: <StockOut /> },
   { path: '/itemregistration', element: <ItemRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },
@@ -30,5 +35,8 @@ export const privateRoutes = [
   { path: '/productlist', element: <ProductList />},
   { path: '/productlistcomponent', element: <ProductListComponent />},
   { path: '/pointofsales', element: <PointofSales />},
-  { path: '/superadmin/dashboard', element: <SuperAdminDashboard />}
+  { path: '/superadmin/dashboard', element: <SuperAdminDashboard />},
+  { path: '/employeemanagement', element: <EmployeeManagement />},
+  { path: '/businessposition', element: <BusinessPosition />},
+  { path: '/businesssetting', element: <BusinessSettings />},
 ]

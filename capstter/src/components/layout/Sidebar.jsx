@@ -1,4 +1,4 @@
-import { Home, ClipboardList, BarChart2, List, Package,ShoppingCart,PackageOpen,NotebookText   } from "lucide-react";
+import { Home, ClipboardList, BarChart2, List, Package,ShoppingCart,PackageOpen,NotebookText,Settings,UserRoundCog,Users   } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
@@ -11,6 +11,10 @@ const menuItems = [
   { label: "ProductList", icon: <PackageOpen  size={18} /> },
   { label: "orderList", icon: <NotebookText   size={18} /> },
   { label: "Stockout", icon: <PackageOpen  size={18} /> },
+  { label: "employee management", icon: <Users  size={18} /> },
+  { label: "business position", icon: <UserRoundCog   size={18} /> },
+  { label: "business setting", icon: <Settings   size={18} /> },
+ 
 ];
 
 export default function Sidebar() {
