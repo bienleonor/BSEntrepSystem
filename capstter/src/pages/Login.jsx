@@ -54,7 +54,7 @@ const Login = () => {
       }
 
       // Business Owner flows
-      if (user.role === "owner") {
+      if (user.role === "SuperAdmin"|| user.role === "user") {
         if (businesses.length === 0) {
           // Owner has no business yet → redirect to business registration
           return navigate("/businessregistration");

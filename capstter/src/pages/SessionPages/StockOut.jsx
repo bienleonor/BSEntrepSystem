@@ -1,33 +1,108 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import axiosInstance from "../../utils/axiosInstance";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const StockOut = () => {
   const [formData, setFormData] = useState({
-    name: 'Sibuyas',
+    name: 'No item',
     quantityAvailable: 200,
+    productId: null,
     quantity: '',
     reason: '',
-    proof: null,
   });
+  const [products, setProducts] = useState([]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: files ? files[0] : value,
+      [name]: value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.quantity || !formData.reason || !formData.proof) {
-      toast.error('Please fill out all fields and attach proof.');
+    // ensure productId exists (selected from the product dropdown)
+    const productId = formData.productId;
+    if (!productId) {
+      toast.error('No product selected. Select a product first.');
       return;
     }
-    toast.success('Stock Out Submitted!');
-    console.log('Stock Out Submitted:', formData);
+
+    if (!formData.quantity || !formData.reason) {
+      toast.error('Please fill out all fields.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('productId', productId);
+    fd.append('quantity', formData.quantity);
+    fd.append('reason', formData.reason);
+
+    // POST to inventory/stock-out (router is mounted under /api/inventory)
+    axiosInstance.post('/inventory/stock-out', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((res) => {
+        toast.success('Stock out recorded.');
+        // optional: reset quantity and proof
+        setFormData((prev) => ({ ...prev, quantity: '', reason: '', proof: null }));
+      })
+      .catch((err) => {
+        console.error('Stock out error:', err.response || err.message || err);
+        const msg = err?.response?.data?.error || 'Failed to record stock out.';
+        toast.error(msg);
+      });
+  };
+
+  // Fetch products for the current business and set initial product selection
+  useEffect(() => {
+    const businessId = localStorage.getItem('selectedBusinessId');
+    if (!businessId) {
+      toast.error('No business selected. Please select a business first.');
+      return;
+    }
+
+      // fetch products with inventory details (includes `quantity`)
+      axiosInstance.get(`/inventory/products/active/inventory-details/${businessId}`)
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setProducts(list);
+
+        // pick stored product or first product as initial selection
+        const stored = localStorage.getItem('selectedProductId');
+        const initial = stored || (list[0] && (list[0].product_id || list[0].productId));
+        if (initial) {
+          const sel = list.find(p => String(p.product_id || p.productId || p.id) === String(initial));
+          if (sel) {
+            setFormData((prev) => ({
+              ...prev,
+              productId: initial,
+              name: sel.name || prev.name,
+                quantityAvailable: (sel.quantity != null ? sel.quantity : prev.quantityAvailable),
+            }));
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch products for business:', err.response || err.message || err);
+        toast.error('Failed to load products.');
+      });
+  }, []);
+
+  const handleProductChange = (e) => {
+    const val = e.target.value;
+    const sel = products.find(p => String(p.product_id || p.productId || p.id) === String(val));
+    if (sel) {
+      setFormData((prev) => ({
+        ...prev,
+        productId: val,
+        name: sel.name || prev.name,
+          quantityAvailable: (sel.quantity != null ? sel.quantity : prev.quantityAvailable),
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, productId: val }));
+    }
   };
 
   return (
@@ -39,15 +114,24 @@ const StockOut = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name
+              Product
             </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              disabled
-              className="w-full rounded-lg border-gray-300 bg-gray-100 text-gray-600 p-2"
-            />
+            <select
+              name="productId"
+              value={formData.productId || ''}
+              onChange={handleProductChange}
+              required
+              className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2 bg-white mb-3"
+            >
+              <option value="" disabled>Select a product</option>
+              {products.map(p => (
+                <option key={p.product_id || p.productId || p.id} value={p.product_id || p.productId || p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+
+          
           </div>
 
           <div>
@@ -69,6 +153,7 @@ const StockOut = () => {
             </label>
             <input
               type="number"
+              min="1"
               name="quantity"
               value={formData.quantity}
               onChange={handleChange}
@@ -96,23 +181,7 @@ const StockOut = () => {
         </div>
 
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Attach Proof
-            </label>
-            <input
-              type="file"
-              name="proof"
-              accept="image/*"
-              onChange={handleChange}
-              required
-              className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4
-                         file:rounded-lg file:border-0
-                         file:text-sm file:font-semibold
-                         file:bg-blue-50 file:text-blue-700
-                         hover:file:bg-blue-100"
-            />
-          </div>
+         
 
           <button
             type="submit"
