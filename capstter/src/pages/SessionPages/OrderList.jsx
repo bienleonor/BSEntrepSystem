@@ -75,7 +75,7 @@ export default function OrderList() {
           >
             <div className="border-b pb-4">
               <div className="flex justify-between">
-                <h2 className="font-semibold text-black text-xl">Order ID:</h2>
+                <h2 className="font-semibold text-black text-2xl">Order ID:</h2>
                 <span className="text-red-600">{order.id}</span>
               </div>
 
@@ -101,8 +101,8 @@ export default function OrderList() {
               </div>
 
               <div className="flex justify-between mt-4">
-                <h2 className="font-semibold text-black text-lg">Total:</h2>
-                <span className="text-green-500 font-bold text-xl">
+                <h2 className="font-semibold text-black text-2xl">Total:</h2>
+                <span className="text-gray font-bold text-2xl">
                   ₱{Number(order.total ?? order.total_amount ?? 0).toLocaleString()}
                 </span>
               </div>

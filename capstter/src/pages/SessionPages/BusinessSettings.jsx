@@ -98,8 +98,8 @@ export default function BusinessSettings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto bg-bronze shadow-lg rounded-lg p-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Business Settings</h1>
+      <div className="max-w-3xl mx-auto bg-slate-300 shadow-lg rounded-lg p-8">
+        <h1 className="text-4xl font-bold mb-6 text-gray-800">Business Settings</h1>
         <form onSubmit={handleSave} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Business Name</label>

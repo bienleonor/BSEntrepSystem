@@ -60,7 +60,7 @@ export default function BusinessPositionManagement() {
 
   return (
     <DashboardLayout>
-      <div className="bg-bronze shadow-lg rounded-lg p-8 max-w-5xl mx-auto">
+      <div className="bg-slate-300 shadow-lg rounded-lg p-8 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-800">
@@ -95,7 +95,7 @@ export default function BusinessPositionManagement() {
                 </tr>
               ) : (
                 positions.map((pos) => (
-                  <tr key={pos.business_pos_id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={pos.business_pos_id} className="hover:bg-blue-400 transition-colors">
                     <td className="border px-4 py-2">{pos.business_pos_id}</td>
                     <td className="border px-4 py-2">{pos.role_name}</td>
                     <td className="border px-4 py-2">
