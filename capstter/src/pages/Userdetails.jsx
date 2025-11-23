@@ -153,7 +153,7 @@ export default function UserDetails() {
         <select name="section_id" className="form-input w-full" value={formData.section_id} onChange={handleChange}>
           <option value="">Select Section</option>
           {sections.map((sec) => (
-            <option key={sec.section_id} value={sec.section_id}>{sec.sec_name}</option>
+            <option key={sec.sec_id} value={sec.sec_id}>{sec.sec_name}</option>
           ))}
         </select>
       </div>
