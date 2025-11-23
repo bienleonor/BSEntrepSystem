@@ -107,7 +107,7 @@ const StockOut = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
+      <div className="max-w-md mx-auto mt-10 bg-slate-300 shadow-lg rounded-xl p-6">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           📦 Stock Adjusment
         </h2>
@@ -158,7 +158,7 @@ const StockOut = () => {
               value={formData.quantity}
               onChange={handleChange}
               required
-              className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2"
+              className="w-full hover:bg-gray-400 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2"
             />
           </div>
 

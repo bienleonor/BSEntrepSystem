@@ -7,7 +7,7 @@ export default function Cart({ inventory, saleDate, setSaleDate, submitSale, sub
   const totalAmount = cartItems.reduce((s, it) => s + it.quantity * Number(it.price), 0);
 
   return (
-    <div className="border border-gray-200 rounded p-2">
+    <div className="border border-gray-200 rounded p-2 bg-slate-300">
       {cartItems.length === 0 && <div className="text-gray-500">Cart is empty</div>}
 
       {cartItems.map((it) => {
@@ -51,14 +51,14 @@ export default function Cart({ inventory, saleDate, setSaleDate, submitSale, sub
       <button
         onClick={submitSale}
         disabled={submitting || cartItems.length === 0}
-        className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
+        className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 hover:bg-blue-600"
       >
         {submitting ? "Submitting..." : "Complete Sale"}
       </button>
       <button
         onClick={clearCart}
         disabled={submitting}
-        className="ml-2 px-4 py-2 bg-gray-400 text-white rounded disabled:opacity-50"
+        className="ml-2 px-4 py-2 bg-gray-400 text-white rounded disabled:opacity-50 hover:bg-blue-600"
       >
         Clear
       </button>

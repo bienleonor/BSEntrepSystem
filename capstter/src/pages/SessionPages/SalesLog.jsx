@@ -52,7 +52,7 @@ useEffect(() => {
   return (
     <DashboardLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4 text-white">Latest Transactions</h1>
+        <h1 className="text-6xl font-bold mb-4 text-white">Latest Transactions</h1>
         <div className="bg-bronze rounded-lg shadow-md overflow-x-auto">
           {loading ? (
             <p className="p-4 text-white">Loading...</p>

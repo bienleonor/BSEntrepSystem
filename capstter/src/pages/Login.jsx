@@ -140,25 +140,34 @@ const Login = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-
+          <div>
             <button
-              type="submit"
-              className="w-full bg-lightblue text-white py-2 rounded-lg mt-4"
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-10 text-gray-700"
             >
-              Login
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
-          </form>
+          </div>
 
-          <Link to="/register">
-            <p className="text-center text-white mt-3">
-              Don't have an account?{" "}
-              <span className="underline cursor-pointer">Register</span>
-            </p>
-          </Link>
-        </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 hover:bg-blue-600 transition text-white py-2 rounded-xl mt-3"
+          >
+            Login
+          </button>
+        </form>
+
+        <Link to="/register">
+          <p className="text-center text-white mt-5">
+            Don’t have an account?{" "}
+            <span className="underline cursor-pointer">Register</span>
+          </p>
+        </Link>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 };
 
 export default Login;
