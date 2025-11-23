@@ -1,6 +1,7 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
 import { generateToken } from "../../utils/generate-token.js";
 
+
 export const registerBusiness = async (req, res) => {
   try {
     const { business_name, business_cat_id } = req.body;
@@ -13,9 +14,19 @@ export const registerBusiness = async (req, res) => {
     // Register business
     const insertedId = await BusinessRegister({ business_name, business_cat_id, owner_id });
 
+    // Try create a default access code for this business (won't block registration if it fails)
+    let access = null;
+    try {
+      access = await createDefaultAccessCode(insertedId);
+    } catch (err) {
+      console.error('Failed to create default access code:', err);
+    }
+
     res.status(201).json({
       message: "Business registered successfully.",
       business_id: insertedId,
+      access_code: access?.code || null,
+      access_code_id: access?.access_id || null
     });
   } catch (error) {
     console.error("Error registering business:", error);

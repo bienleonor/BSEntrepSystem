@@ -11,6 +11,7 @@ import  registerBusiness  from './routes/business/business-routes.js';
 import  productroutes  from './routes/inventory/product-route.js';
 import accessCodeRoute from "./routes/access-codes-route.js";
 
+
 import salesAnalysisRoutes from './routes/analysis/sales.js';
 import profitAnalysisRoutes from './routes/analysis/profit.js';
 import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
@@ -38,6 +39,7 @@ app.use('/api/business', registerBusiness);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', productroutes);
 app.use('/uploads', express.static('uploads'));
+
 
 // KPI routes
 app.use('/api/analysis/sales', salesAnalysisRoutes);
