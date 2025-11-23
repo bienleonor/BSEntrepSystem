@@ -91,52 +91,57 @@ const ProductListComponent = () => {
     return () => clearInterval(interval);
   }, [navigate]);
 
-  if (loading) return <p style={statusStyle}>Loading products...</p>;
-  if (error) return <p style={statusStyle}>{error}</p>;
+  if (loading) return <p className="text-gray-600 text-base">Loading products...</p>;
+  if (error) return <p className="text-gray-600 text-base">{error}</p>;
 
   return (
-    <div style={containerStyle}>
-      <h2 style={headingStyle}>📦 Active Products with Inventory</h2>
+    <div className="p-4 font-sans">
+      <h2 className="mb-4 text-xl font-semibold text-gray-800">📦 Active Products with Inventory</h2>
       {products.length === 0 ? (
-        <p style={statusStyle}>No active products found for this business.</p>
+        <p className="text-gray-600 text-base">No active products found for this business.</p>
       ) : (
-        <table style={tableStyle}>
+        <table className="w-full border-collapse text-sm shadow-md">
           <thead>
-            <tr style={headerRowStyle}>
-              <th style={thStyle}>Product</th>
-              <th style={thStyle}>Unit</th>
-              <th style={thStyle}>Price</th>
-              <th style={thStyle}>Quantity</th>
-              <th style={thStyle}>Last Restocked</th>
-              <th style={thStyle}>Image</th>
-              <th style={thStyle}>Add Stock</th>
+            <tr className="bg-gray-100">
+              <th className="p-3 text-left border-b-2 border-gray-300">Product</th>
+              <th className="p-3 text-left border-b-2 border-gray-300">Unit</th>
+              <th className="p-3 text-left border-b-2 border-gray-300">Price</th>
+              <th className="p-3 text-left border-b-2 border-gray-300">Quantity</th>
+              <th className="p-3 text-left border-b-2 border-gray-300">Last Restocked</th>
+              <th className="p-3 text-left border-b-2 border-gray-300">Image</th>
+              <th className="p-3 text-left border-b-2 border-gray-300">Add Stock</th>
             </tr>
           </thead>
           <tbody>
             {products.map((p, index) => (
-              <tr key={p.product_id} style={index % 2 === 0 ? rowStyle : altRowStyle}>
-                <td style={tdStyle}>{p.name}</td>
-                <td style={tdStyle}>{unitsMap[p.unit_id] || "—"}</td>
-                <td style={tdStyle}>₱{p.price}</td>
-                <td style={tdStyle}>{p.quantity ?? "—"}</td>
-                <td style={tdStyle}>{p.last_restocked ? new Date(p.last_restocked).toLocaleDateString() : "—"}</td>
-                <td style={tdStyle}>
+              <tr
+                key={p.product_id}
+                className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+              >
+                <td className="p-3 border-b border-gray-200">{p.name}</td>
+                <td className="p-3 border-b border-gray-200">{unitsMap[p.unit_id] || "—"}</td>
+                <td className="p-3 border-b border-gray-200">₱{p.price}</td>
+                <td className="p-3 border-b border-gray-200">{p.quantity ?? "—"}</td>
+                <td className="p-3 border-b border-gray-200">
+                  {p.last_restocked ? new Date(p.last_restocked).toLocaleDateString() : "—"}
+                </td>
+                <td className="p-3 border-b border-gray-200">
                   {p.picture ? (
                     <img
                       src={p.picture}
                       alt={p.name}
-                      style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "4px" }}
+                      className="w-12 h-12 object-cover rounded"
                     />
                   ) : (
                     "No image"
                   )}
                 </td>
-                <td style={tdStyle}>
+                <td className="p-3 border-b border-gray-200">
                   <input
                     type="number"
                     min="1"
                     placeholder="Qty"
-                    style={{ width: "60px", marginRight: "6px", padding: "4px" }}
+                    className="w-16 mr-2 p-1 border rounded"
                     value={stockInputs[p.product_id] || ""}
                     onChange={(e) =>
                       setStockInputs((prev) => ({
@@ -147,14 +152,7 @@ const ProductListComponent = () => {
                   />
                   <button
                     onClick={() => handleAddStock(p.product_id)}
-                    style={{
-                      padding: "4px 8px",
-                      backgroundColor: "#4CAF50",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                   >
                     Add
                   </button>
@@ -166,53 +164,6 @@ const ProductListComponent = () => {
       )}
     </div>
   );
-};
-
-// 💅 Styles
-const containerStyle = {
-  padding: "1rem",
-  fontFamily: "Segoe UI, sans-serif",
-};
-
-const headingStyle = {
-  marginBottom: "1rem",
-  fontSize: "1.4rem",
-  color: "#333",
-};
-
-const statusStyle = {
-  fontSize: "1rem",
-  color: "#666",
-};
-
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-  fontSize: "0.95rem",
-  boxShadow: "0 0 5px rgba(0,0,0,0.1)",
-};
-
-const headerRowStyle = {
-  backgroundColor: "#f0f0f0",
-};
-
-const rowStyle = {
-  backgroundColor: "#fff",
-};
-
-const altRowStyle = {
-  backgroundColor: "#f9f9f9",
-};
-
-const thStyle = {
-  padding: "10px",
-  textAlign: "left",
-  borderBottom: "2px solid #ccc",
-};
-
-const tdStyle = {
-  padding: "10px",
-  borderBottom: "1px solid #eee",
 };
 
 export default ProductListComponent;

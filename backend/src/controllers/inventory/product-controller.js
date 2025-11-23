@@ -1,4 +1,4 @@
-import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock } from '../../models/inventory/product-model.js';
+import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
 import fs from 'fs';
 
@@ -270,7 +270,42 @@ export const modifyInventoryStock = async (req, res) => {
   }
 };
 
+// Stock out endpoint: records an adjustment and decreases inventory
+export const stockOut = async (req, res) => {
+  try {
+    const { productId, quantity, reason } = req.body;
+    if (!productId || quantity == null || !reason) {
+      return res.status(400).json({ error: 'Missing required fields.' });
+    }
 
-export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchProductWithInventoryDetails, insertInventoryStock,};
+    const parsedQty = Number(quantity);
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      return res.status(400).json({ error: 'Quantity must be a positive number.' });
+    }
+
+    // Proof upload removed — frontend does not send files for stock-out anymore
+    const proofUrl = null;
+
+    const businessId = req.headers['x-business-id'] || null;
+    // Token payload may use `user_id` or `id` depending on how token was generated
+    const userId = req.user && (req.user.user_id || req.user.id) ? (req.user.user_id || req.user.id) : null;
+
+    // change_qty is negative for stock out
+    const change_qty = -Math.abs(parsedQty);
+    // map frontend reason values to DB enum if needed
+    let mappedReason = reason;
+    if (reason === 'wastage') mappedReason = 'waste';
+
+    await recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason: mappedReason, reference: proofUrl, businessId, userId });
+
+    res.status(201).json({ message: 'Stock out recorded.' });
+  } catch (err) {
+    console.error('Error recording stock out:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+
+export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchProductWithInventoryDetails, insertInventoryStock, stockOut };
 
 
