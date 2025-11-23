@@ -26,7 +26,6 @@ export const privateRoutes = [
   { path: '/businessregistration', element: <BusinessRegistration /> },
   { path: '/chooserole', element: <ChooseRole />},
   { path: '/stockout', element: <StockOut /> },
-  { path: '/StockOut', element: <StockOut /> },
   { path: '/itemregistration', element: <ItemRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },
