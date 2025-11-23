@@ -9,6 +9,12 @@ import multer from 'multer';
 import { localStorage } from '../../config/storage.js';
 import { getSettings, updateSettings } from '../../controllers/business/business_settings-controller.js';
 import { getAllPositions,addPosition } from "../../controllers/business/business-position-controller.js";
+import {
+  getEmployeesByBusiness,
+  addEmployee,
+  assignPosition,
+  removeEmployee,
+} from "../../controllers/business/business-employee-controller.js";
 
 const router = express.Router();
 
@@ -27,4 +33,18 @@ router.post('/settings', authenticateToken, uploadLocal.single('logo'), updateSe
 //business position
 router.get("/position", getAllPositions);
 router.post("/addposition",addPosition);
+
+//employee
+// Get employees for a business
+router.get('/employees/:business_id', authenticateToken, getEmployeesByBusiness);
+
+// Add an employee (admin or via access-code flow)
+router.post('/addemployee', authenticateToken, addEmployee);
+
+// Assign/update position for an employee
+router.post('/assign-position', authenticateToken, assignPosition);
+
+// Remove employee
+router.delete('/removeemployee', authenticateToken, removeEmployee);
+
 export default router;

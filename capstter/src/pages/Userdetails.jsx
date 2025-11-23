@@ -4,6 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import axiosInstance from "../utils/axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/UseAuth";
+import loginImage from "../assets/landing.png";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function UserDetails() {
@@ -110,76 +111,83 @@ export default function UserDetails() {
   };
 
   return (
-    <div>
-      <ToastContainer position="top-center" autoClose={3000} />
-      <h1 className="text-2xl font-bold mb-4 text-center text-white">User Details</h1>
+  <div
+    className="bg-cover bg-center min-h-screen w-full flex flex-col items-center justify-center px-6"
+    style={{ backgroundImage: `url(${loginImage})` }}
+  >
+    <ToastContainer position="top-center" autoClose={3000} />
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-bronze p-4 rounded-md shadow-sm"
-      >
-        {/* Full Name */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input type="text" name="first_name" placeholder="First Name" className="form-input" value={formData.first_name} onChange={handleChange} />
-            <input type="text" name="middle_name" placeholder="Middle Name" className="form-input" value={formData.middle_name} onChange={handleChange} />
-            <input type="text" name="last_name" placeholder="Surname" className="form-input" value={formData.last_name} onChange={handleChange} />
-          </div>
-        </div>
+    <h1 className="text-2xl font-bold mb-4 text-center text-white">
+      User Details
+    </h1>
 
-        {/* Birthdate */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Birthdate</label>
-          <input type="date" name="birthdate" className="form-input w-full" value={formData.birthdate} onChange={handleChange} />
+    <form
+      onSubmit={handleSubmit}
+      className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-bronze p-6 rounded-md shadow-lg max-w-3xl w-full"
+    >
+      {/* Full Name */}
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" name="first_name" placeholder="First Name" className="form-input" value={formData.first_name} onChange={handleChange} />
+          <input type="text" name="middle_name" placeholder="Middle Name" className="form-input" value={formData.middle_name} onChange={handleChange} />
+          <input type="text" name="last_name" placeholder="Surname" className="form-input" value={formData.last_name} onChange={handleChange} />
         </div>
+      </div>
 
-        {/* Phone Number */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <input type="text" name="contact_no" placeholder="09" className="form-input w-full" value={formData.contact_no} onChange={handleChange} />
-        </div>
+      {/* Birthdate */}
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Birthdate</label>
+        <input type="date" name="birthdate" className="form-input w-full" value={formData.birthdate} onChange={handleChange} />
+      </div>
 
-        {/* Section Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-          <select name="section_id" className="form-input w-full" value={formData.section_id} onChange={handleChange}>
-            <option value="">Select Section</option>
-            {sections.map((sec) => (
-              <option key={sec.section_id} value={sec.section_id}>{sec.sec_name}</option>
-            ))}
-          </select>
-        </div>
+      {/* Phone Number */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+        <input type="text" name="contact_no" placeholder="09" className="form-input w-full" value={formData.contact_no} onChange={handleChange} />
+      </div>
 
-        {/* Group Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Group</label>
-          <select name="group_id" className="form-input w-full" value={formData.group_id} onChange={handleChange}>
-            <option value="">Select Group</option>
-            {groups.map((grp) => (
-              <option key={grp.group_id} value={grp.group_id}>{grp.group_name}</option>
-            ))}
-          </select>
-        </div>
+      {/* Section Dropdown */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+        <select name="section_id" className="form-input w-full" value={formData.section_id} onChange={handleChange}>
+          <option value="">Select Section</option>
+          {sections.map((sec) => (
+            <option key={sec.section_id} value={sec.section_id}>{sec.sec_name}</option>
+          ))}
+        </select>
+      </div>
 
-        {/* School Year Dropdown */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">School Year</label>
-          <select name="year_id" className="form-input w-full" value={formData.year_id} onChange={handleChange}>
-            <option value="">Select School Year</option>
-            {Years.map((sy) => (
-              <option key={sy.year_id} value={sy.year_id}>{sy.school_year}</option>
-            ))}
-          </select>
-        </div>
+      {/* Group Dropdown */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Group</label>
+        <select name="group_id" className="form-input w-full" value={formData.group_id} onChange={handleChange}>
+          <option value="">Select Group</option>
+          {groups.map((grp) => (
+            <option key={grp.group_id} value={grp.group_id}>{grp.group_name}</option>
+          ))}
+        </select>
+      </div>
 
-        {/* Submit Button */}
-        <div className="md:col-span-2 text-center">
-          <button type="submit" className="bg-blue-600 text-white font-medium py-2 px-6 rounded-md hover:bg-blue-700 transition">
-            Save Details & Continue
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+      {/* School Year Dropdown */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">School Year</label>
+        <select name="year_id" className="form-input w-full" value={formData.year_id} onChange={handleChange}>
+          <option value="">Select School Year</option>
+          {Years.map((sy) => (
+            <option key={sy.year_id} value={sy.year_id}>{sy.school_year}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Submit Button */}
+      <div className="md:col-span-2 text-center">
+        <button type="submit" className="bg-blue-600 text-white font-medium py-2 px-6 rounded-md hover:bg-blue-700 transition">
+          Save Details & Continue
+        </button>
+      </div>
+    </form>
+  </div>
+);
+
 }
