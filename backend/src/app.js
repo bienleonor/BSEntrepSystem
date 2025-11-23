@@ -9,12 +9,13 @@ import salesRoutes from './routes/sales-route.js';
 import { authenticateToken } from './middlewares/auth-middleware.js';
 import  registerBusiness  from './routes/business/business-routes.js';
 import  productroutes  from './routes/inventory/product-route.js';
-import accessCodeRoute from "./routes/access-code-route.js";
+import accessCodeRoute from "./routes/access-codes-route.js";
 
 import salesAnalysisRoutes from './routes/analysis/sales.js';
 import profitAnalysisRoutes from './routes/analysis/profit.js';
 import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
 import summaryAnalysisRoutes from './routes/analysis/summary.js';
+import UserDetailsRoutes from './routes/user-details-route.js';
 
 const app = express();
 
@@ -27,14 +28,16 @@ app.use(cors({
 }));
 
 
+
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/users-details', UserDetailsRoutes);
+app.use("/api/access-code", accessCodeRoute);
 app.use('/api/business', registerBusiness);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', productroutes);
 app.use('/uploads', express.static('uploads'));
-app.use("/api/access-code", accessCodeRoute);
 
 // KPI routes
 app.use('/api/analysis/sales', salesAnalysisRoutes);
@@ -43,9 +46,10 @@ app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
 app.use('/api/analysis/summary', summaryAnalysisRoutes);
 
 
-// Optionally: error handling middleware
-app.use((err, req, res, next) => {
-  res.status(500).json({ error: err.message });
+// ✅ Debug middleware to see all incoming requests
+app.use((req, res, next) => {
+  console.log("Incoming request:", req.method, req.url, req.body);
+  next();
 });
 
 export default app;
