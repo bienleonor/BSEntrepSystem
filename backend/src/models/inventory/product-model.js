@@ -212,12 +212,41 @@ export const updateinventoryStock = async (productId, quantity) => {
   return result;
 }
 
+// Record a stock adjustment (stock out / in) and update inventory quantity accordingly
+export const recordInventoryTransactionAndUpdateInventory = async ({ productId, change_qty, reason = null, reference = null, businessId = null, userId = null }) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Insert into inventory_transactions according to schema
+    const [insertResult] = await connection.execute(
+      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [businessId, productId, change_qty, reason, reference, userId]
+    );
+
+    // Update inventory by adding change_qty (change_qty may be negative for stock out)
+    await connection.execute(
+      `UPDATE inventory_table SET quantity = GREATEST(quantity + ?, 0), updated_at = NOW() WHERE product_id = ?`,
+      [change_qty, productId]
+    );
+
+    await connection.commit();
+    return insertResult;
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+};
 
 
 
 
 
 
-export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getActiveInventoryWithProductDetails, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, };
+
+export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getActiveInventoryWithProductDetails, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory };
 
     

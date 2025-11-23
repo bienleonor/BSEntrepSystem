@@ -96,10 +96,10 @@ function SalesAnalysis() {
 
   return (
     <DashboardLayout>
-      <h1>Business KPI Dashboard</h1>
+      <h1 className="text-white text-3xl font-extrabold">Business KPI Dashboard</h1> 
 
       <div style={{ marginTop: '40px' }}>
-        <h2>Sales Trend by Category</h2>
+        <h2 className="text-white text-3xl font-extrabold">Sales Trend by Category</h2>
         <Line
           key="salesChart"
           data={salesChart}
@@ -108,7 +108,7 @@ function SalesAnalysis() {
       </div>
 
       <div style={{ marginTop: '40px' }}>
-        <h2>Profit by Category</h2>
+        <h2 className="text-white text-3xl font-extrabold">Profit by Category</h2>
         <Bar
           key="profitChart"
           data={profitChart}
@@ -117,7 +117,7 @@ function SalesAnalysis() {
       </div>
 
       <div style={{ marginTop: '40px' }}>
-        <h2>Ingredient Consumption</h2>
+        <h2 className="text-white text-3xl font-extrabold">Ingredient Consumption</h2>
         <Bar
           key="ingredientChart"
           data={ingredientChart}

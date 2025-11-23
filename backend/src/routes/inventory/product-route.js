@@ -14,9 +14,11 @@ import {
   fetchProductWithInventoryDetailsByBusiness,
   fetchProductWithInventoryDetails,
   insertInventoryStock,
+  stockOut,
   modifyInventoryStock,
   
 } from '../../controllers/inventory/product-controller.js';
+import { authenticateToken } from '../../middlewares/auth-middleware.js';
 
 const router = express.Router();
 
@@ -46,6 +48,7 @@ router.get('/products/active', fetchActiveProducts);
 router.get('/products/inventory-details', fetchProductWithInventoryDetails);
 router.get('/products/active/inventory-details/:businessId', fetchProductWithInventoryDetailsByBusiness);
 router.post('/inventory', insertInventoryStock);
+router.post('/stock-out', authenticateToken, stockOut);
 //wrong
 router.post('/inventory/update', modifyInventoryStock);
 

@@ -71,11 +71,11 @@ export default function OrderList() {
         {list.map((order) => (
           <div
             key={order.id}
-            className="w-full bg-bronze rounded-lg shadow-lg p-6 space-y-6"
+            className="w-full bg-slate-300 rounded-lg shadow-lg p-6 space-y-6"
           >
             <div className="border-b pb-4">
               <div className="flex justify-between">
-                <h2 className="font-semibold text-black text-lg">Order ID:</h2>
+                <h2 className="font-semibold text-black text-xl">Order ID:</h2>
                 <span className="text-red-600">{order.id}</span>
               </div>
 
@@ -87,7 +87,7 @@ export default function OrderList() {
                       key={item.id ?? item.productId ?? `${order.id}-${Math.random()}`}
                       src={item.picture || item.image || FALLBACK}
                       alt={item.productName || item.name || "product"}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-32 h-32 object-cover rounded"
                     />
                   ))}
                 </div>
