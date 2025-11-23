@@ -1,91 +1,93 @@
 // access-code-controller.js
 import {
-  getYear, getSection, insertAccessCode, findCode, addEmployeeToBusiness
+  getYear, getSection, getGroup, insertAccessCode, findCode, addEmployeeToBusiness
 } from "../models/access-codes-model.js";
+import { buildAccessCode } from "../services/access-codes-service.js";
 import pool from "../config/pool.js";
 
+
 export const generateAccessCode = async (req, res) => {
+  console.log("Incoming generateAccessCode:", req.body);
+
   try {
     const { business_id, year_id, section_id, group_id } = req.body;
-    if (!business_id || !year_id || !section_id || !group_id) {
-      console.log("Validation failed - missing fields");
+
+    // 🟦 1. Fetch year, section, group NAME
+    const yearData = await getYear(year_id);
+    const sectionData = await getSection(section_id);
+    const groupData = await getGroup(group_id);
+
+    if (!yearData || !sectionData || !groupData) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: business_id, year_id, section_id, group_id",
-        received: { business_id, year_id, section_id, group_id }
+        message: "Invalid year, section, or group ID."
       });
     }
 
-    const yearData = await getYear(year_id);
+    const yearName = yearData.school_year;
+    const sectionName = sectionData.sec_name;
+    const groupName = groupData.group_name;
 
-    const sectionData = await getSection(section_id);
+    console.log("✔ Year:", yearName);
+    console.log("✔ Section:", sectionName);
+    console.log("✔ Group:", groupName);
 
-    if (!yearData || !sectionData) {
-      console.log("Year or Section not found");
-      return res.status(404).json({
-        success: false,
-        message: "Year or Section not found",
-        yearData,
-        sectionData
-      });
-    }
+    // 🟩 2. Build access code
+    const finalCode = buildAccessCode({
+      schoolYear: yearName,
+      sectionName,
+      groupName
+    });
 
-    const schoolYear = yearData.school_year;
-    const secName = sectionData.sec_name;
-    console.log("schoolYear, secName:", schoolYear, secName);
+    console.log("Generated Access Code:", finalCode);
 
-    const parts = String(schoolYear).split("-");
-    if (parts.length !== 2) {
-      console.log("Unexpected school_year format:", schoolYear);
-      return res.status(500).json({ success: false, message: "Invalid school_year format", schoolYear });
-    }
+    // 🟧 3. Insert into DB
+    const insertId = await insertAccessCode(
+      business_id,
+      finalCode,
+      new Date().getFullYear()
+    );
 
-    const [year1, year2] = parts;
-    const shortYear = String(year1).slice(2) + String(year2).slice(2);
+    console.log("Inserted Access Code ID:", insertId);
 
-    const finalCode = `${shortYear}-${secName}GR${group_id}`;
-    console.log("Generated finalCode:", finalCode);
+    return res.status(201).json({
+      success: true,
+      code: finalCode,
+      access_id: insertId
+    });
 
-    try {
-      const insertedId = await insertAccessCode(business_id, finalCode, new Date().getFullYear());
-      console.log("Access code inserted with ID:", insertedId);
-
-      return res.status(201).json({
-        success: true,
-        message: "Access code generated successfully!",
-        code: finalCode,
-        access_id: insertedId
-      });
-    } catch (err) {
-      console.error("Failed to insert access code:", err);
-      return res.status(500).json({ success: false, message: "DB insert failed", error: err.message });
-    }
   } catch (err) {
-    console.error("Error in generateAccessCode:", err);
-    return res.status(500).json({ success: false, message: "Server error", error: err.message });
+    console.error("❌ Error in generateAccessCode:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
+
+
 
 export const enterAccessCode = async (req, res) => {
   try {
     const { user_id, code } = req.body;
 
     const codeData = await findCode(code);
-
-    if (!codeData)
+    if (!codeData) {
       return res.status(404).json({ success: false, message: "Invalid code" });
+    }
 
     const business_id = codeData.business_id;
 
     await addEmployeeToBusiness(user_id, business_id);
 
-    res.json({
+    return res.json({
       success: true,
       message: "User added as employee!",
       business_id
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ enterAccessCode error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
