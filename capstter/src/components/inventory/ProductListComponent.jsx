@@ -96,7 +96,7 @@ const ProductListComponent = () => {
 
   return (
     <div style={containerStyle}>
-      <h2 style={headingStyle}>📦 Active Products with Inventory</h2>
+      <h1 style={{ ...headingStyle, color: "white" }}>📦 Active Products with Inventory</h1>
       {products.length === 0 ? (
         <p style={statusStyle}>No active products found for this business.</p>
       ) : (

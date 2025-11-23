@@ -240,7 +240,7 @@ function Inventory() {
   return (
     <DashboardLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">Product List</h1>
+        <h1 className="text-6xl font-bold mb-4 text-white">Product List</h1>
         <div className="bg-white rounded-lg shadow-md overflow-x-auto">
           <table className="min-w-full table-auto">
             <thead className="bg-gray-100">

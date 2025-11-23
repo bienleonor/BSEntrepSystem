@@ -43,7 +43,7 @@ export default function TotalSalesCard() {
 
   return (
     <Card className="flex flex-col justify-between w-full">
-      <h2 className="font-semibold text-gray-700">Total Sales</h2>
+      <h2 className="font-semibold text-gray-700 text-2xl">Total Sales</h2>
       <p className="text-3xl font-bold">
         {totalAmount !== null 
           ? `₱${Number(totalAmount).toLocaleString()}` 
