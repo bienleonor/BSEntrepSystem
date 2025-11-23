@@ -4,6 +4,7 @@ import { createUser, findUserByUsername } from '../models/user-models.js';
 import { generateToken } from '../utils/generate-token.js';
 import { findRoleById, findRoleByUserId } from '../models/role-model.js';
 import { findBusinessByUserId } from '../models/business/business-model.js';
+import { fetchUserDetailsById } from "../models/user-details-model.js";
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -17,9 +18,16 @@ export const login = async (req, res) => {
 
     // Get role
     let roleMapping = await findRoleByUserId(user.user_id);
-    const systemRoleId = roleMapping?.system_role_id ?? 4;
-    const roleData = await findRoleById(systemRoleId);
+    const systemRoleId = roleMapping?.system_role_id ?? null;
+    const roleData = systemRoleId ? await findRoleById(systemRoleId) : null;
     const roleName = roleData?.role || "unknown";
+
+    // Check if user already has user_details
+    const userDetails = await fetchUserDetailsById(user.user_id);
+    const user_details_completed = !!userDetails;
+
+    // Check if role is selected
+    const role_selected = !!systemRoleId;
 
     // Find linked businesses
     const businesses = await findBusinessByUserId(user.user_id);
@@ -36,7 +44,9 @@ export const login = async (req, res) => {
       user: {
         user_id: user.user_id,
         username: user.username,
-        role: roleName
+        role: roleName,
+        user_details_completed,  // ⬅️ ADDED
+        role_selected             // ⬅️ ADDED
       },
       businesses
     });

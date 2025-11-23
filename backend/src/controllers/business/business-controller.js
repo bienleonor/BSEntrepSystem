@@ -1,6 +1,7 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
 import { generateToken } from "../../utils/generate-token.js";
 
+
 export const registerBusiness = async (req, res) => {
   try {
     const { business_name, business_cat_id } = req.body;
@@ -12,6 +13,7 @@ export const registerBusiness = async (req, res) => {
 
     // Register business
     const insertedId = await BusinessRegister({ business_name, business_cat_id, owner_id });
+
 
     res.status(201).json({
       message: "Business registered successfully.",
