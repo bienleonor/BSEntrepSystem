@@ -3,17 +3,22 @@ import pool from '../../config/pool.js'
 
 export const findBusinessByUserId = async (user_id) => {
   const [rows] = await pool.execute(
-    `SELECT business_id, business_name FROM business_table WHERE owner_id = ?`,
+    `SELECT b.business_id, b.business_name, b.business_cat_id
+     FROM business_table b
+     INNER JOIN business_user_position_table bu
+       ON b.business_id = bu.business_id
+     WHERE bu.user_id = ?`,
     [user_id]
   );
-  return rows; // returns array of businesses
+
+  return rows; // returns array of businesses the user is part of
 };
 
 
-export const findRoleByUserId = async (userId) => {
+export const findRoleByUserId = async (user_id) => {
   const [rows] = await pool.execute(
     `SELECT system_role_id FROM user_sys_role_table WHERE user_id = ? LIMIT 1`,
-    [userId]
+    [user_id]
   );
   return rows[0]; // returns { system_role_id: ... }
 };

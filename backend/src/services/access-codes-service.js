@@ -9,5 +9,5 @@ export function buildAccessCode({ schoolYear, sectionName, groupName }) {
     .replace(/[^A-Za-z0-9]/g, "")
     .toUpperCase();
 
-  return `${shortYear}-${sectionName}-${cleanGroup}`;
+  return `${shortYear}-${sectionName}${cleanGroup}`;
 }

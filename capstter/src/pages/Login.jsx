@@ -41,49 +41,35 @@ const Login = () => {
       toast.success("✅ Login successful!");
 
       // 4️⃣ Decide next route based on scenarios
-
-      // First-time login: user details not completed
       if (!user.user_details_completed) {
         return navigate("/userdetails");
       }
 
-      // User has no role selected yet
-      if (!user.role_selected) {
-        return navigate("/chooserole");
-      }
+      // SuperAdmin / Admin flows
+      if (user.system_role === "SuperAdmin" || user.system_role === "Admin") {
+        if (businesses.length === 0) return navigate("/businessregistration");
 
-      // Business Owner flows
-      if (user.role === "SuperAdmin"|| user.role === "user") {
-        if (businesses.length === 0) {
-          // Owner has no business yet → redirect to business registration
-          return navigate("/businessregistration");
-        } else if (businesses.length === 1) {
-          // Owner has exactly one business → set and go to dashboard
+        if (businesses.length === 1) {
           localStorage.setItem("selectedBusinessId", businesses[0].business_id);
           return navigate("/UserDashboard");
-        } else {
-          // Owner has multiple businesses → choose one
-          return navigate("/busmanage");
         }
+
+        return navigate("/busmanage");
       }
 
-      // Employee flows
-      if (user.role === "employee") {
-        if (businesses.length === 0) {
-          // Employee not affiliated with a business → enter access code
-          return navigate("/access-code");
-        } else if (businesses.length === 1) {
-          // Employee affiliated with exactly one business → set and dashboard
+      // Regular User (employee)
+      if (user.system_role === "User") {
+        if (businesses.length === 0) return navigate("/access-code");
+
+        if (businesses.length === 1) {
           localStorage.setItem("selectedBusinessId", businesses[0].business_id);
           return navigate("/UserDashboard");
-        } else {
-          // Employee affiliated with multiple businesses → choose one
-          return navigate("/busmanage");
         }
+
+        return navigate("/busmanage");
       }
 
-      // Fallback if role unknown
-      toast.error("Unknown user role. Please contact admin.");
+      toast.error("Unknown system role");
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.error || "Network error");

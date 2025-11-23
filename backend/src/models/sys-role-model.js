@@ -27,3 +27,12 @@ export const findRoleByUserId = async (userId) => {
   );
   return rows[0]; // returns { system_role_id }
 };
+
+export const assignRoleToUser = async (userId, roleId) => {
+  const [result] = await pool.execute(
+    `INSERT INTO user_sys_role_table (user_id, system_role_id)
+     VALUES (?, ?)`,
+    [userId, roleId]
+  );
+  return result.insertId;
+};

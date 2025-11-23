@@ -2,7 +2,7 @@
 import bcrypt from 'bcryptjs';
 import { createUser, findUserByUsername } from '../models/user-models.js';
 import { generateToken } from '../utils/generate-token.js';
-import { findRoleById, findRoleByUserId } from '../models/role-model.js';
+import { findRoleById, findRoleByUserId, assignRoleToUser, findRoleByName } from '../models/sys-role-model.js';
 import { findBusinessByUserId } from '../models/business/business-model.js';
 import { fetchUserDetailsById } from "../models/user-details-model.js";
 
@@ -11,32 +11,31 @@ export const login = async (req, res) => {
 
   try {
     const user = await findUserByUsername(username);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
-    // Get role
-    let roleMapping = await findRoleByUserId(user.user_id);
+    // Fetch system role
+    const roleMapping = await findRoleByUserId(user.user_id);
     const systemRoleId = roleMapping?.system_role_id ?? null;
-    const roleData = systemRoleId ? await findRoleById(systemRoleId) : null;
-    const roleName = roleData?.role || "unknown";
 
-    // Check if user already has user_details
+    const roleData = systemRoleId ? await findRoleById(systemRoleId) : null;
+    const systemRole = roleData?.role || "Unknown";
+
+    // User details
     const userDetails = await fetchUserDetailsById(user.user_id);
     const user_details_completed = !!userDetails;
 
-    // Check if role is selected
-    const role_selected = !!systemRoleId;
-
-    // Find linked businesses
+    // Business list + business positions
     const businesses = await findBusinessByUserId(user.user_id);
+    // MUST include business_position_id or name
+    // Ensure your query returns business_position from business_user_position_table
 
-    // Token WITHOUT business_id
     const token = generateToken({
       user_id: user.user_id,
       username: user.username,
-      role: roleName
+      system_role: systemRole
     });
 
     res.json({
@@ -44,9 +43,8 @@ export const login = async (req, res) => {
       user: {
         user_id: user.user_id,
         username: user.username,
-        role: roleName,
-        user_details_completed,  // ⬅️ ADDED
-        role_selected             // ⬅️ ADDED
+        system_role: systemRole,
+        user_details_completed
       },
       businesses
     });
@@ -87,11 +85,21 @@ export const register = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
+    // 1️⃣ Create the user
     const userId = await createUser({
       username,
       email,
       password: hashed
     });
+
+    // 2️⃣ Find default system role "User"
+    const defaultRole = await findRoleByName("User");
+    if (!defaultRole) {
+      throw new Error("Default system role 'User' not found in DB");
+    }
+
+    // 3️⃣ Assign role to user
+    await assignRoleToUser(userId, defaultRole.system_role_id);
 
     return res.status(201).json({
       message: "User registered successfully",

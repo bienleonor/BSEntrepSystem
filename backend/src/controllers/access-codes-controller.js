@@ -5,7 +5,6 @@ import {
 import { buildAccessCode } from "../services/access-codes-service.js";
 import pool from "../config/pool.js";
 
-
 export const generateAccessCode = async (req, res) => {
   console.log("Incoming generateAccessCode:", req.body);
 

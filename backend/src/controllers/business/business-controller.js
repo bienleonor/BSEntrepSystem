@@ -1,5 +1,7 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
 import { generateToken } from "../../utils/generate-token.js";
+import { addEmployeeModel } from "../../models/business/business-employee-model.js";
+
 
 
 export const registerBusiness = async (req, res) => {
@@ -14,9 +16,13 @@ export const registerBusiness = async (req, res) => {
     // Register business
     const insertedId = await BusinessRegister({ business_name, business_cat_id, owner_id });
 
+    const OWNER_POSITION_ID = 1; // Change this if your Owner = different ID
+
+    await addEmployeeModel(owner_id, insertedId, OWNER_POSITION_ID);
 
     res.status(201).json({
-      message: "Business registered successfully.",
+      success: true,
+      message: "Business registered successfully and Owner added to business_user_position_table.",
       business_id: insertedId,
     });
   } catch (error) {

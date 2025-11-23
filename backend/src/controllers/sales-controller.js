@@ -1,8 +1,5 @@
 //sales-controller.js
 import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder,getFinishOrderByBusiness } from '../models/sales-model.js';
-import { findRoleByName } from '../models/role-model.js'; 
-
-
 
 export const makesale = async (req, res) => {
   try {

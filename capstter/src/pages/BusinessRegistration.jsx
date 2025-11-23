@@ -54,6 +54,8 @@ export default function BusinessRegistration() {
       // Save Business
       localStorage.setItem("selectedBusinessId", businessId);
 
+
+
       // 2️⃣ GET USER ID FROM TOKEN
       const tokenData = JSON.parse(atob(token.split(".")[1]));
       const userId = tokenData.user_id;
@@ -90,6 +92,18 @@ export default function BusinessRegistration() {
       });
 
       toast.success(`🔑 Access code generated: ${accessCodeRes.data.code}`);
+
+            try {
+        await axiosInstance.post("/auth/upgrade-role", {
+          user_id: userId,
+          role: "SuperUser"
+        });
+
+        toast.success("🎉 Your account is now upgraded to SuperUser!");
+      } catch (err) {
+        console.error("Failed to upgrade role:", err);
+        toast.error("⚠ Failed to upgrade role. Contact support if this persists.");
+      }
 
       // Reset form + redirect
       setBusinessName("");

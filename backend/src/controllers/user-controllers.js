@@ -8,11 +8,6 @@ import {
 
 } from '../models/user-models.js';
 
-import {
-  getUserDetails,
-  fetchUserDetailsById
-} from '../models/user-details-model.js'
-
 // Get all users
 export const getUsers = async (req, res) => {
   try {
