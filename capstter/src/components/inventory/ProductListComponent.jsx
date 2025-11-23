@@ -95,8 +95,8 @@ const ProductListComponent = () => {
   if (error) return <p className="text-gray-600 text-base">{error}</p>;
 
   return (
-    <div style={containerStyle}>
-      <h1 style={{ ...headingStyle, color: "white" }}>📦 Active Products with Inventory</h1>
+    <div className="p-4 font-sans">
+      <h2 className="mb-4 text-xl font-semibold text-gray-800">📦 Active Products with Inventory</h2>
       {products.length === 0 ? (
         <p className="text-gray-600 text-base">No active products found for this business.</p>
       ) : (
