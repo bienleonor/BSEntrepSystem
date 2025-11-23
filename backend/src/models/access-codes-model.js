@@ -19,13 +19,12 @@ export const getSection = async (sec_id) => {
 };
 
 // Get group by user ID
-export const getGroup = async (user_id) => {
+export const getGroup = async (group_id) => {
   const [rows] = await pool.execute(
-    `SELECT group_id FROM user_details_table WHERE user_id = ?`,
-    [user_id]
+    `SELECT group_name FROM group_table WHERE group_id = ?`,
+    [group_id]
   );
-  if (!rows.length) return null;
-  return rows[0].group_id;
+  return rows[0] || null;
 };
 
 // Insert access code

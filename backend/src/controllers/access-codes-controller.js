@@ -17,6 +17,10 @@ export const generateAccessCode = async (req, res) => {
     const sectionData = await getSection(section_id);
     const groupData = await getGroup(group_id);
 
+    console.log("yearData:", yearData);
+    console.log("sectionData:", sectionData);
+    console.log("groupData:", groupData);
+
     if (!yearData || !sectionData || !groupData) {
       return res.status(400).json({
         success: false,
