@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const StockOut = () => {
   const [formData, setFormData] = useState({
     name: 'No item',
-    quantityAvailable: 200,
+    quantityAvailable: 0,
     productId: null,
     quantity: '',
     reason: '',
