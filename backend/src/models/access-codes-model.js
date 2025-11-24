@@ -48,6 +48,18 @@ export const findCode = async (code) => {
   return rows[0] || null;
 };
 
+// Find access code for validation
+export const findAccessCodeByBusiness = async (businessId) => {
+  const [rows] = await pool.execute(
+    `SELECT code 
+     FROM access_codes_table 
+     WHERE business_id = ? AND is_active = 1
+     LIMIT 1`,
+    [businessId]
+  );
+  return rows[0] || null;
+};
+
 // Add employee to business
 export const addEmployeeToBusiness = async (user_id, business_id) => {
   const [result] = await pool.execute(

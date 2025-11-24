@@ -2,19 +2,17 @@ import express from "express";
 import {
   getBusinessCategories,
   registerBusiness,
-  getUserBusiness
+  getUserBusiness, getBusinessAccessCode
 } from "../../controllers/business/business-controller.js";
 import { authenticateToken } from "../../middlewares/auth-middleware.js";
 import multer from 'multer';
 import { localStorage } from '../../config/storage.js';
 import { getSettings, updateSettings } from '../../controllers/business/business_settings-controller.js';
 import { getAllPositions,addPosition } from "../../controllers/business/business-position-controller.js";
-import {
-  getEmployeesByBusiness,
-  addEmployee,
-  assignPosition,
-  removeEmployee,
-} from "../../controllers/business/business-employee-controller.js";
+import { getEmployeesByBusiness, addEmployee, assignPosition, removeEmployee, } from "../../controllers/business/business-employee-controller.js";
+import { requireBusinessAccess } from "../../middlewares/business-access.js";
+
+
 
 const router = express.Router();
 
@@ -46,5 +44,8 @@ router.post('/assign-position', authenticateToken, assignPosition);
 
 // Remove employee
 router.delete('/removeemployee', authenticateToken, removeEmployee);
+
+router.get(
+  "/access-code", authenticateToken, requireBusinessAccess, getBusinessAccessCode );
 
 export default router;

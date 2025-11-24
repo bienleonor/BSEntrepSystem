@@ -47,7 +47,7 @@ const Login = () => {
       }
 
       // SuperAdmin / Admin flows
-      if (user.system_role === "SuperAdmin" || user.system_role === "Admin") {
+      if (user.system_role === "superadmin" || user.system_role === "admin") {
         if (businesses.length === 0) return navigate("/businessregistration");
 
         if (businesses.length === 1) {
@@ -58,8 +58,7 @@ const Login = () => {
         return navigate("/busmanage");
       }
 
-      // Regular User (employee)
-      if (user.system_role === "User") {
+      if (user.system_role === "user" || user.system_role === "superuser") {
         if (businesses.length === 0) return navigate("/access-code");
 
         if (businesses.length === 1) {

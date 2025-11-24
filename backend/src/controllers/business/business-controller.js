@@ -1,6 +1,7 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
 import { generateToken } from "../../utils/generate-token.js";
 import { addEmployeeModel } from "../../models/business/business-employee-model.js";
+import { findAccessCodeByBusiness } from "../../models/access-codes-model.js";
 
 
 
@@ -53,6 +54,27 @@ export const getUserBusiness = async (req, res) => {
   } catch (error) {
     console.error("Error fetching user businesses:", error);
     res.status(500).json({ error: "Failed to load businesses." });
+  }
+};
+
+
+export const getBusinessAccessCode = async (req, res) => {
+  try {
+    const businessId = req.query.businessId || req.businessId;
+
+    if (!businessId)
+      return res.status(400).json({ error: "Missing businessId" });
+
+    const code = await findAccessCodeByBusiness(businessId);
+
+    if (!code)
+      return res.status(404).json({ error: "No access code found" });
+
+    return res.json({ code: code.code });
+
+  } catch (error) {
+    console.error("Error getting business access code:", error);
+    return res.status(500).json({ error: "Server error" });
   }
 };
 
