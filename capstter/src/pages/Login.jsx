@@ -59,7 +59,7 @@ const Login = () => {
       }
 
       if (user.system_role === "user" || user.system_role === "superuser") {
-        if (businesses.length === 0) return navigate("/access-code");
+        if (businesses.length === 0) return navigate("/accesscode");
 
         if (businesses.length === 1) {
           localStorage.setItem("selectedBusinessId", businesses[0].business_id);
