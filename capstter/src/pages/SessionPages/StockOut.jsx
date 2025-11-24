@@ -23,37 +23,34 @@ const StockOut = () => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    // ensure productId exists (selected from the product dropdown)
-    const productId = formData.productId;
-    if (!productId) {
-      toast.error('No product selected. Select a product first.');
-      return;
-    }
+  e.preventDefault();
+  const productId = formData.productId;
+  if (!productId) {
+    toast.error('No product selected. Select a product first.');
+    return;
+  }
 
-    if (!formData.quantity || !formData.reason) {
-      toast.error('Please fill out all fields.');
-      return;
-    }
+  if (!formData.quantity || !formData.reason) {
+    toast.error('Please fill out all fields.');
+    return;
+  }
 
-    const fd = new FormData();
-    fd.append('productId', productId);
-    fd.append('quantity', formData.quantity);
-    fd.append('reason', formData.reason);
+  axiosInstance.post('/inventory/stock-out', {
+    productId,
+    quantity: formData.quantity,
+    reason: formData.reason,
+  })
+  .then((res) => {
+    toast.success('Stock out recorded.');
+    setFormData((prev) => ({ ...prev, quantity: '', reason: '' }));
+  })
+  .catch((err) => {
+    console.error('Stock out error:', err.response || err.message || err);
+    const msg = err?.response?.data?.error || 'Failed to record stock out.';
+    toast.error(msg);
+  });
+};
 
-    // POST to inventory/stock-out (router is mounted under /api/inventory)
-    axiosInstance.post('/inventory/stock-out', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      .then((res) => {
-        toast.success('Stock out recorded.');
-        // optional: reset quantity and proof
-        setFormData((prev) => ({ ...prev, quantity: '', reason: '', proof: null }));
-      })
-      .catch((err) => {
-        console.error('Stock out error:', err.response || err.message || err);
-        const msg = err?.response?.data?.error || 'Failed to record stock out.';
-        toast.error(msg);
-      });
-  };
 
   // Fetch products for the current business and set initial product selection
   useEffect(() => {
