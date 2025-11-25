@@ -53,9 +53,12 @@ export const updateSettings = async (req, res) => {
         console.error('Failed to read uploaded logo file:', e);
       }
     }
+    
+    // Upsert business setting (logo blob) only if a new logo was uploaded
+      if (logoBlob !== null) {
+      await upsertBusinessSetting(businessId, logoBlob);
+    }
 
-    // Upsert business setting (logo blob)
-    await upsertBusinessSetting(businessId, logoBlob);
 
     const settings = await getBusinessSettings(businessId);
     res.json({ success: true, message: 'Settings updated', settings });

@@ -37,6 +37,7 @@ export default function POSLayout() {
     }
   }, [businessId, token]);
 
+  //redirect to busmanage
   useEffect(() => {
     if (!businessId) {
       toast.error("No business selected. Redirecting...");
@@ -50,33 +51,47 @@ export default function POSLayout() {
 
   const { addToCart } = useCart();
 
-  const submitSaleHandler = async () => {
-    const cartItems = Object.values(cart);
-    if (!cartItems.length) {
-      toast.warn("Cart is empty");
-      return;
-    }
+const submitSaleHandler = async () => {
+  const cartItems = Object.values(cart);
+  if (!cartItems.length) {
+    toast.warn("Cart is empty");
+    return;
+  }
 
-    const saleData = {
-      business_id: businessId,
-      total_amount: cartItems.reduce((s, it) => s + it.quantity * Number(it.price), 0),
-      sale_date: saleDate,
-      items: cartItems.map((it) => ({ product_id: it.product_id, quantity: it.quantity, price: it.price })),
-    };
+  const paymentMethod = "Cash"; // make dynamic later
+  const statId = 2; // example status ID
 
-    try {
-      setSubmitting(true);
-      const data = await createSale(saleData, token);
-      toast.success(`Sale created (#${data.sale_id})`);
-      clearCart();
-      fetchInventory();
-    } catch (err) {
-      toast.error(`Sale failed: ${err.message}`);
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
+  const saleData = {
+    business_id: businessId,
+    user_id: token?.user_id,
+    total_amount: cartItems.reduce((s, it) => s + it.quantity * Number(it.price), 0),
+    sale_date: saleDate,
+    payment_method: paymentMethod,
+    stat_id: statId,
+    items: cartItems.map((it) => ({
+      product_id: it.product_id,
+      quantity: it.quantity,
+      price: it.price,
+    })),
   };
+
+  try {
+    setSubmitting(true);
+    const data = await createSale(saleData, token);
+
+    // ✅ show receipt number instead of sale_id
+    toast.success(`Sale created (Receipt: ${data.custom_receipt_no})`);
+
+    clearCart();
+    fetchInventory();
+  } catch (err) {
+    toast.error(`Sale failed: ${err.message}`);
+    console.error(err);
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   return (
     <div className="p-4">
