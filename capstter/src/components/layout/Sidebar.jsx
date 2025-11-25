@@ -1,20 +1,25 @@
-import { Home, ClipboardList, BarChart2, List, Package,ShoppingCart,PackageOpen,NotebookText,Settings,UserRoundCog,Users   } from "lucide-react";
+import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users   } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
 const menuItems = [
+  // Sales Management
   { label: "Point of Sales", icon: <ShoppingCart  size={18} /> },
-  { label: "Item Registration", icon: <ClipboardList size={18} /> },
   { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
   { label: "Sales Log", icon: <List size={18} /> },
+  { label: "Order List", icon: <NotebookText   size={18} /> },
+  
+  // Inventory Management
+  { label: "Product Registration", icon: <ClipboardList size={18} /> },
+  { label: "Item Registration", icon: <ClipboardList size={18} /> },
   { label: "Inventory", icon: <Package size={18} /> },
-  { label: "ProductList", icon: <PackageOpen  size={18} /> },
-  { label: "orderList", icon: <NotebookText   size={18} /> },
+  { label: "Product List", icon: <PackageOpen  size={18} /> },
   { label: "Stockout", icon: <PackageOpen  size={18} /> },
-  { label: "employee management", icon: <Users  size={18} /> },
-  { label: "business position", icon: <UserRoundCog   size={18} /> },
-  { label: "business setting", icon: <Settings   size={18} /> },
- 
+
+  // Employee Management
+  { label: "Employee Management", icon: <Users  size={18} /> },
+  { label: "Business Position", icon: <UserRoundCog   size={18} /> },
+  { label: "Business Setting", icon: <Settings   size={18} /> },
 ];
 
 export default function Sidebar() {
@@ -38,16 +43,15 @@ export default function Sidebar() {
           {menuItems.map((item) => (
 
             <Link to={`/${item.label.replace(/\s+/g, '').toLowerCase()}`}>
-            <button 
-              key={item.label}
-              className="flex items-center gap-3 px-3 py-2 sm:px-4 sm:py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition w-full"
-            >
-              {item.icon}
-              <span className="hidden sm:block">{item.label}</span>
-            </button>
+              <button 
+                key={item.label}
+                className="flex items-center gap-3 px-3 py-2 sm:px-4 sm:py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition w-full"
+              >
+                {item.icon}
+                <span className="hidden sm:block">{item.label}</span>
+              </button>
             </Link>
 
-            
           ))}
         </nav>
       </div>

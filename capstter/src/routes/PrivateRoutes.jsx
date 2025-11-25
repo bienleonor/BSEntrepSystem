@@ -18,6 +18,7 @@ import ChooseRole from "../pages/ChooseRole"
 import EmployeeManagement from '../pages/SessionPages/EmployeeManagement.jsx'
 import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
 import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
+import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
 
 
 export const privateRoutes = [
@@ -26,6 +27,7 @@ export const privateRoutes = [
   { path: '/businessregistration', element: <BusinessRegistration /> },
   { path: '/chooserole', element: <ChooseRole />},
   { path: '/stockout', element: <StockOut /> },
+  { path: '/productregistration', element: <ProductRegistration /> },
   { path: '/itemregistration', element: <ItemRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },
