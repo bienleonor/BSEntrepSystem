@@ -11,9 +11,9 @@ export const makesale = async (req, res) => {
     if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
 
     const saleData = { user_id, total_amount, items, business_id };
-    const saleId = await createSale(saleData);
+    const sale = await createSale(saleData);
+    return res.status(201).json(sale);
 
-    return res.status(201).json({ sale_id: saleId });
   } catch (err) {
     console.error("makesale error:", err);
     return res.status(500).json({ error: err.message || "Internal server error" });

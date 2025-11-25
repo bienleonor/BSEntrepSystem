@@ -8,26 +8,72 @@ import pool from '../config/pool.js';
 export const createSale = async (saleData) => {
   const { user_id, total_amount, items, business_id } = saleData;
   if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('No items to create sale');
+    throw new Error("No items to create sale");
   }
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
+    // Step 1: Insert into purchases_table
     const [purchaseResult] = await conn.execute(
-      `INSERT INTO purchases_table (user_id, total_amount, purchase_date, business_id) VALUES (?, ?, NOW(), ?)`,
+      `INSERT INTO purchases_table (user_id, total_amount, purchase_date, business_id) 
+       VALUES (?, ?, NOW(), ?)`,
       [user_id, total_amount, business_id]
     );
     const purchaseId = purchaseResult.insertId;
 
+    // Step A: Get today's count and business_code
+    const [rows] = await conn.execute(
+      `SELECT b.business_code, 
+              (SELECT COUNT(*) 
+               FROM transaction_table t 
+               WHERE t.business_id = b.business_id 
+                 AND DATE(t.created_at) = CURDATE()) AS cnt
+       FROM business_table b
+       WHERE b.business_id = ? 
+       FOR UPDATE`,
+      [business_id]
+    );
+
+    if (!rows.length) throw new Error("Business not found");
+
+    const businessCode = rows[0].business_code;
+    const nextReceiptNo = rows[0].cnt + 1;
+
+    // Optional: update snapshot counter in business_table
+    await conn.execute(
+      `UPDATE business_table SET last_receipt_no = ? WHERE business_id = ?`,
+      [nextReceiptNo, business_id]
+    );
+
+    // Step B: Build receipt string
+    const receiptNo = `${businessCode}-${nextReceiptNo}`;
+
+    // Step 2: Insert into transaction_table
+    await conn.execute(
+      `INSERT INTO transaction_table 
+       (purchase_id, custom_receipt_no, payment_method, business_id, stat_id, user_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        purchaseId,
+        receiptNo,
+        saleData.payment_method || "Cash",
+        business_id,
+        saleData.stat_id || 2,
+        user_id,
+      ]
+    );
+
+    // Step 3: Insert purchase items and update inventory
     for (const it of items) {
       const productId = Number(it.product_id);
       const qty = Number(it.quantity);
       const price = Number(it.price);
 
       await conn.execute(
-        `INSERT INTO purchase_items_table (purchase_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO purchase_items_table (purchase_id, product_id, quantity, price) 
+         VALUES (?, ?, ?, ?)`,
         [purchaseId, productId, qty, price]
       );
 
@@ -41,7 +87,7 @@ export const createSale = async (saleData) => {
     }
 
     await conn.commit();
-    return purchaseId;
+   return { sale_id: purchaseId, custom_receipt_no: receiptNo };
   } catch (err) {
     await conn.rollback();
     throw err;
@@ -49,6 +95,7 @@ export const createSale = async (saleData) => {
     conn.release();
   }
 };
+
 
 /**
  * Get purchase items by purchase id (rename for clarity).
@@ -76,9 +123,9 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
 
   // 1️⃣ Count total completed orders
   const [countRows] = await pool.execute(
-    `SELECT COUNT(DISTINCT purchase_id) AS total
-     FROM purchases_table
-     WHERE business_id = ? AND status_id = 2`,
+    `SELECT COUNT(DISTINCT p.purchase_id) AS total
+     FROM purchases_table p
+     WHERE p.business_id = ? AND p.status_id = 2`,
     [bizId]
   );
   const totalRows = Number(countRows[0]?.total || 0);
@@ -87,13 +134,14 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
     return { orders: [], meta: { page, pageSize, totalRows: 0 } };
   }
 
-  // 2️⃣ Fetch paginated orders with items
+  // 2️⃣ Fetch paginated orders with items + receipt
   const [rows] = await pool.execute(
     `SELECT 
       p.purchase_id AS purchaseId,
       p.business_id,
       p.purchase_date,
       p.total_amount,
+      t.custom_receipt_no,
       i.purchase_item_id AS itemId,
       i.product_id,
       pr.name AS product_name,
@@ -101,6 +149,7 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
       i.price,
       pr.picture
     FROM purchases_table p
+    JOIN transaction_table t ON p.purchase_id = t.purchase_id
     JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
     JOIN product_table pr ON i.product_id = pr.product_id
     WHERE p.business_id = ? AND p.status_id = 2
@@ -119,6 +168,7 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
         businessId: Number(r.business_id),
         purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
         total: r.total_amount !== null ? Number(r.total_amount) : 0,
+        receiptNo: r.custom_receipt_no ?? null,   // ✅ include receipt
         items: []
       });
     }
@@ -139,6 +189,7 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
     meta: { page, pageSize, totalRows }
   };
 };
+
 
 /**
  * getAllOrders - generic grouping across all purchases
@@ -224,8 +275,15 @@ export const cancelSale = async (purchaseId) => {
     }
 
     // delete items first, then purchase
-    await conn.execute(`DELETE FROM purchase_items_table WHERE purchase_id = ?`, [pid]);
-    await conn.execute(`DELETE FROM purchases_table WHERE purchase_id = ?`, [pid]);
+    // delete items first
+      await conn.execute(`DELETE FROM purchase_items_table WHERE purchase_id = ?`, [pid]);
+
+      // delete transaction row(s) referencing this purchase
+      await conn.execute(`DELETE FROM transaction_table WHERE purchase_id = ?`, [pid]);
+
+      // then delete purchase
+      await conn.execute(`DELETE FROM purchases_table WHERE purchase_id = ?`, [pid]);
+
 
     await conn.commit();
     return true;

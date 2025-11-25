@@ -42,16 +42,33 @@ export const upsertBusinessSetting = async (business_id, logo_blob) => {
 
   if (rows.length > 0) {
     const settingId = rows[0].bus_set_id;
-    const [res] = await pool.execute(
-      `UPDATE business_setting_table SET logo = ? WHERE bus_set_id = ?`,
-      [logo_blob, settingId]
-    );
-    return { updated: res.affectedRows };
+
+    if (logo_blob !== null) {
+      // Update only if logo_blob is provided
+      const [res] = await pool.execute(
+        `UPDATE business_setting_table SET logo = ? WHERE bus_set_id = ?`,
+        [logo_blob, settingId]
+      );
+      return { updated: res.affectedRows };
+    }
+
+    // Nothing to update, just return
+    return { updated: 0 };
   }
 
+  if (logo_blob !== null) {
+    // Insert only if logo_blob is provided
+    const [insertRes] = await pool.execute(
+      `INSERT INTO business_setting_table (business_id, logo) VALUES (?, ?)`,
+      [business_id, logo_blob]
+    );
+    return { insertedId: insertRes.insertId };
+  }
+
+  // No logo provided and no existing row → create a row without logo
   const [insertRes] = await pool.execute(
-    `INSERT INTO business_setting_table (business_id, logo) VALUES (?, ?)`,
-    [business_id, logo_blob]
+    `INSERT INTO business_setting_table (business_id) VALUES (?)`,
+    [business_id]
   );
   return { insertedId: insertRes.insertId };
 };
