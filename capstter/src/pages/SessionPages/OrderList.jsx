@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import OverviewSection from "../../components/dashboard/OverviewSection";
 import { OrderPopup } from "../../components/common/OrderPopup";
-
 import { useOrders } from "../../hooks/useOrders";
+
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FALLBACK = "/fallback.png";
 
@@ -32,6 +34,13 @@ export default function OrderList() {
   useEffect(() => {
     fetchOrders(currentPage);
   }, [fetchOrders, currentPage]);
+
+  // Toast error when fetch fails
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   const openPopup = (order) => {
     setSelectedOrder(order);
@@ -68,79 +77,92 @@ export default function OrderList() {
           </div>
         )}
 
-       {list.map((order) => (
-  <div
-    key={order.receiptNo ?? order.id}   // ✅ use receiptNo as the key
-    className="w-full bg-slate-300 rounded-lg shadow-lg p-6 space-y-6"
-  >
-    <div className="border-b pb-4">
-      <div className="flex justify-between">
-        <h2 className="font-semibold text-black text-2xl">Receipt No:</h2>
-        <span className="text-red-600">
-          {order.receiptNo ?? order.id}   {/* ✅ show receipt number */}
-        </span>
-      </div>
+        {list.map((order) => (
+          <div
+            key={order.receiptNo ?? order.id}
+            className="w-full bg-slate-300 rounded-lg shadow-lg p-6 space-y-6"
+          >
+            <div className="border-b pb-4">
+              <div className="flex justify-between">
+                <h2 className="font-semibold text-black text-2xl">Receipt No:</h2>
+                <span className="text-red-600">
+                  {order.receiptNo ?? order.id}
+                </span>
+              </div>
 
-      <div className="mt-3">
-        <h2 className="font-semibold text-black text-lg">Items</h2>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {(Array.isArray(order.items) ? order.items : []).map((item) => (
-            <img
-              key={item.id ?? item.productId ?? `${order.receiptNo}-${Math.random()}`}
-              src={item.picture || item.image || FALLBACK}
-              alt={item.productName || item.name || "product"}
-              className="w-32 h-32 object-cover rounded"
-            />
-          ))}
-        </div>
+              <div className="mt-3">
+                <h2 className="font-semibold text-black text-lg">Items</h2>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(Array.isArray(order.items) ? order.items : []).map((item) => (
+                    <img
+                      key={item.id ?? item.productId ?? `${order.receiptNo}-${Math.random()}`}
+                      src={item.picture || item.image || FALLBACK}
+                      alt={item.productName || item.name || "product"}
+                      className="w-32 h-32 object-cover rounded"
+                    />
+                  ))}
+                </div>
 
-        <span className="text-black">
-          {(Array.isArray(order.items) ? order.items : [])
-            .map((i) => i.productName ?? i.name ?? "")
-            .filter(Boolean)
-            .join(", ")}
-        </span>
-      </div>
+                <span className="text-black">
+                  {(Array.isArray(order.items) ? order.items : [])
+                    .map((i) => i.productName ?? i.name ?? "")
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              </div>
 
-      <div className="flex justify-between mt-4">
-        <h2 className="font-semibold text-black text-2xl">Total:</h2>
-        <span className="text-gray font-bold text-2xl">
-          ₱{Number(order.total ?? order.total_amount ?? 0).toLocaleString()}
-        </span>
-      </div>
-    </div>
+              <div className="flex justify-between mt-4">
+                <h2 className="font-semibold text-black text-2xl">Total:</h2>
+                <span className="text-gray font-bold text-2xl">
+                  ₱{Number(order.total ?? order.total_amount ?? 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
 
-    <div className="flex justify-end gap-4">
-      <button
-        className="bg-gray-700 text-white px-5 py-2 rounded hover:bg-gray-800"
-        onClick={() => openPopup(order)}
-      >
-        📋 View
-      </button>
+            <div className="flex justify-end gap-4">
+              <button
+                className="bg-gray-700 text-white px-5 py-2 rounded hover:bg-gray-800"
+                onClick={() => openPopup(order)}
+              >
+                📋 View
+              </button>
 
-      <button
-        className={`bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 ${
-          finishingId === order.id ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-        onClick={() => finishOrder(order.id)}
-        disabled={finishingId === order.id}
-      >
-        {finishingId === order.id ? "⏳ Finishing..." : "Finish"}
-      </button>
+              <button
+                className={`bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 ${
+                  finishingId === order.id ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                onClick={async () => {
+                  try {
+                    await finishOrder(order.id);
+                    toast.success(`Order ${order.receiptNo ?? order.id} finished successfully ✅`);
+                  } catch (err) {
+                    toast.error(`Failed to finish order: ${err.message}`);
+                  }
+                }}
+                disabled={finishingId === order.id}
+              >
+                {finishingId === order.id ? "⏳ Finishing..." : "Finish"}
+              </button>
 
-      <button
-        className={`bg-red-600 text-white px-5 py-2 rounded hover:bg-red-700 ${
-          cancelingId === order.id ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-        onClick={() => cancelOrder(order.id)}
-        disabled={cancelingId === order.id}
-      >
-        {cancelingId === order.id ? "⏳ Canceling..." : "Cancel"}
-      </button>
-    </div>
-  </div>
-))}
-
+              <button
+                className={`bg-red-600 text-white px-5 py-2 rounded hover:bg-red-700 ${
+                  cancelingId === order.id ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                onClick={async () => {
+                  try {
+                    await cancelOrder(order.id);
+                    toast.success(`Order ${order.receiptNo ?? order.id} canceled ❌`);
+                  } catch (err) {
+                    toast.error(`Failed to cancel order: ${err.message}`);
+                  }
+                }}
+                disabled={cancelingId === order.id}
+              >
+                {cancelingId === order.id ? "⏳ Canceling..." : "Cancel"}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Pagination */}
@@ -200,6 +222,9 @@ export default function OrderList() {
       <div className="mt-12">
         <OverviewSection />
       </div>
+
+      {/* Toast container */}
+      <ToastContainer position="top-middle" autoClose={3000} />
     </DashboardLayout>
   );
 }

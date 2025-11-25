@@ -22,3 +22,25 @@
   -ms-overflow-style: none;  /* IE/Edge */
   scrollbar-width: none;     /* Firefox */
 }
+
+.my-cart-item {
+
+  transition: all 0.5s ease-in-out;  /* transition-all duration-500 ease-in-out */
+  transform: scale(0.95);            /* scale-95 */
+  opacity: 0;                        /* opacity-0 */
+
+  animation: fadeIn 0.5s ease-in-out forwards; /* animate-[fadeIn_0.5s_ease-in-out_forwards] */
+}
+
+/* Define the fadeIn keyframes */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+

@@ -48,8 +48,14 @@ export const createSale = async (saleData) => {
       [nextReceiptNo, business_id]
     );
 
-    // Step B: Build receipt string
-    const receiptNo = `${businessCode}-${nextReceiptNo}`;
+    // Step B: Build receipt string with businessCode + datePart + nextReceiptNo
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, "0"); // months are 0-based
+      const day = String(now.getDate()).padStart(2, "0");
+      const datePart = `${month}${day}`;
+
+      const receiptNo = `${businessCode}-${datePart}${nextReceiptNo}`;
+
 
     // Step 2: Insert into transaction_table
     await conn.execute(
@@ -193,7 +199,6 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
 };
 
 
-
 /**
  * getAllOrders - generic grouping across all purchases
  */
@@ -316,8 +321,6 @@ export const cancelSale = async (purchaseId) => {
   }
 };
 
-
-
 export const finishOrder = async (purchaseId) => {
   const pid = Number(purchaseId);
   if (!pid) throw new Error("purchaseId is required");
@@ -376,11 +379,10 @@ export const finishOrder = async (purchaseId) => {
 
 export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
   const bizId = Number(businessId);
-  const page = Math.max(1, Number(opts.page) || 1);
-  const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 25));
-  const offset = (page - 1) * pageSize;
+  const sortBy = opts.sortBy || "id";       // default sort field
+  const sortOrder = opts.sortOrder || "desc"; // "asc" or "desc"
 
-  // 1️⃣ Count total finished transactions for the business (status_id 1 or 3)
+  // 1️⃣ Count total finished transactions
   const [countRows] = await pool.execute(
     `SELECT COUNT(DISTINCT t.purchase_id) AS total
      FROM transaction_table t
@@ -391,58 +393,55 @@ export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
   const totalRows = Number(countRows[0]?.total || 0);
 
   if (totalRows === 0) {
-    return { orders: [], meta: { page, pageSize, totalRows: 0 } };
+    return { orders: [], meta: { totalRows: 0 } };
   }
 
-  // 2️⃣ Fetch paginated finished orders with items (status_id 1 or 3)
-    const [rows] = await pool.execute(
-          `SELECT 
-          t.purchase_id AS purchaseId,
-          t.business_id,
-          t.user_id,
-          u.username AS username,
-          t.custom_receipt_no,
-          p.purchase_date,
-          p.finished_at,
-          p.total_amount,
-          p.status_id,              -- ✅ include status_id
-          i.purchase_item_id AS itemId,
-          i.product_id,
-          pr.name AS product_name,
-          i.quantity,
-          i.price,
-          pr.picture
-        FROM transaction_table t
-        JOIN purchases_table p ON t.purchase_id = p.purchase_id
-        JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
-        JOIN product_table pr ON i.product_id = pr.product_id
-        JOIN user_table u ON t.user_id = u.user_id
-        WHERE t.business_id = ? AND p.status_id IN (1, 3)
-        ORDER BY t.purchase_id ASC
-        LIMIT ? OFFSET ?;`,
-  [bizId, pageSize, offset]
-);
-
-
+  // 2️⃣ Fetch all finished orders (no LIMIT/OFFSET)
+  const [rows] = await pool.execute(
+    `SELECT 
+      t.purchase_id AS purchaseId,
+      t.business_id,
+      t.user_id,
+      u.username AS username,
+      t.custom_receipt_no,
+      p.purchase_date,
+      p.finished_at,
+      p.total_amount,
+      p.status_id,
+      i.purchase_item_id AS itemId,
+      i.product_id,
+      pr.name AS product_name,
+      i.quantity,
+      i.price,
+      pr.picture
+    FROM transaction_table t
+    JOIN purchases_table p ON t.purchase_id = p.purchase_id
+    JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
+    JOIN product_table pr ON i.product_id = pr.product_id
+    JOIN user_table u ON t.user_id = u.user_id
+    WHERE t.business_id = ? AND p.status_id IN (1, 3)
+    ORDER BY t.purchase_id ASC;`,
+    [bizId]
+  );
 
   // 3️⃣ Group items by purchaseId
   const ordersMap = new Map();
   for (const r of rows) {
     const pid = Number(r.purchaseId);
-      if (!ordersMap.has(pid)) {
-        ordersMap.set(pid, {
-          id: pid,
-          businessId: Number(r.business_id),
-          userId: r.user_id !== null ? Number(r.user_id) : null,
-          username: r.username ?? null,
-          receiptNo: r.custom_receipt_no ?? null,
-          purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
-          finishedAt: r.finished_at ? new Date(r.finished_at).toISOString() : null,
-          total: r.total_amount !== null ? Number(r.total_amount) : 0,
-          statusId: r.status_id,   // ✅ pass status_id forward
-          items: []
-        });
-      }
+    if (!ordersMap.has(pid)) {
+      ordersMap.set(pid, {
+        id: pid,
+        businessId: Number(r.business_id),
+        userId: r.user_id !== null ? Number(r.user_id) : null,
+        username: r.username ?? null,
+        receiptNo: r.custom_receipt_no ?? null,
+        purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
+        finishedAt: r.finished_at ? new Date(r.finished_at).toISOString() : null,
+        total: r.total_amount !== null ? Number(r.total_amount) : 0,
+        statusId: r.status_id,
+        items: []
+      });
+    }
 
     const order = ordersMap.get(pid);
     order.items.push({
@@ -455,9 +454,39 @@ export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
     });
   }
 
+  // 4️⃣ Sorting logic
+  const orders = Array.from(ordersMap.values()).sort((a, b) => {
+    let valA, valB;
+    switch (sortBy) {
+      case "date":
+        valA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
+        valB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+        break;
+      case "time":
+        valA = a.finishedAt ? new Date(a.finishedAt).getTime() : 0;
+        valB = b.finishedAt ? new Date(b.finishedAt).getTime() : 0;
+        break;
+      case "total":
+        valA = a.total;
+        valB = b.total;
+        break;
+      case "username":
+        valA = a.username?.toLowerCase() || "";
+        valB = b.username?.toLowerCase() || "";
+        break;
+      default: // id
+        valA = a.id;
+        valB = b.id;
+    }
+
+    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return {
-    orders: Array.from(ordersMap.values()).sort((a, b) => b.id - a.id),
-    meta: { page, pageSize, totalRows }
+    orders,
+    meta: { totalRows }
   };
 };
 

@@ -1,4 +1,4 @@
-import { updateBusinessInfo, upsertBusinessSetting, getBusinessSettings } from '../../models/business/business-settings_model.js';
+import { updateBusinessInfo, upsertBusinessSetting, getBusinessSettings,getBusinessLogo } from '../../models/business/business-settings_model.js';
 import { findBusinessByUserId } from '../../models/business/business-model.js';
 import fs from 'fs';
 import path from 'path';
@@ -65,5 +65,26 @@ export const updateSettings = async (req, res) => {
   } catch (err) {
     console.error('updateSettings error', err);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const getLogo = async (req, res) => {
+  try {
+    const businessId = req.params.id || req.headers["x-business-id"];
+    if (!businessId) {
+      return res.status(400).json({ error: "Missing business id" });
+    }
+
+    const logoBlob = await getBusinessLogo(businessId);
+    if (!logoBlob) {
+      return res.status(404).send("Logo not found");
+    }
+
+    // Send blob as image (default to PNG, adjust if you store mime type)
+    res.setHeader("Content-Type", "image/png");
+    res.send(logoBlob);
+  } catch (err) {
+    console.error("getLogo error", err);
+    res.status(500).send("Server error");
   }
 };
