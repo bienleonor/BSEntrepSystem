@@ -163,13 +163,13 @@ export const GetFinishOrderByBusiness = async (req, res) => {
 
 export const GetAllTotalSales = async (req, res) => {
   try {
-    const businessId = req.businessId;   // ✅ comes from middleware
+    const businessId = req.businessId;
     if (!businessId) {
       return res.status(400).json({ error: "Missing business context" });
     }
 
     const result = await getSalesTotal(businessId);
-    res.json({ total_sales: result.total_sales });
+    res.json(result); // ✅ sends { total_sales: ... }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

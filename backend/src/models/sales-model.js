@@ -13,15 +13,16 @@ export const createSale = async (saleData) => {
 
   const conn = await pool.getConnection();
   try {
-    await conn.beginTransaction();
-
+    await conn.beginTransaction();   
+    
     // Step 1: Insert into purchases_table
     const [purchaseResult] = await conn.execute(
-      `INSERT INTO purchases_table (user_id, total_amount, purchase_date, business_id) 
-       VALUES (?, ?, NOW(), ?)`,
-      [user_id, total_amount, business_id]
+      `INSERT INTO purchases_table (user_id, total_amount, purchase_date) 
+      VALUES (?, ?, NOW())`,
+      [user_id, total_amount]
     );
     const purchaseId = purchaseResult.insertId;
+
 
     // Step A: Get today's count and business_code
     const [rows] = await conn.execute(
@@ -121,11 +122,12 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
   const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 25));
   const offset = (page - 1) * pageSize;
 
-  // 1️⃣ Count total completed orders
+  // 1️⃣ Count total completed transactions for the business
   const [countRows] = await pool.execute(
-    `SELECT COUNT(DISTINCT p.purchase_id) AS total
-     FROM purchases_table p
-     WHERE p.business_id = ? AND p.status_id = 2`,
+    `SELECT COUNT(DISTINCT t.purchase_id) AS total
+     FROM transaction_table t
+     JOIN purchases_table p ON t.purchase_id = p.purchase_id
+     WHERE t.business_id = ? AND p.status_id = 2`,
     [bizId]
   );
   const totalRows = Number(countRows[0]?.total || 0);
@@ -134,11 +136,11 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
     return { orders: [], meta: { page, pageSize, totalRows: 0 } };
   }
 
-  // 2️⃣ Fetch paginated orders with items + receipt
+  // 2️⃣ Fetch paginated transactions with items + receipt
   const [rows] = await pool.execute(
     `SELECT 
-      p.purchase_id AS purchaseId,
-      p.business_id,
+      t.purchase_id AS purchaseId,
+      t.business_id,
       p.purchase_date,
       p.total_amount,
       t.custom_receipt_no,
@@ -148,12 +150,12 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
       i.quantity,
       i.price,
       pr.picture
-    FROM purchases_table p
-    JOIN transaction_table t ON p.purchase_id = t.purchase_id
+    FROM transaction_table t
+    JOIN purchases_table p ON t.purchase_id = p.purchase_id
     JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
     JOIN product_table pr ON i.product_id = pr.product_id
-    WHERE p.business_id = ? AND p.status_id = 2
-    ORDER BY p.purchase_id ASC
+    WHERE t.business_id = ? AND p.status_id = 2
+    ORDER BY t.purchase_id ASC
     LIMIT ? OFFSET ?`,
     [bizId, pageSize, offset]
   );
@@ -168,7 +170,7 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
         businessId: Number(r.business_id),
         purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
         total: r.total_amount !== null ? Number(r.total_amount) : 0,
-        receiptNo: r.custom_receipt_no ?? null,   // ✅ include receipt
+        receiptNo: r.custom_receipt_no ?? null,
         items: []
       });
     }
@@ -189,6 +191,7 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
     meta: { page, pageSize, totalRows }
   };
 };
+
 
 
 /**
@@ -241,22 +244,33 @@ export const getAllOrders = async () => {
  */
 export const cancelSale = async (purchaseId) => {
   const pid = Number(purchaseId);
-  if (!pid) throw new Error('purchaseId is required');
+  if (!pid) throw new Error("purchaseId is required");
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
+    // Lock purchase row
     const [purchaseRows] = await conn.execute(
-      `SELECT purchase_id FROM purchases_table WHERE purchase_id = ? FOR UPDATE`,
+      `SELECT purchase_id, status_id 
+       FROM purchases_table 
+       WHERE purchase_id = ? 
+       FOR UPDATE`,
       [pid]
     );
     if (purchaseRows.length === 0) {
       throw new Error(`Purchase ${pid} not found`);
     }
 
+    const status = purchaseRows[0].status_id;
+    if (status === 3) throw new Error(`Purchase ${pid} is already cancelled`);
+    if (status === 1) throw new Error(`Purchase ${pid} is already finished`);
+
+    // Restore inventory
     const [items] = await conn.execute(
-      `SELECT product_id, quantity FROM purchase_items_table WHERE purchase_id = ?`,
+      `SELECT product_id, quantity 
+       FROM purchase_items_table 
+       WHERE purchase_id = ?`,
       [pid]
     );
 
@@ -265,7 +279,9 @@ export const cancelSale = async (purchaseId) => {
       if (qty <= 0) continue;
 
       const [res] = await conn.execute(
-        `UPDATE inventory_table SET quantity = quantity + ? WHERE product_id = ?`,
+        `UPDATE inventory_table 
+         SET quantity = quantity + ? 
+         WHERE product_id = ?`,
         [qty, item.product_id]
       );
 
@@ -274,16 +290,21 @@ export const cancelSale = async (purchaseId) => {
       }
     }
 
-    // delete items first, then purchase
-    // delete items first
-      await conn.execute(`DELETE FROM purchase_items_table WHERE purchase_id = ?`, [pid]);
+    // Mark purchase as cancelled
+    await conn.execute(
+      `UPDATE purchases_table 
+       SET status_id = 3, purchase_date = NOW()
+       WHERE purchase_id = ?`,
+      [pid]
+    );
 
-      // delete transaction row(s) referencing this purchase
-      await conn.execute(`DELETE FROM transaction_table WHERE purchase_id = ?`, [pid]);
-
-      // then delete purchase
-      await conn.execute(`DELETE FROM purchases_table WHERE purchase_id = ?`, [pid]);
-
+    // Mark transaction as cancelled
+    await conn.execute(
+      `UPDATE transaction_table 
+       SET stat_id = 3, created_at = NOW()
+       WHERE purchase_id = ?`,
+      [pid]
+    );
 
     await conn.commit();
     return true;
@@ -294,6 +315,7 @@ export const cancelSale = async (purchaseId) => {
     conn.release();
   }
 };
+
 
 
 export const finishOrder = async (purchaseId) => {
@@ -326,7 +348,15 @@ export const finishOrder = async (purchaseId) => {
     // Mark purchase as finished
     await conn.execute(
       `UPDATE purchases_table 
-       SET status_id = 1, finished_at = NOW()
+       SET status_id = 1, purchase_date = NOW()
+       WHERE purchase_id = ?`,
+      [pid]
+    );
+
+    // Also mark transaction as finished
+    await conn.execute(
+      `UPDATE transaction_table 
+       SET stat_id = 1, created_at = NOW()
        WHERE purchase_id = ?`,
       [pid]
     );
@@ -350,11 +380,12 @@ export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
   const pageSize = Math.min(100, Math.max(1, Number(opts.pageSize) || 25));
   const offset = (page - 1) * pageSize;
 
-  // 1️⃣ Count total finished orders
+  // 1️⃣ Count total finished transactions for the business (status_id 1 or 3)
   const [countRows] = await pool.execute(
-    `SELECT COUNT(DISTINCT purchase_id) AS total
-     FROM purchases_table
-     WHERE business_id = ? AND status_id = 1`,
+    `SELECT COUNT(DISTINCT t.purchase_id) AS total
+     FROM transaction_table t
+     JOIN purchases_table p ON t.purchase_id = p.purchase_id
+     WHERE t.business_id = ? AND p.status_id IN (1, 3)`,
     [bizId]
   );
   const totalRows = Number(countRows[0]?.total || 0);
@@ -363,43 +394,55 @@ export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
     return { orders: [], meta: { page, pageSize, totalRows: 0 } };
   }
 
-  // 2️⃣ Fetch paginated finished orders with items
-  const [rows] = await pool.execute(
-    `SELECT 
-      p.purchase_id AS purchaseId,
-      p.business_id,
-      p.purchase_date,
-      p.finished_at,
-      p.total_amount,
-      i.purchase_item_id AS itemId,
-      i.product_id,
-      pr.name AS product_name,
-      i.quantity,
-      i.price,
-      pr.picture
-    FROM purchases_table p
-    JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
-    JOIN product_table pr ON i.product_id = pr.product_id
-    WHERE p.business_id = ? AND p.status_id = 1
-    ORDER BY p.purchase_id ASC
-    LIMIT ? OFFSET ?`,
-    [bizId, pageSize, offset]
-  );
+  // 2️⃣ Fetch paginated finished orders with items (status_id 1 or 3)
+    const [rows] = await pool.execute(
+          `SELECT 
+          t.purchase_id AS purchaseId,
+          t.business_id,
+          t.user_id,
+          u.username AS username,
+          t.custom_receipt_no,
+          p.purchase_date,
+          p.finished_at,
+          p.total_amount,
+          p.status_id,              -- ✅ include status_id
+          i.purchase_item_id AS itemId,
+          i.product_id,
+          pr.name AS product_name,
+          i.quantity,
+          i.price,
+          pr.picture
+        FROM transaction_table t
+        JOIN purchases_table p ON t.purchase_id = p.purchase_id
+        JOIN purchase_items_table i ON p.purchase_id = i.purchase_id
+        JOIN product_table pr ON i.product_id = pr.product_id
+        JOIN user_table u ON t.user_id = u.user_id
+        WHERE t.business_id = ? AND p.status_id IN (1, 3)
+        ORDER BY t.purchase_id ASC
+        LIMIT ? OFFSET ?;`,
+  [bizId, pageSize, offset]
+);
+
+
 
   // 3️⃣ Group items by purchaseId
   const ordersMap = new Map();
   for (const r of rows) {
     const pid = Number(r.purchaseId);
-    if (!ordersMap.has(pid)) {
-      ordersMap.set(pid, {
-        id: pid,
-        businessId: Number(r.business_id),
-        purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
-        finishedAt: r.finished_at ? new Date(r.finished_at).toISOString() : null,
-        total: r.total_amount !== null ? Number(r.total_amount) : 0,
-        items: []
-      });
-    }
+      if (!ordersMap.has(pid)) {
+        ordersMap.set(pid, {
+          id: pid,
+          businessId: Number(r.business_id),
+          userId: r.user_id !== null ? Number(r.user_id) : null,
+          username: r.username ?? null,
+          receiptNo: r.custom_receipt_no ?? null,
+          purchaseDate: r.purchase_date ? new Date(r.purchase_date).toISOString() : null,
+          finishedAt: r.finished_at ? new Date(r.finished_at).toISOString() : null,
+          total: r.total_amount !== null ? Number(r.total_amount) : 0,
+          statusId: r.status_id,   // ✅ pass status_id forward
+          items: []
+        });
+      }
 
     const order = ordersMap.get(pid);
     order.items.push({
@@ -414,22 +457,24 @@ export const getFinishOrderByBusiness = async (businessId, opts = {}) => {
 
   return {
     orders: Array.from(ordersMap.values()).sort((a, b) => b.id - a.id),
-
     meta: { page, pageSize, totalRows }
   };
 };
 
+
 export const getSalesTotal = async (businessId) => {
   const bizId = Number(businessId);
+
   const [rows] = await pool.execute(
-    `SELECT COALESCE(SUM(total_amount),0) AS total_sales 
-     FROM purchases_table 
-     WHERE business_id = ? AND status_id = 1 `,
+    `SELECT COALESCE(SUM(p.total_amount), 0) AS total_sales
+     FROM transaction_table t
+     JOIN purchases_table p ON t.purchase_id = p.purchase_id
+     WHERE t.business_id = ? AND p.status_id = 1`,
     [bizId]
   );
-  return rows[0];
-};
 
+  return { total_sales: Number(rows[0]?.total_sales || 0) }; // ✅ consistent key
+};
 
 
 export default {
