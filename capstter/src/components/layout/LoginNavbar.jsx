@@ -22,7 +22,6 @@ export default function LoginNavbar() {
         if (res.data.success) {
           setSettings(res.data.settings);
 
-          // fetch logo
           if (res.data.settings?.business_id) {
             const logoRes = await AxiosInstance.get(
               `/business/${res.data.settings.business_id}/logo`,
@@ -45,28 +44,40 @@ export default function LoginNavbar() {
   }, []);
 
   return (
-    <header className="flex justify-between items-center bg-slate-800 text-white px-4 sm:px-6 py-3 sm:py-4 border-b-2 border-b-bronze/50 shadow-2xl">
-      <div className="flex items-center gap-2 sm:gap-3">
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt="Business Logo"
-            className="rounded-full w-8 h-8 sm:w-9 sm:h-9 object-cover"
-          />
-        ) : (
-          <div className="bg-gray-600 rounded-full w-8 h-8 sm:w-9 sm:h-9"></div>
-        )}
+   <header className="flex flex-col sm:flex-row 
+                   justify-center sm:justify-between 
+                   items-center 
+                   bg-slate-800 text-white 
+                   px-3 sm:px-6 py-2 sm:py-4 
+                   border-b-2 border-b-bronze/50 shadow-2xl">
+  <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center">
+    {logoUrl ? (
+      <img
+        src={logoUrl}
+        alt="Business Logo"
+        className="rounded-full w-8 h-8 sm:w-10 sm:h-10 object-cover"
+      />
+    ) : (
+      <div className="bg-gray-600 rounded-full w-8 h-8 sm:w-10 sm:h-10"></div>
+    )}
 
-        <div className="text-xs sm:text-sm">
-          <p className="font-bold">{user ? user.username : "Loading..."}</p>
-          {settings && (
-            <>
-              <p>{settings.business_name}</p>
-              <p className="italic text-gray-300">{settings.name}</p>
-            </>
-          )}
-        </div>
-      </div>
-    </header>
+    <div className="flex flex-col min-w-0 text-center sm:text-left">
+      <p className="font-bold text-xs sm:text-sm truncate">
+        {user ? user.username : "Loading..."}
+      </p>
+      {settings && (
+        <>
+          <p className="text-xs sm:text-sm truncate">
+            {settings.business_name}
+          </p>
+          <p className="italic text-[10px] sm:text-xs text-gray-300 truncate">
+            {settings.name}
+          </p>
+        </>
+      )}
+    </div>
+  </div>
+</header>
+
   );
 }
