@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import AxiosInstance from "../../utils/axiosInstance";
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
+import { OrderPopup } from '../../components/common/OrderPopup';
 
 function SalesLog() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortFilter, setSortFilter] = useState("latest"); // 👈 sorting filter
   const [dateFilter, setDateFilter] = useState("all");    // 👈 date range filter
+  const [searchReceipt, setSearchReceipt] = useState("");  // 👈 search filter for receiptNo
+  const [receiptPopupOpen, setReceiptPopupOpen] = useState(false); // 👈 receipt popup state
+  const [selectedReceipt, setSelectedReceipt] = useState(null);    // 👈 selected receipt data
 
   useEffect(() => {
     const fetchSalesLog = async () => {
@@ -35,6 +39,7 @@ function SalesLog() {
             id: order.id,
             name: order.receiptNo ? order.receiptNo : `Purchase #${order.id}`,
             item: (order.items || []).map(item => item.productName).join(', '),
+            items: order.items || [], // 👈 store full items array with quantities and prices
             date: order.purchaseDate ? new Date(order.purchaseDate).toLocaleDateString() : '',
             time: order.purchaseDate ? new Date(order.purchaseDate).toLocaleTimeString() : '',
             rawDate: order.purchaseDate ? new Date(order.purchaseDate) : null, // 👈 keep raw date for filtering/sorting
@@ -70,6 +75,12 @@ function SalesLog() {
     }
   };
 
+  // 👇 Handle view receipt button
+  const handleViewReceipt = (transaction) => {
+    setSelectedReceipt(transaction);
+    setReceiptPopupOpen(true);
+  };
+
   // 👇 Apply date filter
   const applyDateFilter = (txs) => {
     if (dateFilter === "all") return txs;
@@ -101,6 +112,13 @@ function SalesLog() {
     });
   };
 
+  // 👇 Apply search filter
+  const applySearchFilter = (txs) => {
+    if (!searchReceipt.trim()) return txs;
+    const query = searchReceipt.toLowerCase();
+    return txs.filter(tx => tx.name.toLowerCase().includes(query));
+  };
+
   // 👇 Apply sorting filter
   const applySortFilter = (txs) => {
     const sorted = [...txs];
@@ -122,7 +140,7 @@ function SalesLog() {
     }
   };
 
-  const filteredTransactions = applySortFilter(applyDateFilter(transactions));
+  const filteredTransactions = applySortFilter(applySearchFilter(applyDateFilter(transactions)));
 
   return (
     <DashboardLayout>
@@ -130,7 +148,18 @@ function SalesLog() {
         <h1 className="text-6xl font-bold mb-4 text-white">Latest Transactions</h1>
 
         {/* 👇 Filter controls */}
-        <div className="mb-4 flex gap-4">
+        <div className="mb-4 flex gap-4 flex-wrap">
+          <div>
+            <label className="text-white mr-2">Search Receipt:</label>
+            <input
+              type="text"
+              value={searchReceipt}
+              onChange={(e) => setSearchReceipt(e.target.value)}
+              placeholder="Enter receipt number..."
+              className="px-3 py-2 rounded-md w-64"
+            />
+          </div>
+
           <div>
             <label className="text-white mr-2">Sort by:</label>
             <select
@@ -177,6 +206,7 @@ function SalesLog() {
                   <th className="px-4 py-2">Date</th>
                   <th className="px-4 py-2">Time</th>
                   <th className="px-4 py-2">User</th>
+                  <th className="px-4 py-2">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,6 +219,15 @@ function SalesLog() {
                     <td className="px-4 py-2">{tx.date}</td>
                     <td className="px-4 py-2">{tx.time}</td>
                     <td className="px-4 py-2">{tx.username}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => handleViewReceipt(tx)}
+                        className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -196,6 +235,57 @@ function SalesLog() {
           )}
         </div>
       </div>
+
+      {/* 👇 Receipt Popup */}
+      <OrderPopup
+        isOpen={receiptPopupOpen}
+        onClose={() => setReceiptPopupOpen(false)}
+        title="Receipt"
+      >
+        {selectedReceipt && (
+          <div className="space-y-4">
+            <div className="text-sm">
+              <p className="font-semibold">Receipt No: {selectedReceipt.name}</p>
+              <p className="text-gray-600">Employee: {selectedReceipt.username}</p>
+              <p className="text-gray-600">Date: {selectedReceipt.date} {selectedReceipt.time}</p>
+              <p className="text-gray-600">Status: {selectedReceipt.status}</p>
+            </div>
+
+            <hr className="border-gray-400" />
+
+            {/* Items */}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm">Items:</h3>
+              <div className="max-h-48 overflow-y-auto space-y-2">
+                {selectedReceipt.items && selectedReceipt.items.length > 0 ? (
+                  selectedReceipt.items.map((item, idx) => (
+                    <div key={idx} className="text-sm text-gray-700 border-b pb-1">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{item.productName}</span>
+                        <span>x{item.quantity}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>₱{Number(item.price).toFixed(2)} each</span>
+                        <span>₱{(Number(item.price) * Number(item.quantity)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No items</p>
+                )}
+              </div>
+            </div>
+
+            <hr className="border-gray-400" />
+
+            {/* Total */}
+            <div className="flex justify-between items-center font-bold text-lg">
+              <span>Total:</span>
+              <span className="text-green-600">₱{selectedReceipt.total}</span>
+            </div>
+          </div>
+        )}
+      </OrderPopup>
     </DashboardLayout>
   );
 }
