@@ -11,7 +11,6 @@ const menuItems = [
   
   // Inventory Management
   { label: "Product Registration", icon: <ClipboardList size={18} /> },
-  { label: "Item Registration", icon: <ClipboardList size={18} /> },
   { label: "Inventory", icon: <Package size={18} /> },
   { label: "Product List", icon: <PackageOpen  size={18} /> },
   { label: "Stockout", icon: <PackageOpen  size={18} /> },
@@ -31,7 +30,7 @@ export default function Sidebar() {
   };
   return (
     
-    <aside className="w-60 md:w-60 sm:w-20 bg-slate-900 text-white flex flex-col justify-between min-h-screen p-4 sm:p-2 transition-all duration-300">
+    <aside className="overflow-hidden w-60 md:w-60 sm:w-20 bg-slate-900 text-white flex flex-col justify-between min-h-screen p-4 sm:p-2 transition-all duration-300">
       <div>
         <div className="flex items-center gap-2 mb-8">
           <Link to="/UserDashboard" className="flex items-center gap-2">
@@ -39,7 +38,7 @@ export default function Sidebar() {
             <span className="text-lg font-bold hidden sm:block">Dashboard</span>
           </Link>
         </div>
-        <nav className="flex flex-col gap-3">
+        <nav className="flex flex-col gap-3 overflow-auto">
           {menuItems.map((item) => (
 
             <Link to={`/${item.label.replace(/\s+/g, '').toLowerCase()}`}>

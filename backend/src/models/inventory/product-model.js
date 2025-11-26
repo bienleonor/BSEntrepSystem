@@ -27,7 +27,7 @@ export const addProduct = async (productData) => {
 
   const productId = productResult.insertId;
 
-  // ✅ Insert empty inventory row
+  // ✅ Insert data for quantity managemment of product
   await pool.execute(
     `INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())`,
     [productId, 0]
@@ -35,7 +35,6 @@ export const addProduct = async (productData) => {
 
   return productResult;
 };
-
 
 
 export const getAllProducts = async () => {
@@ -127,6 +126,7 @@ export const getactiveProducts = async () => {
   );
   return rows;
 }
+
 //fetch products with inventory details
 export const getActiveInventoryWithProductDetails = async () => {
   const [rows] = await pool.execute(
@@ -201,6 +201,7 @@ export const addInventoryStock = async ({ productId, quantity }) => {
 
   return result;
 };
+
 
 
 //wrong

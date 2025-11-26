@@ -1,4 +1,6 @@
 import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
+import { addIngredient } from '../../models/inventory/recipe-model.js';
+import { addComboItems } from '../../models/inventory/combo-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
 import fs from 'fs';
 
@@ -25,30 +27,20 @@ import fs from 'fs';
 
 export const createProduct = async (req, res) => {
   try {
-    console.log('BODY:', req.body);
-    console.log('FILE:', req.file);
-
     const { name, businessId, unit_id, price, product_type } = req.body;
 
-    // Validate required fields
     if (!name || !businessId || !unit_id || !price || !req.file) {
       return res.status(400).json({ error: "Missing required fields or image." });
     }
 
-    if (isNaN(price) || Number(price) < 0) {
-      return res.status(400).json({ error: "Price must be a non-negative number." });
-    }
-
-    // Upload image to Cloudinary
     const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
       folder: 'products',
       transformation: [{ width: 800, height: 800, crop: 'limit' }],
     });
 
     const picture = cloudinaryResult.secure_url;
-    const localPath = req.file.path;
 
-    // Insert product and initialize inventory
+    // STEP 1 — Insert product
     const result = await addProduct({
       name,
       businessId,
@@ -56,24 +48,36 @@ export const createProduct = async (req, res) => {
       price,
       picture,
       product_type,
-      localpath: localPath,
+      localpath: req.file.path,
     });
 
-    // Clean up local file
-    fs.unlink(req.file.path, (err) => {
-      if (err) console.warn('Failed to delete local file:', err.message);
-    });
+    const productId = result.insertId;
+
+    // STEP 2 — Recipe product: insert recipe
+    if (product_type && product_type.toLowerCase() === "recipe") {
+      const recipe = JSON.parse(req.body.recipe || "[]");
+      await addIngredient(productId, recipe);
+    }
+
+    // STEP 3 — Composite product: insert combo items
+    if (product_type && product_type.toLowerCase() === "composite") {
+      const composite = JSON.parse(req.body.compositeItems || "[]");
+      await addComboItems(productId, composite);
+    }
+
+    // cleanup
+    fs.unlink(req.file.path, () => {});
 
     res.status(201).json({
       message: "Product added successfully.",
-      productId: result.insertId,
+      productId,
     });
+
   } catch (error) {
     console.error("🔥 Error adding product:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 };
-
 
 
 
