@@ -10,20 +10,24 @@ export const updateBusinessInfo = async (business_id, business_name, business_ca
 
 export const getBusinessSettings = async (business_id) => {
   try {
-    // Do NOT select the raw logo BLOB here — returning binary in JSON causes issues.
     const [rows] = await pool.execute(
-      `SELECT b.business_id, b.business_name, b.business_cat_id
+      `SELECT b.business_id, b.business_name, b.business_cat_id, c.name
        FROM business_table b
+       LEFT JOIN business_category_table c 
+         ON b.business_cat_id = c.business_cat_id
        WHERE b.business_id = ? LIMIT 1`,
       [business_id]
     );
 
     return rows[0] || null;
   } catch (err) {
-    // If business_setting_table doesn't exist, fall back to basic business_table query
     if (err && (err.code === 'ER_NO_SUCH_TABLE' || (err.message && err.message.includes('business_setting_table')))) {
       const [rows] = await pool.execute(
-        `SELECT business_id, business_name, business_cat_id FROM business_table WHERE business_id = ? LIMIT 1`,
+        `SELECT b.business_id, b.business_name, b.business_cat_id, c.name
+         FROM business_table b
+         LEFT JOIN business_category_table c 
+           ON b.business_cat_id = c.business_cat_id
+         WHERE b.business_id = ? LIMIT 1`,
         [business_id]
       );
       return rows[0] || null;
@@ -71,4 +75,14 @@ export const upsertBusinessSetting = async (business_id, logo_blob) => {
     [business_id]
   );
   return { insertedId: insertRes.insertId };
+};
+
+export const getBusinessLogo = async (business_id) => {
+  const [rows] = await pool.execute(
+    `SELECT logo FROM business_setting_table WHERE business_id = ? LIMIT 1`,
+    [business_id]
+  );
+
+  if (!rows.length) return null;
+  return rows[0].logo; // raw blob
 };

@@ -7,7 +7,7 @@ import {
 import { authenticateToken } from "../../middlewares/auth-middleware.js";
 import multer from 'multer';
 import { localStorage } from '../../config/storage.js';
-import { getSettings, updateSettings } from '../../controllers/business/business_settings-controller.js';
+import { getSettings, updateSettings,getLogo  } from '../../controllers/business/business_settings-controller.js';
 import { getAllPositions,addPosition } from "../../controllers/business/business-position-controller.js";
 import { getEmployeesByBusiness, addEmployee, assignPosition, removeEmployee, } from "../../controllers/business/business-employee-controller.js";
 import { requireBusinessAccess } from "../../middlewares/business-access.js";
@@ -27,6 +27,7 @@ router.get("/mybusinesses", authenticateToken, getUserBusiness);
 const uploadLocal = multer({ storage: localStorage });
 router.get('/settings', authenticateToken, getSettings);
 router.post('/settings', authenticateToken, uploadLocal.single('logo'), updateSettings);
+router.get("/:business_id/logo", authenticateToken, getLogo);
 
 //business position
 router.get("/position", getAllPositions);

@@ -2,8 +2,8 @@ import React from "react";
 
 export default function InventoryCard({ item, onAddToCart }) {
   return (
-    <div className="border border-gray-400 rounded-lg shadow p-4 flex flex-col items-center bg-slate-300">
-      <div className="w-full h-40 bg-gray-100 flex items-center justify-center mb-4 rounded overflow-hidden">
+    <div className="border border-gray-800 rounded-2xl shadow-lg shadow-cyan-700/30 p-4 flex flex-col items-center bg-slate-300">
+      <div className="w-full h-40 bg-gray-100 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
         {item.picture ? (
           <img
             src={item.picture.startsWith("http") ? item.picture : `http://localhost:5000/${item.picture}`}
@@ -21,7 +21,7 @@ export default function InventoryCard({ item, onAddToCart }) {
       </div>
       <div className="text-xl font-semibold mb-3">₱{Number(item.price).toFixed(2)}</div>
       <button
-  className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+  className="px-4 py-2 bg-slate-700 text-white rounded-xl hover:bg-blue-800 hover:font-bold transition-all duration-150 disabled:opacity-50"
   onClick={() => onAddToCart(item, 1)}
   disabled={item.quantity <= 0}
 >
