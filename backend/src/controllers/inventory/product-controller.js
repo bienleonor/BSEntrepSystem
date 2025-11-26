@@ -1,6 +1,7 @@
 import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
 import { addIngredient } from '../../models/inventory/recipe-model.js';
 import { addComboItems } from '../../models/inventory/combo-model.js';
+import { applyInventoryChange } from "../../services/inventory-services.js";
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
 import fs from 'fs';
 
@@ -282,39 +283,42 @@ export const fetchActiveProducts = async (req, res) => {
 
 export const insertInventoryStock = async (req, res) => {
   try {
-    const { productId, quantity } = req.body; 
-    if (!productId || quantity == null ) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
+    const { productId, quantity } = req.body;
+    const businessId = req.headers["x-business-id"];
+    const userId = req.user?.user_id;
 
-    const result = await addInventoryStock({ productId, quantity });
-    res.status(201).json({
-      message: "Inventory stock added successfully.",
-      inventoryId: result.insertId,
+    await applyInventoryChange({
+      productId,
+      change_qty: Number(quantity),
+      reason: "stock-initial",
+      businessId,
+      userId,
     });
-    console.log("Adding inventory stock:", { productId, quantity });
-  }
-  catch (error) {
-    console.error("Error adding inventory stock:", error);
+
+    res.status(201).json({ message: "Stock added." });
+  } catch (err) {
+    console.error("Error in insertInventoryStock:", err);
     res.status(500).json({ error: "Internal server error." });
   }
 };
 
 export const modifyInventoryStock = async (req, res) => {
   try {
-    const { productId, quantity } = req.body; 
-    if (!productId || quantity == null ) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
-    const result = await updateinventoryStock({ productId, quantity });
-    res.status(201).json({
-      message: "Inventory stock updated successfully.",
-      inventoryId: result.insertId,
+    const { productId, quantity } = req.body;
+    const businessId = req.headers["x-business-id"];
+    const userId = req.user?.user_id;
+
+    await applyInventoryChange({
+      productId,
+      change_qty: Number(quantity),
+      reason: "correction",
+      businessId,
+      userId,
     });
-    console.log("Updating inventory stock:", { productId, quantity });
-  }
-  catch (error) {
-    console.error("Error updating inventory stock:", error);
+
+    res.status(200).json({ message: "Inventory corrected." });
+  } catch (err) {
+    console.error("Error in modifyInventoryStock:", err);
     res.status(500).json({ error: "Internal server error." });
   }
 };
@@ -322,29 +326,28 @@ export const modifyInventoryStock = async (req, res) => {
 export const stockOut = async (req, res) => {
   try {
     const { productId, quantity, reason } = req.body;
-    if (!productId || quantity == null || !reason) {
-      return res.status(400).json({ error: 'Missing required fields.' });
+
+    if (!productId || !quantity || !reason) {
+      return res.status(400).json({ error: "Missing required fields." });
     }
 
-    const parsedQty = Number(quantity);
-    if (isNaN(parsedQty) || parsedQty <= 0) {
-      return res.status(400).json({ error: 'Quantity must be a positive number.' });
-    }
+    const businessId = req.headers["x-business-id"];
+    const userId = req.user?.user_id || null;
 
-    const proofUrl = null;
-    const businessId = req.headers['x-business-id'] || null;
-    const userId = req.user && (req.user.user_id || req.user.id) ? (req.user.user_id || req.user.id) : null;
+    const change_qty = -Math.abs(Number(quantity));
 
-    const change_qty = -Math.abs(parsedQty);
-    let mappedReason = reason;
-    if (reason === 'wastage') mappedReason = 'waste';
+    await applyInventoryChange({
+      productId,
+      change_qty,
+      reason: reason === "wastage" ? "waste" : reason,
+      businessId,
+      userId,
+    });
 
-    await recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason: mappedReason, reference: proofUrl, businessId, userId });
-
-    res.status(201).json({ message: 'Stock out recorded.' });
+    res.status(201).json({ message: "Stock out recorded." });
   } catch (err) {
-    console.error('Error recording stock out:', err);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error("Error in stockOut:", err);
+    res.status(500).json({ error: "Internal server error." });
   }
 };
 
