@@ -12,6 +12,8 @@ function SalesLog() {
   const [searchReceipt, setSearchReceipt] = useState("");  // 👈 search filter for receiptNo
   const [receiptPopupOpen, setReceiptPopupOpen] = useState(false); // 👈 receipt popup state
   const [selectedReceipt, setSelectedReceipt] = useState(null);    // 👈 selected receipt data
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     const fetchSalesLog = async () => {
@@ -142,6 +144,15 @@ function SalesLog() {
 
   const filteredTransactions = applySortFilter(applySearchFilter(applyDateFilter(transactions)));
 
+  // Pagination calculations
+  const totalItems = filteredTransactions.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  // Keep currentPage in range
+  if (currentPage > totalPages) setCurrentPage(totalPages);
+
+  const paginatedTransactions = filteredTransactions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <DashboardLayout>
       <div className="p-6">
@@ -210,7 +221,7 @@ function SalesLog() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.map((tx, index) => (
+                {paginatedTransactions.map((tx, index) => (
                   <tr key={tx.id ?? index} className="border-t text-sm bg-white text-gray-700 hover:bg-gray-50">
                     <td className="px-4 py-2">{renderStatusIcon(tx.status)}</td>
                     <td className="px-4 py-2">{tx.name}</td>
@@ -233,6 +244,57 @@ function SalesLog() {
               </tbody>
             </table>
           )}
+        </div>
+
+        {/* Pagination controls */}
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="text-sm text-gray-200">
+            Showing <span className="font-semibold">{totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span>
+            -<span className="font-semibold">{Math.min(currentPage * pageSize, totalItems)}</span> of <span className="font-semibold">{totalItems}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded-md text-sm ${currentPage === 1 ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}>
+              First
+            </button>
+
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded-md text-sm ${currentPage === 1 ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}>
+              Prev
+            </button>
+
+            <div className="px-3 py-1 rounded-md bg-slate-800 text-white text-sm">Page {currentPage} of {totalPages}</div>
+
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 rounded-md text-sm ${currentPage === totalPages ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}>
+              Next
+            </button>
+
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 rounded-md text-sm ${currentPage === totalPages ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}>
+              Last
+            </button>
+
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              className="ml-3 px-2 py-1 rounded-md bg-slate-700 text-white text-sm"
+            >
+              <option value={5}>5 / page</option>
+              <option value={10}>10 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+            </select>
+          </div>
         </div>
       </div>
 

@@ -54,6 +54,8 @@ export default function OrderList() {
 
   return (
     <DashboardLayout>
+            {/* Toast container */}
+      <ToastContainer position="top-middle" autoClose={3000} />
       <h1 className="text-4xl text-center text-white font-extrabold mb-10">
         🧾 Order List
       </h1>
@@ -223,8 +225,7 @@ export default function OrderList() {
         <OverviewSection />
       </div>
 
-      {/* Toast container */}
-      <ToastContainer position="top-middle" autoClose={3000} />
+
     </DashboardLayout>
   );
 }
