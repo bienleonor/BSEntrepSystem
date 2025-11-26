@@ -1,4 +1,4 @@
-// services/unitService.js
+// models/inventory/product-model.js
 import pool from '../../config/pool.js';
 
 export const getUnits = async () => {

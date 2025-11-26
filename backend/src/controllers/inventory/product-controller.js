@@ -23,24 +23,28 @@ import fs from 'fs';
   }
 };*/
 
-
-
 export const createProduct = async (req, res) => {
   try {
     const { name, businessId, unit_id, price, product_type } = req.body;
 
+    // --- VALIDATION ---
     if (!name || !businessId || !unit_id || !price || !req.file) {
       return res.status(400).json({ error: "Missing required fields or image." });
     }
 
+    if (isNaN(price) || Number(price) < 0) {
+      return res.status(400).json({ error: "Price must be a non-negative number." });
+    }
+
+    // --- UPLOAD IMAGE ---
     const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'products',
-      transformation: [{ width: 800, height: 800, crop: 'limit' }],
+      folder: "products",
+      transformation: [{ width: 800, height: 800, crop: "limit" }],
     });
 
     const picture = cloudinaryResult.secure_url;
 
-    // STEP 1 — Insert product
+    // --- STEP 1: CREATE PRODUCT ---
     const result = await addProduct({
       name,
       businessId,
@@ -53,21 +57,73 @@ export const createProduct = async (req, res) => {
 
     const productId = result.insertId;
 
-    // STEP 2 — Recipe product: insert recipe
-    if (product_type && product_type.toLowerCase() === "recipe") {
-      const recipe = JSON.parse(req.body.recipe || "[]");
-      await addIngredient(productId, recipe);
+    // --- STEP 2A: PROCESS RECIPE TYPE ---
+    if (product_type?.toLowerCase() === "recipe") {
+      let recipe = [];
+
+      try {
+        recipe = JSON.parse(req.body.recipe || "[]");
+      } catch {
+        return res.status(400).json({ error: "Invalid recipe JSON format." });
+      }
+
+      if (!Array.isArray(recipe) || recipe.length === 0) {
+        return res.status(400).json({ error: "Recipe items are required for Recipe products." });
+      }
+
+      // Validate and insert each recipe ingredient
+      for (const ing of recipe) {
+        if (!ing.product_id || !ing.qty) {
+          return res.status(400).json({
+            error: "Each recipe ingredient must have product_id and qty."
+          });
+        }
+
+        // ✅ MAP frontend fields to backend model
+        await addIngredient({
+          productId: productId,
+          ingredientProductId: ing.product_id,
+          consumptionAmount: ing.qty
+        });
+      }
     }
 
-    // STEP 3 — Composite product: insert combo items
-    if (product_type && product_type.toLowerCase() === "composite") {
-      const composite = JSON.parse(req.body.compositeItems || "[]");
-      await addComboItems(productId, composite);
+    // --- STEP 2B: PROCESS COMPOSITE TYPE ---
+    if (product_type?.toLowerCase() === "composite") {
+      let composite = [];
+
+      try {
+        composite = JSON.parse(req.body.recipe || "[]"); // frontend uses 'recipe' for both
+      } catch {
+        return res.status(400).json({ error: "Invalid composite JSON format." });
+      }
+
+      if (!Array.isArray(composite) || composite.length === 0) {
+        return res.status(400).json({ error: "Composite items are required for composite products." });
+      }
+
+      // Validate composite items
+      for (const item of composite) {
+        if (!item.product_id || !item.qty) {
+          return res.status(400).json({
+            error: "Each composite item must have product_id and qty."
+          });
+        }
+      }
+
+      // ✅ MAP frontend fields to backend model
+      const mappedComposite = composite.map(item => ({
+        component_product_id: item.product_id,
+        quantity: item.qty
+      }));
+
+      await addComboItems(productId, mappedComposite);
     }
 
-    // cleanup
+    // --- CLEAN LOCAL FILE ---
     fs.unlink(req.file.path, () => {});
 
+    // --- RESPONSE ---
     res.status(201).json({
       message: "Product added successfully.",
       productId,
@@ -79,8 +135,7 @@ export const createProduct = async (req, res) => {
   }
 };
 
-
-
+// ... rest of your controller exports remain the same
 export const fetchProductsByBusiness = async (req, res) => {
   try {
     const { businessId } = req.params;
@@ -114,6 +169,7 @@ export const fetchAllProducts = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
     }
 };
+
 export const fetchProductById = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -127,19 +183,16 @@ export const fetchProductById = async (req, res) => {
         res.status(500).json({ error: "Internal server error." });
     }
 };
+
 export const modifyProduct = async (req, res) => {
   try {
     const { productId } = req.params;
     const { name, businessId, unit_id, price, product_type, picture: pictureFallback } = req.body;
 
-    // basic validation...
-    // handle uploaded file
     let pictureValue = pictureFallback || null;
     if (req.file) {
-      // if using local storage: upload file to cloudinary
       const cloudRes = await cloudinary.uploader.upload(req.file.path, { folder: 'products', transformation: [{ width:800, height:800, crop:'limit' }] });
       pictureValue = cloudRes.secure_url;
-      // cleanup local file
       fs.unlink(req.file.path, (err) => { if (err) console.warn('unlink err', err); });
     }
 
@@ -165,8 +218,6 @@ export const removeProduct = async (req, res) => {
     }
 };
 
-
-
 export const toggleProductStatus = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -184,8 +235,6 @@ export const toggleProductStatus = async (req, res) => {
   }
 };
 
-//product with inventory details
-
 export const fetchProductWithInventoryDetails = async (req, res) => {
   try {
     const { businessId } = req.query;
@@ -198,7 +247,7 @@ export const fetchProductWithInventoryDetails = async (req, res) => {
       return res.status(400).json({ error: "Business ID must be a number." });
     }
 
-    const products = await getActiveInventoryWithProductDetail(parsedBusinessId);
+    const products = await getActiveInventoryWithProductDetails(parsedBusinessId);
 
     res.status(200).json(products);
   } catch (error) {
@@ -231,15 +280,12 @@ export const fetchActiveProducts = async (req, res) => {
   }
 };
 
-
-
 export const insertInventoryStock = async (req, res) => {
   try {
     const { productId, quantity } = req.body; 
     if (!productId || quantity == null ) {
       return res.status(400).json({ error: "Missing required fields." });
     }
-
 
     const result = await addInventoryStock({ productId, quantity });
     res.status(201).json({
@@ -254,7 +300,6 @@ export const insertInventoryStock = async (req, res) => {
   }
 };
 
-//wrong
 export const modifyInventoryStock = async (req, res) => {
   try {
     const { productId, quantity } = req.body; 
@@ -274,7 +319,6 @@ export const modifyInventoryStock = async (req, res) => {
   }
 };
 
-// Stock out endpoint: records an adjustment and decreases inventory
 export const stockOut = async (req, res) => {
   try {
     const { productId, quantity, reason } = req.body;
@@ -287,16 +331,11 @@ export const stockOut = async (req, res) => {
       return res.status(400).json({ error: 'Quantity must be a positive number.' });
     }
 
-    // Proof upload removed — frontend does not send files for stock-out anymore
     const proofUrl = null;
-
     const businessId = req.headers['x-business-id'] || null;
-    // Token payload may use `user_id` or `id` depending on how token was generated
     const userId = req.user && (req.user.user_id || req.user.id) ? (req.user.user_id || req.user.id) : null;
 
-    // change_qty is negative for stock out
     const change_qty = -Math.abs(parsedQty);
-    // map frontend reason values to DB enum if needed
     let mappedReason = reason;
     if (reason === 'wastage') mappedReason = 'waste';
 

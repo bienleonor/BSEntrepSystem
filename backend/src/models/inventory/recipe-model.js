@@ -1,11 +1,8 @@
-// services/recipeModel.js
 import pool from '../../config/pool.js';
 
 /**
  * Add a recipe ingredient for a product
- * @param {Number} productId - The product (recipe) ID
- * @param {Number} ingredientProductId - The ingredient product ID
- * @param {Number} consumptionAmount - Amount of ingredient needed
+ * @param {Object} data - { productId, ingredientProductId, consumptionAmount }
  */
 export const addIngredient = async ({ productId, ingredientProductId, consumptionAmount }) => {
   const [result] = await pool.execute(
