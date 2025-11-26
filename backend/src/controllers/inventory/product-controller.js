@@ -1,7 +1,6 @@
 import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
 import { addIngredient } from '../../models/inventory/recipe-model.js';
 import { addComboItems } from '../../models/inventory/combo-model.js';
-import { applyInventoryChange } from "../../services/inventory-services.js";
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
 import fs from 'fs';
 
@@ -281,77 +280,11 @@ export const fetchActiveProducts = async (req, res) => {
   }
 };
 
-export const insertInventoryStock = async (req, res) => {
-  try {
-    const { productId, quantity } = req.body;
-    const businessId = req.headers["x-business-id"];
-    const userId = req.user?.user_id;
-
-    await applyInventoryChange({
-      productId,
-      change_qty: Number(quantity),
-      reason: "stock-initial",
-      businessId,
-      userId,
-    });
-
-    res.status(201).json({ message: "Stock added." });
-  } catch (err) {
-    console.error("Error in insertInventoryStock:", err);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
-
-export const modifyInventoryStock = async (req, res) => {
-  try {
-    const { productId, quantity } = req.body;
-    const businessId = req.headers["x-business-id"];
-    const userId = req.user?.user_id;
-
-    await applyInventoryChange({
-      productId,
-      change_qty: Number(quantity),
-      reason: "correction",
-      businessId,
-      userId,
-    });
-
-    res.status(200).json({ message: "Inventory corrected." });
-  } catch (err) {
-    console.error("Error in modifyInventoryStock:", err);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
-
-export const stockOut = async (req, res) => {
-  try {
-    const { productId, quantity, reason } = req.body;
-
-    if (!productId || !quantity || !reason) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
-
-    const businessId = req.headers["x-business-id"];
-    const userId = req.user?.user_id || null;
-
-    const change_qty = -Math.abs(Number(quantity));
-
-    await applyInventoryChange({
-      productId,
-      change_qty,
-      reason: reason === "wastage" ? "waste" : reason,
-      businessId,
-      userId,
-    });
-
-    res.status(201).json({ message: "Stock out recorded." });
-  } catch (err) {
-    console.error("Error in stockOut:", err);
-    res.status(500).json({ error: "Internal server error." });
-  }
-};
 
 
-export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchProductWithInventoryDetails, insertInventoryStock, stockOut };
+
+
+
+export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchProductWithInventoryDetails };
 
 

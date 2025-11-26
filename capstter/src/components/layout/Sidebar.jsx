@@ -13,7 +13,7 @@ const menuItems = [
   { label: "Product Registration", icon: <ClipboardList size={18} /> },
   { label: "Inventory", icon: <Package size={18} /> },
   { label: "Product List", icon: <PackageOpen  size={18} /> },
-  { label: "Stockout", icon: <PackageOpen  size={18} /> },
+  { label: "Multi Adjustment Stock", icon: <PackageOpen  size={18} /> },
 
   // Employee Management
   { label: "Employee Management", icon: <Users  size={18} /> },

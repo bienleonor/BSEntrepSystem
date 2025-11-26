@@ -7,16 +7,12 @@ import {
   fetchUnits,
   fetchAllProducts,
   fetchProductById,
-  modifyProduct,
   removeProduct,
   toggleProductStatus,
   fetchActiveProducts,
+  modifyProduct,
   fetchProductWithInventoryDetailsByBusiness,
   fetchProductWithInventoryDetails,
-  insertInventoryStock,
-  stockOut,
-  modifyInventoryStock,
-  
 } from '../../controllers/inventory/product-controller.js';
 import { authenticateToken } from '../../middlewares/auth-middleware.js';
 
@@ -34,6 +30,7 @@ const uploadCloud = multer({ storage: cloudinaryStorage });
 // Product routes
 router.get('/products', fetchAllProducts);
 router.get('/products/:productId', fetchProductById);
+
 // Use the same storage middleware you used for POST
 router.put('/products/:productId', uploadLocal.single('picture'), modifyProduct);
 
@@ -41,16 +38,12 @@ router.put('/products/:productId', uploadLocal.single('picture'), modifyProduct)
 //router.put('/products/:productId', uploadCloud.single('picture'), modifyProduct);
 
 router.delete('/products/:productId', removeProduct);
-router.get('/businesses/:businessId/products', fetchProductsByBusiness);
 router.get('/units', fetchUnits);
 router.patch('/products/:productId/status', toggleProductStatus);
 router.get('/products/active', fetchActiveProducts);
 router.get('/products/inventory-details', fetchProductWithInventoryDetails);
+router.get('/businesses/:businessId/products', fetchProductsByBusiness);
 router.get('/products/active/inventory-details/:businessId', fetchProductWithInventoryDetailsByBusiness);
-router.post('/inventory', insertInventoryStock);
-router.post('/stock-out', authenticateToken, stockOut);
-//wrong
-router.post('/inventory/update', modifyInventoryStock);
 
 
 

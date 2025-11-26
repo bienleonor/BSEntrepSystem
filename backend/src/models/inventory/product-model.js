@@ -214,33 +214,34 @@ export const updateinventoryStock = async (productId, quantity) => {
 }
 
 // Record a stock adjustment (stock out / in) and update inventory quantity accordingly
-export const recordInventoryTransactionAndUpdateInventory = async ({ productId, change_qty, reason = null, reference = null, businessId = null, userId = null }) => {
-  const connection = await pool.getConnection();
+export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId, unit_price }) {
+  const conn = await pool.getConnection();
+  await conn.beginTransaction();
   try {
-    await connection.beginTransaction();
+    // check if inventory exists
+    const [rows] = await conn.query("SELECT * FROM inventory_table WHERE product_id = ? FOR UPDATE", [productId]);
+    if (rows.length > 0) {
+      await conn.query("UPDATE inventory_table SET quantity = quantity + ?, updated_at = NOW() WHERE product_id = ?", [change_qty, productId]);
+    } else {
+      await conn.query("INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())", [productId, change_qty]);
+    }
 
-    // Insert into inventory_transactions according to schema
-    const [insertResult] = await connection.execute(
-      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [businessId, productId, change_qty, reason, reference, userId]
+    // insert transaction
+    await conn.query(
+      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, unit_price, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [businessId, productId, change_qty, reason, reference, userId, unit_price || null]
     );
 
-    // Update inventory by adding change_qty (change_qty may be negative for stock out)
-    await connection.execute(
-      `UPDATE inventory_table SET quantity = GREATEST(quantity + ?, 0), updated_at = NOW() WHERE product_id = ?`,
-      [change_qty, productId]
-    );
-
-    await connection.commit();
-    return insertResult;
+    await conn.commit();
+    conn.release();
+    return { productId, change_qty };
   } catch (err) {
-    await connection.rollback();
+    await conn.rollback();
+    conn.release();
     throw err;
-  } finally {
-    connection.release();
   }
-};
+}
 
 
 

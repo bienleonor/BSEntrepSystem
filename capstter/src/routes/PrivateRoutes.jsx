@@ -11,7 +11,7 @@ import ProductList from '../pages/SessionPages/ProductList.jsx'
 import ProductListComponent from '../components/inventory/ProductListComponent.jsx'
 import PointofSales from '../pages/SessionPages/PointofSales.jsx'
 import SuperAdminDashboard from '../pages/SuperAdminPages/SuperAdminDashboard.jsx'
-import StockOut from '../pages/SessionPages/StockOut.jsx'
+import MultiAdjustment from '../pages/SessionPages/MultiAdjustment.jsx'
 import AccessCode from '../pages/SessionPages/AccessCode.jsx'
 import ChooseRole from "../pages/ChooseRole"
 import EmployeeManagement from '../pages/SessionPages/EmployeeManagement.jsx'
@@ -25,7 +25,7 @@ export const privateRoutes = [
   { path: '/UserDetails', element: <UserDetails /> },
   { path: '/businessregistration', element: <BusinessRegistration /> },
   { path: '/chooserole', element: <ChooseRole />},
-  { path: '/stockout', element: <StockOut /> },
+  { path: '/multiadjustmentstock', element: <MultiAdjustment /> },
   { path: '/productregistration', element: <ProductRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },
