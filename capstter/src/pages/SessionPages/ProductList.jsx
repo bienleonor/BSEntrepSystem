@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Popup from '../../components/common/Popup';
+import RecipeBuilder from './RecipeBuilder';
 import axiosInstance from '../../utils/axiosInstance'; // Import configured axios instance
 
 function ProductList() {
@@ -24,6 +25,7 @@ function ProductList() {
     imageFile: null,
     picture: '',
   });
+  const [recipeIngredients, setRecipeIngredients] = useState([]);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
   const navigate = useNavigate();
@@ -120,6 +122,43 @@ function ProductList() {
       imageFile: null,
       picture: product.picture || '',
     });
+    // If product has recipe/composite type, fetch its ingredients from backend
+    const loadRecipe = async () => {
+      try {
+        if (product.product_type === 'recipe') {
+          const res = await axiosInstance.get(`/inventory/recipes/${product.product_id}`);
+          const ingredients = Array.isArray(res.data)
+            ? res.data.map(r => ({
+                recipe_id: r.recipe_id,
+                ingredient_product_id: r.ingredient_product_id,
+                consumption_amount: r.consumption_amount,
+                ingredient_name: r.ingredient_name || r.name || ''
+              }))
+            : [];
+          setRecipeIngredients(ingredients);
+        } else if (product.product_type === 'composite') {
+          const res = await axiosInstance.get(`/inventory/combo/${product.product_id}`);
+          const items = Array.isArray(res.data)
+            ? res.data.map(r => ({
+                component_id: r.component_id,
+                component_product_id: r.component_product_id,
+                quantity: r.quantity,
+                component_name: r.component_name,
+                product_type: r.product_type,
+              }))
+            : [];
+          setRecipeIngredients(items);
+        } else {
+          setRecipeIngredients(product.recipe || []);
+        }
+      } catch (err) {
+        console.error('Failed to load recipe ingredients:', err);
+        toast.error('Failed to load recipe ingredients.');
+        setRecipeIngredients(product.recipe || []);
+      }
+    };
+
+    loadRecipe();
     setIsEditOpen(true);
   };
 
@@ -172,6 +211,7 @@ function ProductList() {
         formData.append('price', editForm.price);
         formData.append('product_type', editForm.product_type || '');
         formData.append('picture', editForm.imageFile);
+        formData.append('recipe', JSON.stringify(recipeIngredients || []));
 
         response = await axiosInstance.put(
           `/inventory/products/${editProduct.product_id}`,
@@ -191,6 +231,7 @@ function ProductList() {
           price: editForm.price,
           picture: editForm.picture || '',
           product_type: editForm.product_type || '',
+          recipe: recipeIngredients || [],
         };
 
         response = await axiosInstance.put(
@@ -401,6 +442,7 @@ function ProductList() {
               >
                 <option value="">Select Product Type</option>
                 <option value="simple">Simple</option>
+                <option value="recipe">Recipe</option>
                 <option value="composite">Composite</option>
               </select>
             </label>
@@ -421,6 +463,18 @@ function ProductList() {
               />
             </label>
 
+             {/* RECIPE BUILDER */}
+          {(editForm.product_type === "recipe" ||
+            editForm.product_type === "composite") && (
+            <div className="w-full flex justify-center animate-fadeIn mt-4">
+              <RecipeBuilder
+                productType={editForm.product_type}
+                onRecipeChange={setRecipeIngredients}
+                initialRecipe={recipeIngredients}
+              />
+            </div>
+          )}
+
             {/* Buttons */}
             <div className="flex gap-4 mt-6 justify-center">
               <button
@@ -438,6 +492,7 @@ function ProductList() {
               </button>
             </div>
           </div>
+         
         </form>
       </Popup>
     </DashboardLayout>

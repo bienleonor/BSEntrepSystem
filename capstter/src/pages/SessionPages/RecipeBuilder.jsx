@@ -3,7 +3,7 @@ import axiosInstance from "../../utils/axiosInstance";
 import { Plus, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function RecipeBuilder({ productType, onRecipeChange }) {
+export default function RecipeBuilder({ productType, onRecipeChange, initialRecipe }) {
   const [ingredients, setIngredients] = useState([]);
   const [products, setProducts] = useState([]);
   const businessId = localStorage.getItem('selectedBusinessId');
@@ -12,7 +12,7 @@ export default function RecipeBuilder({ productType, onRecipeChange }) {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const res = await axiosInstance.get(`/inventory/businesses/${businessId}/products/`);
+        const res = await axiosInstance.get(`/inventory/businesses/${businessId}/products`);
         setProducts(res.data);
       } catch (err) {
         toast.error("Failed to load ingredients list");
@@ -38,13 +38,52 @@ export default function RecipeBuilder({ productType, onRecipeChange }) {
     onRecipeChange(updated);
   };
 
-  // Render nothing if product type does not support recipes
-  if (productType === "Simple") return null;
+  // Normalize initialRecipe into shape expected by this component: { product_id, qty }
+useEffect(() => {
+  if (!initialRecipe) return;
+
+  const normalized = initialRecipe.map((ing) => {
+    if (ing.ingredient_product_id !== undefined || ing.consumption_amount !== undefined) {
+      return {
+        product_id: String(ing.ingredient_product_id ?? ing.product_id ?? ''),
+        qty: String(ing.consumption_amount ?? ing.qty ?? ''),
+      };
+    }
+      // Combo items mapping (component_product_id, quantity)
+      if (ing.component_product_id !== undefined || ing.quantity !== undefined) {
+        return {
+          product_id: String(ing.component_product_id ?? ing.product_id ?? ''),
+          qty: String(ing.quantity ?? ing.qty ?? ''),
+        };
+      }
+    return {
+      product_id: String(ing.product_id ?? ''),
+      qty: String(ing.qty ?? ing.consumption_amount ?? ''),
+    };
+  });
+
+  // Only update if different
+  const isDifferent =
+    normalized.length !== ingredients.length ||
+    normalized.some((ing, idx) =>
+      ing.product_id !== ingredients[idx]?.product_id ||
+      ing.qty !== ingredients[idx]?.qty
+    );
+
+  if (isDifferent) {
+    setIngredients(normalized);
+    onRecipeChange && onRecipeChange(normalized);
+  }
+  // eslint-disable-next-line
+}, [initialRecipe]);
+
+  // Render nothing if product type does not support recipes (case-insensitive)
+  if (!productType || (productType.toString().toLowerCase() === "simple")) return null;
 
   return (
     <div className="mt-6 p-4 bg-white  shadow rounded-xl w-full text-center items-center">
       <h3 className="text-xl font-semibold mb-5">
-        {productType === "Recipe" ? "Recipe Ingredients" : "Composite Contents"}
+        {productType?.toString().toLowerCase() === "recipe" ? "Recipe Ingredients" : "Composite Contents"}
       </h3>
 
       <div >
@@ -60,7 +99,7 @@ export default function RecipeBuilder({ productType, onRecipeChange }) {
             >
               <option value="">Select Item</option>
               {products.map((p) => (
-                <option key={p.product_id} value={p.product_id}>
+                <option key={p.product_id} value={String(p.product_id)}>
                   {p.name}
                 </option>
               ))}
