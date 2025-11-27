@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { getUserId } from "../../utils/token";
-import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import axiosInstance from "../../utils/axiosInstance";
 import { toast, ToastContainer } from 'react-toastify';
@@ -12,8 +10,6 @@ export default function EmployeeManagement() {
   const [editingUserId, setEditingUserId] = useState(null);
   const [editingPosition, setEditingPosition] = useState(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const userId = getUserId();
   const selectedBusinessId = localStorage.getItem('selectedBusinessId');
 
   useEffect(() => {

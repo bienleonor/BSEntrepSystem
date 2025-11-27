@@ -42,10 +42,13 @@ export default function Sidebar() {
       </button>
 
       {/* Sidebar */}
-        <aside
-          className={`fixed md:static top-0 left-0 h-full md:h-screen bg-slate-900 text-white flex flex-col justify-between transition-transform duration-300 z-40
-          ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-60"} overflow-y-auto`}
-        >
+      <aside
+        className={`fixed md:static top-0 left-0 h-full md:h-screen bg-slate-900 text-white 
+          flex flex-col transition-transform duration-300 z-40
+          ${isOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0 md:w-60"}`}
+      >
+
+        {/* TOP (not scrollable) */}
         <div className="p-4">
           <div className="flex items-center gap-2 mb-8">
             <Link to="/UserDashboard" className="flex items-center gap-2">
@@ -53,42 +56,44 @@ export default function Sidebar() {
               <span className="text-lg font-bold hidden sm:block">Dashboard</span>
             </Link>
           </div>
-          <nav className="flex flex-col gap-2 overflow-auto">
-           {menuItems.map((item) => (
+        </div>
+
+        {/* MIDDLE (scrollable area) */}
+        <div className="flex-1 overflow-y-auto px-4">
+          <nav className="flex flex-col gap-2">
+            {menuItems.map((item) => (
               <Link key={item.label} to={`/${item.label.replace(/\s+/g, "").toLowerCase()}`}>
                 <button className="flex items-center gap-3 px-3 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition w-full">
                   {item.icon}
-                  {/* Show text if sidebar is open OR if screen is sm+ */}
                   <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
                     {item.label}
                   </span>
                 </button>
               </Link>
             ))}
-
           </nav>
-        </div>
 
-        <div className="p-4">
-          <Link to="/busmanage">
-            <button className="flex items-center gap-2 w-full px-3 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition justify-center mb-2">
+          {/* Buttons included in scroll */}
+          <div className="mt-6">
+            <Link to="/busmanage">
+              <button className="flex items-center gap-2 w-full px-3 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition justify-center mb-2">
+                <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
+                  Manage other business
+                </span>
+              </button>
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 w-full px-3 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition justify-center"
+            >
+              <LogOut size={20} />
               <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
-                Manage other business
+                Logout
               </span>
             </button>
-          </Link>
-
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition justify-center"
-          >
-            <LogOut size={20} />
-            <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
-              Logout
-            </span>
-          </button>
+          </div>
         </div>
-
       </aside>
     </>
   );
