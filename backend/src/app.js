@@ -20,6 +20,7 @@ import salesAnalysisRoutes from './routes/analysis/sales.js';
 import profitAnalysisRoutes from './routes/analysis/profit.js';
 import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
 import summaryAnalysisRoutes from './routes/analysis/summary.js';
+import adminMetricsRoute from './routes/admin-metrics-route.js';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/analysis/sales', salesAnalysisRoutes);
 app.use('/api/analysis/profit', profitAnalysisRoutes);
 app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
 app.use('/api/analysis/summary', summaryAnalysisRoutes);
+app.use('/api/admin/metrics', adminMetricsRoute);
 
 
 // ✅ Debug middleware to see all incoming requests
