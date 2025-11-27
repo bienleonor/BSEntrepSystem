@@ -18,6 +18,7 @@ import EmployeeManagement from '../pages/SessionPages/EmployeeManagement.jsx'
 import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
 import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
 import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
+import Category from '../pages/SessionPages/Category.jsx'
 
 
 export const privateRoutes = [
@@ -33,6 +34,7 @@ export const privateRoutes = [
   { path: '/accesscode', element: <AccessCode /> },
   { path: '/orderlist', element: <OrderList /> },
   { path: '/recipes', element: <Recipes /> },
+  { path: '/category', element: <Category /> },
   { path: '/busmanage', element: <Busmanage />},
   { path: '/productlist', element: <ProductList />},
   { path: '/productlistcomponent', element: <ProductListComponent />},

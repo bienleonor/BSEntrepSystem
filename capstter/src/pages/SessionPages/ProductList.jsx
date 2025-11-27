@@ -11,6 +11,8 @@ function ProductList() {
   const [products, setProducts] = useState([]);
   const [units, setUnits] = useState([]);
   const [unitsMap, setUnitsMap] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [categoriesMap, setCategoriesMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   // Edit modal state
@@ -24,6 +26,7 @@ function ProductList() {
     price: '',
     imageFile: null,
     picture: '',
+    category_id: '',
   });
   const [recipeIngredients, setRecipeIngredients] = useState([]);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
@@ -48,9 +51,10 @@ function ProductList() {
       setLoading(true);
 
       // Parallel requests using Promise.all
-      const [productsRes, unitsRes] = await Promise.all([
+      const [productsRes, unitsRes, categoriesRes] = await Promise.all([
         axiosInstance.get(`/inventory/businesses/${businessId}/products`),
         axiosInstance.get('/inventory/units'),
+        axiosInstance.get(`/inventory/${businessId}/product-categories`),
       ]);
 
       // Build units map for easy lookup
@@ -61,6 +65,12 @@ function ProductList() {
 
       setUnits(unitsRes.data);
       setUnitsMap(unitMap);
+      const catMap = {};
+      (categoriesRes.data || []).forEach(cat => {
+        catMap[cat.category_id] = cat.name;
+      });
+      setCategories(categoriesRes.data || []);
+      setCategoriesMap(catMap);
       setProducts(productsRes.data);
     } catch (error) {
       console.error('Error fetching inventory:', error);
@@ -121,6 +131,7 @@ function ProductList() {
       price: product.price || '',
       imageFile: null,
       picture: product.picture || '',
+      category_id: product.category_id || '',
     });
     // If product has recipe/composite type, fetch its ingredients from backend
     const loadRecipe = async () => {
@@ -212,6 +223,7 @@ function ProductList() {
         formData.append('product_type', editForm.product_type || '');
         formData.append('picture', editForm.imageFile);
         formData.append('recipe', JSON.stringify(recipeIngredients || []));
+        if (editForm.category_id) formData.append('category_id', editForm.category_id);
 
         response = await axiosInstance.put(
           `/inventory/products/${editProduct.product_id}`,
@@ -232,6 +244,7 @@ function ProductList() {
           picture: editForm.picture || '',
           product_type: editForm.product_type || '',
           recipe: recipeIngredients || [],
+          category_id: editForm.category_id || '',
         };
 
         response = await axiosInstance.put(
@@ -253,6 +266,7 @@ function ProductList() {
                 picture: editForm.imageFile 
                   ? URL.createObjectURL(editForm.imageFile) 
                   : editForm.picture,
+                category_id: editForm.category_id || p.category_id,
               }
             : p
         )
@@ -290,6 +304,7 @@ function ProductList() {
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Type</th>
                 <th className="px-4 py-2">Price</th>
+                <th className="px-4 py-2">Category</th>
                 <th className="px-4 py-2">Unit</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Created At</th>
@@ -302,6 +317,7 @@ function ProductList() {
                   <td className="px-4 py-2">{product.name}</td>
                   <td className="px-4 py-2">{product.product_type}</td>
                   <td className="px-4 py-2">₱{product.price}</td>
+                  <td className="px-4 py-2">{product.category_name || categoriesMap[product.category_id] || '—'}</td>
                   <td className="px-4 py-2">{unitsMap[product.unit_id] || '—'}</td>
                   <td className="px-4 py-2">
                     <button
@@ -330,7 +346,7 @@ function ProductList() {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="px-4 py-6 text-center text-gray-500">
+                  <td colSpan="8" className="px-4 py-6 text-center text-gray-500">
                     No products found.
                   </td>
                 </tr>
@@ -429,6 +445,26 @@ function ProductList() {
                     ))}
                 </ul>
               )}
+            </label>
+
+            {/* Category */}
+            <label className="block text-sm font-medium text-gray-700">
+              Category
+              <select
+                name="category_id"
+                value={editForm.category_id}
+                onChange={handleEditChange}
+                className="mt-1 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full"
+                disabled={!categories.length}
+                required
+              >
+                <option value="">{categories.length ? 'Select Category' : 'No categories available'}</option>
+                {categories.map((cat) => (
+                  <option key={cat.category_id} value={cat.category_id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {/* Product Type */}

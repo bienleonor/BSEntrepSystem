@@ -16,13 +16,14 @@ export const addProduct = async (productData) => {
     picture = null,
     product_type = null,
     localpath = null,
+    category_id = null,
   } = productData;
 
   // ✅ Insert product
   const [productResult] = await pool.execute(
-    `INSERT INTO product_table (name, business_id, unit_id, price, picture, product_type, localpath) 
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [name, businessId, unit_id, price, picture, product_type, localpath]
+    `INSERT INTO product_table (name, business_id, unit_id, price, picture, product_type, localpath, category_id) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, businessId, unit_id, price, picture, product_type, localpath, category_id]
   );
 
   const productId = productResult.insertId;
@@ -40,17 +41,20 @@ export const addProduct = async (productData) => {
 export const getAllProducts = async () => {
   const [rows] = await pool.execute(`
     SELECT 
-      product_id,
-      name,
-      business_id,
-      unit_id,
-      price,
-      sku,
-      picture,
-      product_type,
-      is_active,
-      created_at
-    FROM product_table
+      p.product_id,
+      p.name,
+      p.business_id,
+      p.unit_id,
+      p.price,
+      p.sku,
+      p.category_id,
+      c.name AS name,
+      p.picture,
+      p.product_type,
+      p.is_active,
+      p.created_at
+    FROM product_table p
+    LEFT JOIN product_category_table c ON c.category_id = p.category_id
   `);
   return rows;
 };
@@ -64,13 +68,13 @@ export const getProductById = async (productId) => {
 }
 
 export const updateProduct = async (productId, productData) => {
-    const { name, businessId, unit_id, price, picture } = productData;
+    const { name, businessId, unit_id, price, picture, category_id } = productData;
 
 await pool.execute(
   `UPDATE product_table
-   SET name = ?, business_id = ?, unit_id = ?, price = ?, picture = ?
+   SET name = ?, business_id = ?, unit_id = ?, price = ?, picture = ?, category_id = ?
    WHERE product_id = ?`,
-  [name, businessId, unit_id, price, picture, productId]
+  [name, businessId, unit_id, price, picture, category_id, productId]
 );
 };
 
@@ -103,11 +107,13 @@ export const deleteProduct = async (productId) => {
 };
 
 export const getProductsByBusiness = async (businessId) => {
-    const [rows] = await pool.execute(
-      `SELECT * FROM product_table
-         WHERE business_id = ?`,
-        [businessId]
-    );
+  const [rows] = await pool.execute(
+    `SELECT p.*, c.name AS category_name
+     FROM product_table p
+     LEFT JOIN product_category_table c ON c.category_id = p.category_id
+     WHERE p.business_id = ?`,
+    [businessId]
+  );
     return rows;
 }
 

@@ -14,6 +14,7 @@ import comboRoutes from './routes/inventory/combo-route.js';
 import accessCodeRoute from "./routes/access-codes-route.js";
 import UserDetailsRoutes from './routes/user-details-route.js';
 import stockadjustment from './routes/inventory/stock-adjustment-route.js';
+import Categoryroutes from './routes/inventory/product-category-route.js';
 
 import salesAnalysisRoutes from './routes/analysis/sales.js';
 import profitAnalysisRoutes from './routes/analysis/profit.js';
@@ -43,6 +44,8 @@ app.use('/api/inventory', productroutes);
 app.use('/api/inventory', recipeRoutes);
 app.use('/api/inventory/combo', comboRoutes);
 app.use('/api/inventory/adjust', stockadjustment);
+// Mount inventory category routes directly under /api/inventory
+app.use('/api/inventory', Categoryroutes);
 app.use('/uploads', express.static('uploads'));
 
 

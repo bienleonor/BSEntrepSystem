@@ -25,7 +25,7 @@ import fs from 'fs';
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, businessId, unit_id, price, product_type } = req.body;
+    const { name, businessId, unit_id, price, product_type, category_id } = req.body;
 
     // --- VALIDATION ---
     if (!name || !businessId || !unit_id || !price || !req.file) {
@@ -53,6 +53,7 @@ export const createProduct = async (req, res) => {
       picture,
       product_type,
       localpath: req.file.path,
+      category_id: category_id || null,
     });
 
     const productId = result.insertId;
@@ -187,7 +188,7 @@ export const fetchProductById = async (req, res) => {
 export const modifyProduct = async (req, res) => {
   try {
     const { productId } = req.params;
-    const { name, businessId, unit_id, price, product_type, picture: pictureFallback } = req.body;
+    const { name, businessId, unit_id, price, product_type, picture: pictureFallback, category_id } = req.body;
 
     let pictureValue = pictureFallback || null;
     if (req.file) {
@@ -196,7 +197,7 @@ export const modifyProduct = async (req, res) => {
       fs.unlink(req.file.path, (err) => { if (err) console.warn('unlink err', err); });
     }
 
-    await updateProduct(productId, { name, businessId, unit_id, price, picture: pictureValue, product_type });
+    await updateProduct(productId, { name, businessId, unit_id, price, picture: pictureValue, product_type, category_id: category_id || null });
     res.status(200).json({ message: 'Product updated successfully.' });
   } catch (err) {
     console.error('Error updating product:', err);

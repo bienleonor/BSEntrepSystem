@@ -1,5 +1,5 @@
 // src/context/AuthContext.jsx
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback, useContext } from "react";
 import { decodeToken, getToken, removeToken } from "../utils/token";
 
 export const AuthContext = createContext(null);
@@ -58,4 +58,13 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Hook to access auth context
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (ctx === null) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return ctx;
 };

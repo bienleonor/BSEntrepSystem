@@ -8,6 +8,7 @@ import axiosInstance from "../../utils/axiosInstance";
 
 function ProductRegistration() {
   const [units, setUnits] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [recipeIngredients, setRecipeIngredients] = useState([]);
 
@@ -18,11 +19,12 @@ function ProductRegistration() {
     productType: "",
     price: "",
     image: null,
+    category_id: "",
   });
 
   const navigate = useNavigate();
 
-  // 🔎 FETCH UNITS (AXIOS)
+  // 🔎 FETCH UNITS AND CATEGORIES (AXIOS)
   useEffect(() => {
     const token = getToken();
     const businessId = localStorage.getItem("selectedBusinessId");
@@ -33,6 +35,7 @@ function ProductRegistration() {
       return;
     }
 
+    // Fetch units
     axiosInstance
       .get("/inventory/units", {
         headers: { Authorization: `Bearer ${token}` },
@@ -44,6 +47,20 @@ function ProductRegistration() {
       .catch((err) => {
         console.error("Error fetching units:", err);
         setUnits([]);
+      });
+
+    // Fetch product categories for this business
+    axiosInstance
+      .get(`/inventory/${businessId}/product-categories`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        if (Array.isArray(res.data)) setCategories(res.data);
+        else setCategories([]);
+      })
+      .catch((err) => {
+        console.error("Error fetching categories:", err);
+        setCategories([]);
       });
   }, [navigate]);
 
@@ -67,6 +84,7 @@ function ProductRegistration() {
       productType: "",
       price: "",
       image: null,
+      category_id: "",
     });
     setShowUnitDropdown(false);
     setRecipeIngredients([]);
@@ -101,6 +119,9 @@ function ProductRegistration() {
     formData.append("price", product.price);
     formData.append("businessId", product.businessId);
     formData.append("recipe", JSON.stringify(product.recipe));
+    if (product.category_id) {
+      formData.append("category_id", product.category_id);
+    }
 
     // convert base64 → real file for uploading
     formData.append(
@@ -168,6 +189,7 @@ function ProductRegistration() {
       businessId,
       image: await toBase64(itemData.image),
       recipe: recipeIngredients,
+      category_id: itemData.category_id || "",
     };
 
     // OFFLINE MODE
@@ -322,6 +344,26 @@ function ProductRegistration() {
                           ))}
                       </ul>
                     )}
+                </label>
+
+                {/* CATEGORY */}
+                <label className="block text-sm font-medium text-gray-700">
+                  Category
+                  <select
+                    name="category_id"
+                    value={itemData.category_id}
+                    onChange={handleChange}
+                    className="mt-1 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full"
+                    disabled={!categories.length}
+                    required
+                  >
+                    <option value="">{categories.length ? 'Select Category' : 'No categories available'}</option>
+                    {categories.map((cat) => (
+                      <option key={cat.category_id} value={cat.category_id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 {/* PRODUCT TYPE */}
