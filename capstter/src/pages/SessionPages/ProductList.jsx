@@ -14,6 +14,7 @@ function ProductList() {
   const [categories, setCategories] = useState([]);
   const [categoriesMap, setCategoriesMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [inventoryDetailsMap, setInventoryDetailsMap] = useState({});
 
   // Edit modal state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -47,38 +48,49 @@ function ProductList() {
 
   // Fetch products and units
   const fetchData = async (businessId) => {
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      // Parallel requests using Promise.all
-      const [productsRes, unitsRes, categoriesRes] = await Promise.all([
-        axiosInstance.get(`/inventory/businesses/${businessId}/products`),
-        axiosInstance.get('/inventory/units'),
-        axiosInstance.get(`/inventory/${businessId}/product-categories`),
-      ]);
+        // Parallel requests using Promise.all
+        const [productsRes, unitsRes, categoriesRes, inventoryDetailsRes] = await Promise.all([
+          axiosInstance.get(`/inventory/businesses/${businessId}/products`),
+          axiosInstance.get('/inventory/units'),
+          axiosInstance.get(`/inventory/${businessId}/product-categories`),
+          axiosInstance.get('/inventory/products/inventory-details'),
+        ]);
 
-      // Build units map for easy lookup
-      const unitMap = {};
-      unitsRes.data.forEach(unit => {
-        unitMap[unit.unit_id] = unit.name;
-      });
 
-      setUnits(unitsRes.data);
-      setUnitsMap(unitMap);
-      const catMap = {};
-      (categoriesRes.data || []).forEach(cat => {
-        catMap[cat.category_id] = cat.name;
-      });
-      setCategories(categoriesRes.data || []);
-      setCategoriesMap(catMap);
-      setProducts(productsRes.data);
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-      toast.error(error.response?.data?.message || "Error loading inventory.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        // Build units map for easy lookup
+        const unitMap = {};
+        unitsRes.data.forEach(unit => {
+          unitMap[unit.unit_id] = unit.name;
+        });
+
+       // Build inventory details map (product_id -> quantity)
+        const invMap = {};
+        (inventoryDetailsRes.data || []).forEach(item => {
+          const pid = item.product_id ?? item.productId ?? item.id;
+          const qty = item.quantity ?? item.qty ?? item.total ?? 0;
+          if (pid != null) invMap[pid] = qty;
+        });
+        setInventoryDetailsMap(invMap);
+
+        setUnits(unitsRes.data);
+        setUnitsMap(unitMap);
+        const catMap = {};
+        (categoriesRes.data || []).forEach(cat => {
+          catMap[cat.category_id] = cat.name;
+        });
+        setCategories(categoriesRes.data || []);
+        setCategoriesMap(catMap);
+        setProducts(productsRes.data);
+      } catch (error) {
+        console.error('Error fetching inventory:', error);
+        toast.error(error.response?.data?.message || "Error loading inventory.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // Toggle product active status
   const handleStatusToggle = async (product) => {
@@ -305,6 +317,7 @@ function ProductList() {
                 <th className="px-4 py-2">Type</th>
                 <th className="px-4 py-2">Price</th>
                 <th className="px-4 py-2">Category</th>
+                <th className="px-4 py-2">Quantity</th>
                 <th className="px-4 py-2">Unit</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Created At</th>
@@ -318,6 +331,7 @@ function ProductList() {
                   <td className="px-4 py-2">{product.product_type}</td>
                   <td className="px-4 py-2">₱{product.price}</td>
                   <td className="px-4 py-2">{product.category_name || categoriesMap[product.category_id] || '—'}</td>
+                  <td className="px-4 py-2">{inventoryDetailsMap[product.product_id] ?? '0'}</td>
                   <td className="px-4 py-2">{unitsMap[product.unit_id] || '—'}</td>
                   <td className="px-4 py-2">
                     <button

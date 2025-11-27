@@ -11,7 +11,7 @@ import {
   toggleProductStatus,
   fetchActiveProducts,
   modifyProduct,
-  fetchProductWithInventoryDetailsByBusiness,
+  fetchActiveProductWithInventoryDetailsByBusiness,
   fetchProductWithInventoryDetails,
 } from '../../controllers/inventory/product-controller.js';
 import { authenticateToken } from '../../middlewares/auth-middleware.js';
@@ -43,7 +43,7 @@ router.patch('/products/:productId/status', toggleProductStatus);
 router.get('/products/active', fetchActiveProducts);
 router.get('/products/inventory-details', fetchProductWithInventoryDetails);
 router.get('/businesses/:businessId/products', fetchProductsByBusiness);
-router.get('/products/active/inventory-details/:businessId', fetchProductWithInventoryDetailsByBusiness);
+router.get('/products/active/inventory-details/:businessId', fetchActiveProductWithInventoryDetailsByBusiness);
 
 
 
