@@ -157,7 +157,7 @@ export const getactiveProducts = async () => {
 }
 
 //fetch products with inventory details
-export const getActiveInventoryWithProductDetails = async () => {
+export const getInventoryWithProductDetailsByBusiness = async () => {
   const [rows] = await pool.execute(
     `SELECT 
        p.product_id,
@@ -170,7 +170,7 @@ export const getActiveInventoryWithProductDetails = async () => {
        i.updated_at AS last_restocked
      FROM product_table p
      LEFT JOIN inventory_table i ON p.product_id = i.product_id
-     WHERE p.is_active = 1`
+     WHERE p.business_id = ?`
   );
   return rows;
 };
@@ -278,6 +278,6 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
 
 
 
-export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getActiveInventoryWithProductDetails, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory };
+export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getInventoryWithProductDetailsByBusiness, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory };
 
     

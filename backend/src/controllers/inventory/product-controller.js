@@ -1,4 +1,4 @@
-import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getActiveInventoryWithProductDetails,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
+import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getInventoryWithProductDetailsByBusiness,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
 import { addIngredient } from '../../models/inventory/recipe-model.js';
 import { addComboItems } from '../../models/inventory/combo-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
@@ -245,10 +245,10 @@ export const fetchProductWithInventoryDetails = async (req, res) => {
 
     const parsedBusinessId = Number(businessId);
     if (isNaN(parsedBusinessId)) {
-      return res.status(400).json({ error: "Business ID must be a number." });
+      return res.status(400).json({ error: "Business ID must be a number." });fetchActiveProductWithInventoryDetailsByBusiness
     }
 
-    const products = await getActiveInventoryWithProductDetails(parsedBusinessId);
+    const products = await getInventoryWithProductDetailsByBusiness(parsedBusinessId);
 
     res.status(200).json(products);
   } catch (error) {
@@ -257,7 +257,7 @@ export const fetchProductWithInventoryDetails = async (req, res) => {
   }
 };
 
-export const fetchProductWithInventoryDetailsByBusiness = async (req, res) => {
+export const fetchActiveProductWithInventoryDetailsByBusiness = async (req, res) => {
   try {
     const { businessId } = req.params;
     if (!businessId) {
@@ -286,6 +286,6 @@ export const fetchActiveProducts = async (req, res) => {
 
 
 
-export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchProductWithInventoryDetails };
+export default { createProduct, fetchProductsByBusiness, fetchUnits, fetchAllProducts, fetchProductById, modifyProduct, removeProduct, toggleProductStatus, fetchActiveProducts, fetchActiveProductWithInventoryDetailsByBusiness };
 
 

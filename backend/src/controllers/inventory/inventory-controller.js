@@ -47,7 +47,10 @@ export const stockInController = async (req, res) => {
 //  Stock-out controller (Spoilage / Wastage)
 
 export const stockOutController = async (req, res) => {
-  console.log("📥 Stock-out Body:", req.body);
+  console.log("📥 Stock-out Headers:", req.headers);
+  console.log("📦 Stock-out Body:", req.body);
+  console.log("👤 User:", req.user);
+
 
   try {
     const { businessId, userId, items } = req.body;
@@ -101,7 +104,9 @@ export const stockOutController = async (req, res) => {
 //  Correction controller (Stock Adjustment)
 
 export const correctionController = async (req, res) => {
-  console.log("📥 Correction Body:", req.body);
+  console.log("📥 Correction Headers:", req.headers);
+  console.log("📦 Correction Body:", req.body);
+  console.log("👤 User:", req.user);
 
   try {
     const { businessId, userId, items } = req.body;
@@ -143,7 +148,9 @@ export const correctionController = async (req, res) => {
 
 // Production controller
 export const productionController = async (req, res) => {
-  console.log("📥 Production Body:", req.body);
+  console.log("📥 Production Headers:", req.headers);
+  console.log("📦 Production Body:", req.body);
+  console.log("👤 User:", req.user);
 
   try {
     const { businessId, userId, items } = req.body;
@@ -159,12 +166,9 @@ export const productionController = async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing or invalid items array" });
     }
 
-    const result = await processProduction({
-      items,
-      businessId,
-      userId
-    });
-    
+    // Call service
+    const result = await processProduction({ items, businessId, userId });
+
     res.status(200).json({
       success: true,
       message: "Production recorded successfully",
