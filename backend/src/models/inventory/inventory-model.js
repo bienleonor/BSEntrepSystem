@@ -1,3 +1,4 @@
+//models/inventory/inventory-model.js
 import pool from "../../config/pool.js";
 
 export const startTransaction = async () => {

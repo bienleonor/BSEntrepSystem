@@ -109,7 +109,6 @@ const ProductListComponent = () => {
               <th className="p-3 text-left border-b-2 border-gray-300">Quantity</th>
               <th className="p-3 text-left border-b-2 border-gray-300">Last Restocked</th>
               <th className="p-3 text-left border-b-2 border-gray-300">Image</th>
-              <th className="p-3 text-left border-b-2 border-gray-300">Add Stock</th>
             </tr>
           </thead>
           <tbody>
@@ -135,27 +134,6 @@ const ProductListComponent = () => {
                   ) : (
                     "No image"
                   )}
-                </td>
-                <td className="p-3 border-b border-gray-200">
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Qty"
-                    className="w-16 mr-2 p-1 border rounded"
-                    value={stockInputs[p.product_id] || ""}
-                    onChange={(e) =>
-                      setStockInputs((prev) => ({
-                        ...prev,
-                        [p.product_id]: e.target.value,
-                      }))
-                    }
-                  />
-                  <button
-                    onClick={() => handleAddStock(p.product_id)}
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Add
-                  </button>
                 </td>
               </tr>
             ))}

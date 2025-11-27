@@ -1,10 +1,11 @@
-import { addStockIn, applyMultiInventoryChange } from "../../services/inventory-services.js";
+import { 
+  addStockIn, 
+  applyMultiInventoryChange,
+  processProduction  // ✅ Add this import
+} from "../../services/inventory-services.js";
 
-/**
- * Stock-in controller (Add Stocks)
- * POST /inventory/adjust/stockin
- * Body: { businessId, userId, items: [{ productId, quantity, unit_price }] }
- */
+// Stock-in controller (Add Stocks)
+
 export const stockInController = async (req, res) => {
   console.log("📥 Stock-in Headers:", req.headers);
   console.log("📦 Stock-in Body:", req.body);
@@ -42,13 +43,9 @@ export const stockInController = async (req, res) => {
   }
 };
 
-/**
- * Stock-out controller (Spoilage / Wastage)
- * POST /inventory/adjust/stockout
- * Body: { businessId, userId, items: [{ productId, quantity }] }
- * 
- * Frontend sends type='spoilage' or type='waste' but both use this endpoint
- */
+
+//  Stock-out controller (Spoilage / Wastage)
+
 export const stockOutController = async (req, res) => {
   console.log("📥 Stock-out Body:", req.body);
 
@@ -100,11 +97,9 @@ export const stockOutController = async (req, res) => {
   }
 };
 
-/**
- * Correction controller (Stock Adjustment)
- * POST /inventory/adjust/correction
- * Body: { businessId, userId, items: [{ productId, quantity }] }
- */
+
+//  Correction controller (Stock Adjustment)
+
 export const correctionController = async (req, res) => {
   console.log("📥 Correction Body:", req.body);
 
@@ -145,11 +140,8 @@ export const correctionController = async (req, res) => {
   }
 };
 
-/**
- * Production controller
- * POST /inventory/adjust/production
- * Body: { businessId, userId, items: [{ productId, quantity }] }
- */
+
+// Production controller
 export const productionController = async (req, res) => {
   console.log("📥 Production Body:", req.body);
 
@@ -167,10 +159,8 @@ export const productionController = async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing or invalid items array" });
     }
 
-    // Call service
-    const result = await applyMultiInventoryChange({
+    const result = await processProduction({
       items,
-      reason: "production",
       businessId,
       userId
     });

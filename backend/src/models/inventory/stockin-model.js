@@ -15,7 +15,40 @@ export const createStockIn = async ({ businessId, userId, totalAmount }) => {
 };
 
 /**
- * Insert stock-in items
+ * Validate that all products are simple type
+ * @param {Array} items - [{ productId, quantity, unit_price }]
+ * @throws {Error} if any product is not simple
+ */
+export const validateSimpleProducts = async (items) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    for (const item of items) {
+      const [rows] = await connection.execute(
+        `SELECT product_id, name, product_type FROM product_table WHERE product_id = ?`,
+        [item.productId]
+      );
+
+      if (rows.length === 0) {
+        throw new Error(`Product ${item.productId} not found`);
+      }
+
+      const product = rows[0];
+      
+      if (product.product_type !== 'simple') {
+        throw new Error(
+          `Cannot stock-in ${product.product_type} product "${product.name}". ` +
+          `Only simple products can be stocked in.`
+        );
+      }
+    }
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Insert stock-in items (with validation)
  * @param {Number} stockinId
  * @param {Array} items - [{ productId, quantity, unit_price }]
  */
@@ -27,8 +60,58 @@ export const insertStockInItems = async (stockinId, items) => {
 
     for (const item of items) {
       const { productId, quantity, unit_price } = item;
+
+      // ✅ Validate product type
+      const [productRows] = await connection.execute(
+        `SELECT product_id, name, product_type FROM product_table WHERE product_id = ?`,
+        [productId]
+      );
+
+      if (productRows.length === 0) {
+        throw new Error(`Product ${productId} not found`);
+      }
+
+      const product = productRows[0];
       
+      if (product.product_type !== 'simple') {
+        throw new Error(
+          `Cannot stock-in ${product.product_type} product "${product.name}". ` +
+          `Only simple products allowed in stock-in.`
+        );
+      }
+
       // ✅ Calculate total_price for each item
+      const total_price = Number(quantity) * Number(unit_price);
+
+      await connection.execute(
+        `INSERT INTO stockin_item_table (stockin_id, product_id, quantity, unit_price, total_price)
+         VALUES (?, ?, ?, ?, ?)`,
+        [stockinId, productId, quantity, unit_price, total_price]
+      );
+    }
+
+    await connection.commit();
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Insert stock-in items (without validation - use with caution)
+ * @param {Number} stockinId
+ * @param {Array} items - [{ productId, quantity, unit_price }]
+ */
+export const insertStockInItemsUnsafe = async (stockinId, items) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    for (const item of items) {
+      const { productId, quantity, unit_price } = item;
       const total_price = Number(quantity) * Number(unit_price);
 
       await connection.execute(
@@ -95,7 +178,7 @@ export const getStockInDetails = async (stockinId) => {
     return null;
   }
 
-  // Get stock-in items
+  // Get stock-in items with product types
   const [items] = await pool.execute(
     `SELECT 
        sii.stockin_item_id,
@@ -104,6 +187,7 @@ export const getStockInDetails = async (stockinId) => {
        sii.unit_price,
        sii.total_price,
        p.name AS product_name,
+       p.product_type,
        u.name AS unit_name
      FROM stockin_item_table sii
      LEFT JOIN product_table p ON sii.product_id = p.product_id
@@ -152,7 +236,9 @@ export const deleteStockIn = async (stockinId) => {
 
 export default {
   createStockIn,
+  validateSimpleProducts,
   insertStockInItems,
+  insertStockInItemsUnsafe,
   getStockInsByBusiness,
   getStockInDetails,
   deleteStockIn
