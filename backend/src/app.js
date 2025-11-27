@@ -9,6 +9,8 @@ import salesRoutes from './routes/sales-route.js';
 import { authenticateToken } from './middlewares/auth-middleware.js';
 import  registerBusiness  from './routes/business/business-routes.js';
 import  productroutes  from './routes/inventory/product-route.js';
+import recipeRoutes from './routes/inventory/recipe-route.js';
+import comboRoutes from './routes/inventory/combo-route.js';
 import accessCodeRoute from "./routes/access-codes-route.js";
 import UserDetailsRoutes from './routes/user-details-route.js';
 import stockadjustment from './routes/inventory/stock-adjustment-route.js';
@@ -38,6 +40,8 @@ app.use("/api/access-code", accessCodeRoute);
 app.use('/api/business', registerBusiness);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', productroutes);
+app.use('/api/inventory', recipeRoutes);
+app.use('/api/inventory/combo', comboRoutes);
 app.use('/api/inventory/adjust', stockadjustment);
 app.use('/uploads', express.static('uploads'));
 
