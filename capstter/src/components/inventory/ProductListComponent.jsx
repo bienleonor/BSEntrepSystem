@@ -57,34 +57,6 @@ const ProductListComponent = () => {
     }
   };
 
-  const handleAddStock = async (productId) => {
-    const quantity = parseInt(stockInputs[productId], 10);
-    if (!quantity || quantity <= 0) {
-      toast.error("Enter a valid quantity.");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:5000/api/inventory/inventory", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ productId, quantity }),
-      });
-
-      if (!response.ok) throw new Error("Failed to add stock");
-
-      toast.success("Stock added successfully.");
-      setStockInputs((prev) => ({ ...prev, [productId]: "" }));
-      fetchData(); // refresh inventory
-    } catch (err) {
-      console.error("Error adding stock:", err);
-      toast.error("Failed to add stock.");
-    }
-  };
-
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, REFRESH_INTERVAL);
