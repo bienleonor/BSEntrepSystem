@@ -19,6 +19,7 @@ import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
 import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
 import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
 import Category from '../pages/SessionPages/Category.jsx'
+import StockAdjustmentReport from '../pages/SessionPages/StockAdjustmentReport.jsx'
 
 
 export const privateRoutes = [
@@ -27,6 +28,7 @@ export const privateRoutes = [
   { path: '/businessregistration', element: <BusinessRegistration /> },
   { path: '/chooserole', element: <ChooseRole />},
   { path: '/multiadjustmentstock', element: <MultiAdjustment /> },
+  { path: '/stockadjustmentreport', element: <StockAdjustmentReport /> },
   { path: '/productregistration', element: <ProductRegistration /> },
   { path: '/inventory', element: <Inventory /> },
   { path: '/salesanalysis', element: <SalesAnalysis /> },

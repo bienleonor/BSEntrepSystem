@@ -48,7 +48,7 @@ export default function MultiAdjustment() {
       return [];
     }
     try {
-      const res = await axiosInstance.get(`/inventory/products/active/inventory-details/${biz}`);
+      const res = await axiosInstance.get(`/inventory/businesses/${biz}/products`);
       setProducts(res.data);
       return res.data;
     } catch (e) {

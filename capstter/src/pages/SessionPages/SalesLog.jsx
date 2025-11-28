@@ -14,7 +14,7 @@ function SalesLog() {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [exportDate, setExportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [exportDate, setExportDate] = useState(formatLocalDateInput(new Date()));
 
   useEffect(() => {
     const fetchSalesLog = async () => {
@@ -148,7 +148,7 @@ function SalesLog() {
 
   const filterByDate = (dateStr, txs) => {
     if (!txs || !txs.length || !dateStr) return [];
-    const selectedDate = new Date(dateStr);
+    const selectedDate = new Date(dateStr + 'T00:00:00');
     return txs.filter(tx => {
       if (!tx.rawDate) return false;
       return tx.rawDate.toDateString() === selectedDate.toDateString();
@@ -239,8 +239,8 @@ function SalesLog() {
 
     if (dates.length === 0) return { minDate: '', maxDate: '' };
 
-    const minDate = dates[0].toISOString().split('T')[0];
-    const maxDate = dates[dates.length - 1].toISOString().split('T')[0];
+    const minDate = formatLocalDateInput(dates[0]);
+    const maxDate = formatLocalDateInput(dates[dates.length - 1]);
     return { minDate, maxDate };
   };
 
@@ -325,6 +325,7 @@ function SalesLog() {
               <button
                 onClick={exportByDate}
                 className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm w-full sm:w-auto"
+                disabled={!filteredTransactions.some(tx => tx.rawDate && tx.rawDate.toDateString() === new Date(exportDate + 'T00:00:00').toDateString())}
               >
                 Export
               </button>
@@ -533,6 +534,13 @@ function SalesLog() {
       </OrderPopup>
     </DashboardLayout>
   );
+}
+
+function formatLocalDateInput(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default SalesLog;
