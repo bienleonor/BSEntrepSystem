@@ -17,30 +17,41 @@ export const addComboItems = async (parentProductId, components) => {
 
     await connection.commit();
   } catch (err) {
-    await connection.rollback();
+    console.error("addComboItems error:", err);
+    try { await connection.rollback(); } catch (e) { /* ignore */ }
     throw err;
   } finally {
-    connection.release();
+    try { connection.release(); } catch (e) { /* ignore */ }
   }
 };
 
 export const getComboByParent = async (parentProductId) => {
-  const [rows] = await pool.execute(
-    `SELECT c.component_id, c.component_product_id, c.quantity, p.name AS component_name, p.product_type
-     FROM combo_items_table c
-     JOIN product_table p ON c.component_product_id = p.product_id
-     WHERE c.parent_product_id = ?`,
-    [parentProductId]
-  );
-  return rows;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT c.component_id, c.component_product_id, c.quantity, p.name AS component_name, p.product_type
+       FROM combo_items_table c
+       JOIN product_table p ON c.component_product_id = p.product_id
+       WHERE c.parent_product_id = ?`,
+      [parentProductId]
+    );
+    return rows;
+  } catch (err) {
+    console.error("getComboByParent error:", err);
+    throw err;
+  }
 };
 
 export const deleteComboByParent = async (parentProductId) => {
-  const [result] = await pool.execute(
-    `DELETE FROM combo_items_table WHERE parent_product_id = ?`,
-    [parentProductId]
-  );
-  return result;
+  try {
+    const [result] = await pool.execute(
+      `DELETE FROM combo_items_table WHERE parent_product_id = ?`,
+      [parentProductId]
+    );
+    return result;
+  } catch (err) {
+    console.error("deleteComboByParent error:", err);
+    throw err;
+  }
 };
 
 export default { addComboItems, getComboByParent, deleteComboByParent };
