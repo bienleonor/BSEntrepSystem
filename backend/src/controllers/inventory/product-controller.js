@@ -84,6 +84,7 @@ export const createProduct = async (req, res) => {
         await addIngredient({
           productId: productId,
           ingredientProductId: ing.product_id,
+          ingredientUnitId: ing.ingredient_unit_id || null,
           consumptionAmount: ing.qty
         });
       }

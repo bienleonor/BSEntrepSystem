@@ -6,9 +6,10 @@ import toast from "react-hot-toast";
 export default function RecipeBuilder({ productType, onRecipeChange, initialRecipe }) {
   const [ingredients, setIngredients] = useState([]);
   const [products, setProducts] = useState([]);
-  const businessId = localStorage.getItem('selectedBusinessId');
+  const [units, setUnits] = useState([]);
+  const businessId = localStorage.getItem("selectedBusinessId");
 
-  // Fetch products that can be used as ingredients
+  // Fetch products for ingredients
   useEffect(() => {
     async function loadProducts() {
       try {
@@ -19,10 +20,25 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
       }
     }
     loadProducts();
+  }, [businessId]);
+
+  // Fetch units
+  useEffect(() => {
+    async function loadUnits() {
+      try {
+        const res = await axiosInstance.get("/inventory/units");
+        setUnits(res.data);
+      } catch {
+        toast.error("Failed to load units");
+      }
+    }
+    loadUnits();
   }, []);
 
-  const addIngredient = () => {
-    setIngredients([...ingredients, { product_id: "", qty: "" }]);
+  const addIngredientRow = () => {
+    const newIng = { product_id: "", qty: "", unit_id: null };
+    setIngredients([...ingredients, newIng]);
+    onRecipeChange([...ingredients, newIng]);
   };
 
   const removeIngredient = (index) => {
@@ -33,69 +49,42 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
 
   const updateIngredient = (index, field, value) => {
     const updated = [...ingredients];
-    updated[index][field] = value;
+    updated[index][field] = value ?? null; // always default null
     setIngredients(updated);
     onRecipeChange(updated);
   };
 
-  // Normalize initialRecipe into shape expected by this component: { product_id, qty }
-useEffect(() => {
-  if (!initialRecipe) return;
-
-  const normalized = initialRecipe.map((ing) => {
-    if (ing.ingredient_product_id !== undefined || ing.consumption_amount !== undefined) {
-      return {
-        product_id: String(ing.ingredient_product_id ?? ing.product_id ?? ''),
-        qty: String(ing.consumption_amount ?? ing.qty ?? ''),
-      };
-    }
-      // Combo items mapping (component_product_id, quantity)
-      if (ing.component_product_id !== undefined || ing.quantity !== undefined) {
-        return {
-          product_id: String(ing.component_product_id ?? ing.product_id ?? ''),
-          qty: String(ing.quantity ?? ing.qty ?? ''),
-        };
-      }
-    return {
-      product_id: String(ing.product_id ?? ''),
-      qty: String(ing.qty ?? ing.consumption_amount ?? ''),
-    };
-  });
-
-  // Only update if different
-  const isDifferent =
-    normalized.length !== ingredients.length ||
-    normalized.some((ing, idx) =>
-      ing.product_id !== ingredients[idx]?.product_id ||
-      ing.qty !== ingredients[idx]?.qty
-    );
-
-  if (isDifferent) {
+  // Normalize initialRecipe into { product_id, qty, unit_id }
+  useEffect(() => {
+    if (!initialRecipe) return;
+    const normalized = initialRecipe.map((ing) => ({
+      product_id: String(ing.ingredient_product_id ?? ing.product_id ?? ""),
+      qty: String(ing.consumption_amount ?? ing.qty ?? ""),
+      unit_id: ing.unit_id ?? null,
+    }));
     setIngredients(normalized);
     onRecipeChange && onRecipeChange(normalized);
-  }
-  // eslint-disable-next-line
-}, [initialRecipe]);
+  }, [initialRecipe]);
 
-  // Render nothing if product type does not support recipes (case-insensitive)
-  if (!productType || (productType.toString().toLowerCase() === "simple")) return null;
+  if (!productType || productType.toLowerCase() === "simple") return null;
 
   return (
-    <div className="mt-6 p-4 bg-white  shadow rounded-xl w-full text-center items-center">
+    <div className="mt-6 p-4 bg-white shadow rounded-xl w-full text-center">
       <h3 className="text-xl font-semibold mb-5">
-        {productType?.toString().toLowerCase() === "recipe" ? "Recipe Ingredients" : "Composite Contents"}
+        {productType.toLowerCase() === "recipe" ? "Recipe Ingredients" : "Composite Contents"}
       </h3>
 
-      <div >
+      <div>
         {ingredients.map((ing, index) => (
           <div
             key={index}
             className="grid grid-cols-12 gap-3 items-center bg-gray-50 p-2 rounded-lg"
           >
+            {/* Product select */}
             <select
               value={ing.product_id}
               onChange={(e) => updateIngredient(index, "product_id", e.target.value)}
-              className="col-span-6 p-2 rounded border"
+              className="col-span-4 p-2 rounded border"
             >
               <option value="">Select Item</option>
               {products.map((p) => (
@@ -105,14 +94,29 @@ useEffect(() => {
               ))}
             </select>
 
+            {/* Quantity input */}
             <input
               type="number"
               min="1"
               value={ing.qty}
               onChange={(e) => updateIngredient(index, "qty", e.target.value)}
               placeholder="Qty"
-              className="col-span-4 p-2 border rounded"
+              className="col-span-3 p-2 border rounded"
             />
+
+            {/* Unit select */}
+            <select
+              value={ing.unit_id ?? ""}
+              onChange={(e) => updateIngredient(index, "unit_id", e.target.value || null)}
+              className="col-span-3 p-2 rounded border"
+            >
+              <option value="">Select Unit</option>
+              {units.map((u) => (
+                <option key={u.unit_id} value={String(u.unit_id)}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
 
             <button
               type="button"
@@ -127,8 +131,8 @@ useEffect(() => {
 
       <button
         type="button"
-        onClick={addIngredient}
-        className="mt-5 m-auto flex justify-center items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md"
+        onClick={addIngredientRow}
+        className="mt-5 flex justify-center items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md"
       >
         <Plus size={18} />
         Add Ingredient

@@ -9,13 +9,20 @@ export async function getUnitById(unitId) {
 }
 
 // optional bulk fetch
-export async function getUnitsByIds(unitIds = []) {
-  if (!unitIds.length) return {};
-  const [rows] = await pool.query(
-    `SELECT unit_id, name, abbreviation, base_unit, conversion_factor FROM unit_table WHERE unit_id IN (?)`,
-    [unitIds]
+export async function getUnitsByIds(ids) {
+  if (!ids || !ids.length) return {};
+
+  const placeholders = ids.map(() => "?").join(",");
+  const [rows] = await pool.execute(
+    `SELECT * FROM unit_table WHERE unit_id IN (${placeholders})`,
+    ids
   );
+
+  // Convert array → object for fast lookup
   const map = {};
-  for (const r of rows) map[r.unit_id] = r;
+  rows.forEach(u => {
+    map[u.unit_id] = u;
+  });
+
   return map;
 }
