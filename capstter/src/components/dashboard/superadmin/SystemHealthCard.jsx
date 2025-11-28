@@ -13,19 +13,17 @@ export default function SystemHealthCard() {
     : "bg-red-100 text-red-700";
 
   return (
-    <Card className="flex flex-col justify-between w-full h-full bg-slate-900 border border-slate-700">
-      <h2 className="font-semibold text-gray-800 flex items-center">
-        <Server className="w-5 h-5 mr-2" />
-        System Health Status
+    <Card className="flex flex-col justify-between w-full h-full bg-slate-900 border border-slate-700 p-4 sm:p-5">
+      <h2 className="text-sm sm:text-base font-semibold text-gray-200 flex items-center">
+        <Server className="w-5 h-5 mr-2 text-cyan-400" />
+        System Health
       </h2>
-      <p className="text-4xl font-extrabold text-gray-600">
+      <p className="text-2xl sm:text-3xl font-extrabold text-gray-100 mt-2">
         {systemStatus}
       </p>
-      <div className="mt-3 flex justify-between items-center">
-        <span className={`text-sm font-medium px-3 py-1 rounded-full ${statusClass}`}>
-          Running Smoothly
-        </span>
-        <span className="text-xs text-gray-500">Last check: {lastCheck}</span>
+      <div className="mt-3 flex flex-wrap gap-2 justify-between items-center">
+        <span className={`text-xs sm:text-sm font-medium px-3 py-1 rounded-full ${statusClass} shadow-sm`}>Running Smoothly</span>
+        <span className="text-[10px] sm:text-xs text-gray-400">Last check: {lastCheck}</span>
       </div>
     </Card>
   );

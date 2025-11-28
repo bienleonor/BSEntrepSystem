@@ -257,7 +257,7 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
     // insert transaction
     await conn.query(
       `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?,  NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
       [businessId, productId, change_qty, reason, reference, userId]
     );
 

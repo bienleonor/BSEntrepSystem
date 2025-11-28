@@ -25,6 +25,7 @@ export default function OrderList() {
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [popupMode, setPopupMode] = useState(null); // 'view' | 'finish'
   const [currentPage, setCurrentPage] = useState(1);
 
   const list = Array.isArray(orders) ? orders : [];
@@ -42,20 +43,22 @@ export default function OrderList() {
     }
   }, [error]);
 
-  const openPopup = (order) => {
+  const openPopup = (order, mode = "view") => {
     setSelectedOrder(order);
+    setPopupMode(mode);
     setIsPopupOpen(true);
   };
 
   const closePopup = () => {
     setIsPopupOpen(false);
     setSelectedOrder(null);
+    setPopupMode(null);
   };
 
   return (
     <DashboardLayout>
             {/* Toast container */}
-      <ToastContainer position="top-middle" autoClose={3000} />
+      <ToastContainer position="top-center" autoClose={3000} />
       <h1 className="text-4xl text-center text-white font-extrabold mb-10">
         🧾 Order List
       </h1>
@@ -124,7 +127,7 @@ export default function OrderList() {
             <div className="flex justify-end gap-4">
               <button
                 className="bg-gray-700 text-white px-5 py-2 rounded hover:bg-gray-800"
-                onClick={() => openPopup(order)}
+                onClick={() => openPopup(order, "view")}
               >
                 📋 View
               </button>
@@ -133,17 +136,10 @@ export default function OrderList() {
                 className={`bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 ${
                   finishingId === order.id ? "opacity-50 cursor-not-allowed" : ""
                 }`}
-                onClick={async () => {
-                  try {
-                    await finishOrder(order.id);
-                    toast.success(`Order ${order.receiptNo ?? order.id} finished successfully ✅`);
-                  } catch (err) {
-                    toast.error(`Failed to finish order: ${err.message}`);
-                  }
-                }}
+                onClick={() => openPopup(order, "finish")}
                 disabled={finishingId === order.id}
               >
-                {finishingId === order.id ? "⏳ Finishing..." : "Finish"}
+                Finish
               </button>
 
               <button
@@ -196,10 +192,20 @@ export default function OrderList() {
       <OrderPopup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={`Order Details: ${selectedOrder?.id ?? ""}`}
+        title={
+          popupMode === "finish"
+            ? `Review & Finish Order: ${selectedOrder?.receiptNo ?? selectedOrder?.id ?? ""}`
+            : `Order Details: ${selectedOrder?.receiptNo ?? selectedOrder?.id ?? ""}`
+        }
+        closeOnOutside={popupMode !== "finish"}
       >
         {selectedOrder && (
           <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-700">Receipt:</div>
+              <div className="font-semibold">{selectedOrder?.receiptNo ?? selectedOrder?.id}</div>
+            </div>
+
             {(Array.isArray(selectedOrder.items) ? selectedOrder.items : []).map((item) => (
               <div key={item.id ?? item.productId} className="flex items-center gap-4">
                 <img
@@ -217,6 +223,46 @@ export default function OrderList() {
                 </div>
               </div>
             ))}
+
+            <div className="flex justify-between pt-2 border-t mt-2">
+              <span className="font-semibold">Order Total</span>
+              <span className="font-bold">
+                ₱{Number(selectedOrder.total ?? selectedOrder.total_amount ?? 0).toLocaleString()}
+              </span>
+            </div>
+
+            {popupMode === "finish" && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-gray-700">
+                  Please review the items before finishing the order.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                    onClick={closePopup}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded text-white ${
+                      finishingId === selectedOrder.id ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                    disabled={finishingId === selectedOrder.id}
+                    onClick={async () => {
+                      try {
+                        await finishOrder(selectedOrder.id);
+                        toast.success(`Order ${selectedOrder.receiptNo ?? selectedOrder.id} finished successfully ✅`);
+                        closePopup();
+                      } catch (err) {
+                        toast.error(`Failed to finish order: ${err.message}`);
+                      }
+                    }}
+                  >
+                    {finishingId === selectedOrder.id ? "⏳ Finishing..." : "Confirm Finish"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </OrderPopup>

@@ -16,6 +16,7 @@ export default function MultiAdjustment() {
   const [type, setType] = useState('add');
   const [products, setProducts] = useState([]);
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
   
   const getUserIdFromToken = () => {
     const token = localStorage.getItem("token");
@@ -39,26 +40,37 @@ export default function MultiAdjustment() {
 
   const modeLabel = adjustmentTypes.find(t => t.value === type)?.label || "Stock Adjustment";
 
-  // Fetch products
-  useEffect(() => {
+  // Fetch products helper
+  const fetchProducts = async () => {
     const biz = localStorage.getItem("selectedBusinessId");
-    if (!biz) return toast.error("Select a business first.");
+    if (!biz) {
+      toast.error("Select a business first.");
+      return [];
+    }
+    try {
+      const res = await axiosInstance.get(`/inventory/products/active/inventory-details/${biz}`);
+      setProducts(res.data);
+      return res.data;
+    } catch (e) {
+      toast.error("Failed to load products.");
+      return [];
+    }
+  };
 
-    axiosInstance
-      .get(`/inventory/businesses/${biz}/products/`)
-      .then((res) => {
-        setProducts(res.data);
-        if (res.data[0]) {
-          setItems([{
-            productId: res.data[0].product_id,
-            name: res.data[0].name,
-            quantityAvailable: res.data[0].quantity,
-            quantity: "",
-            unit_price: type === 'add' ? 0 : undefined,
-          }]);
-        }
-      })
-      .catch(() => toast.error("Failed to load products."));
+  // Initial/Type-change product load
+  useEffect(() => {
+    (async () => {
+      const data = await fetchProducts();
+      if (data[0]) {
+        setItems([{
+          productId: data[0].product_id,
+          name: data[0].name,
+          quantityAvailable: data[0].quantity || 0,
+          quantity: "",
+          unit_price: type === 'add' ? 0 : undefined,
+        }]);
+      }
+    })();
   }, [type]);
 
   const handleItemChange = (index, field, value) => {
@@ -69,8 +81,8 @@ export default function MultiAdjustment() {
       const sel = products.find(p => String(p.product_id) === String(value));
       if (sel) {
         newItems[index].name = sel.name;
-        newItems[index].quantityAvailable = sel.quantity;
-        if (type === 'add') newItems[index].unit_price = sel.unit_price || 0;
+        newItems[index].quantityAvailable = sel.quantity || 0;
+        // Do not auto-map unit_price from product price; keep user input
       }
     }
 
@@ -83,9 +95,9 @@ export default function MultiAdjustment() {
     setItems([...items, {
       productId: first.product_id,
       name: first.name,
-      quantityAvailable: first.quantity,
+      quantityAvailable: first.quantity || 0,
       quantity: "",
-      unit_price: type === 'add' ? first.unit_price || 0 : undefined,
+      unit_price: type === 'add' ? 0 : undefined,
     }]);
   };
 
@@ -101,6 +113,9 @@ export default function MultiAdjustment() {
     const userId = getUserIdFromToken();
     if (!userId) return toast.error("Missing user info");
 
+    // Determine sign: correction should MINUS the stock
+    const isStockOut = type === 'spoilage' || type === 'waste' || type === 'correction';
+
     const payload = {
       businessId,
       userId,
@@ -110,19 +125,33 @@ export default function MultiAdjustment() {
 
         return {
           productId: Number(i.productId),
-          quantity: Number(i.quantity),
+          // Send negative quantity for stock-out/correction to reduce stock
+          quantity: isStockOut ? -Math.abs(Number(i.quantity)) : Math.abs(Number(i.quantity)),
           ...(type === 'add' ? { unit_price: Number(i.unit_price) || 0 } : {})
         };
       })
     };
 
     try {
+      setLoading(true);
       await axiosInstance.post(apiMap[type], payload);
+      // Re-fetch products to reflect updated quantities immediately
+      const updatedProducts = await fetchProducts();
+      // Sync current items' quantityAvailable from latest product data
+      setItems(prev => prev.map(i => {
+        const p = updatedProducts.find(p => Number(p.product_id) === Number(i.productId));
+        return {
+          ...i,
+          quantityAvailable: p ? (p.quantity || 0) : i.quantityAvailable,
+          quantity: "",
+        };
+      }));
       toast.success(`${modeLabel} successful`);
-      setItems(items.map(i => ({ ...i, quantity: "" })));
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.error || "Action failed.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -207,7 +236,7 @@ export default function MultiAdjustment() {
             + Add Another Product
           </button>
           <button type="submit" className="w-full bg-blue-600 p-2 text-white rounded-lg">
-            Confirm
+            {loading ? 'Processing...' : 'Confirm'}
           </button>
         </form>
 
