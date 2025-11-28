@@ -1,8 +1,10 @@
 import { 
   addStockIn, 
   applyMultiInventoryChange,
-  processProduction  // ✅ Add this import
+  processProduction, 
 } from "../../services/inventory-services.js";
+
+import { getAllInventoryTransactions } from "../../models/inventory/inventory-model.js";
 
 // Stock-in controller (Add Stocks)
 
@@ -180,6 +182,28 @@ export const productionController = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: err.message || "Internal server error" 
+    });
+  }
+};
+
+export const getInventoryTransactionsController = async (req, res) => {
+  console.log("📥 Get Inventory Transactions Headers:", req.headers);
+  console.log("👤 User:", req.user) ;
+  try {
+    const businessId = req.businessId;
+    if (!businessId) {
+      return res.status(400).json({ success: false, error: "Missing businessId" });
+    }
+    const transactions = await getAllInventoryTransactions(businessId);
+    res.status(200).json({
+      success: true,
+      data: transactions
+    });
+  } catch (err) {
+    console.error("❌ Get Inventory Transactions error:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message || "Internal server error"
     });
   }
 };

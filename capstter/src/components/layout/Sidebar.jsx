@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book } from "lucide-react";
+import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book,BookOpenText  } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const menuItems = [
@@ -15,6 +15,8 @@ const menuItems = [
   { label: "Product List", icon: <PackageOpen  size={18} /> },
   { label: "Category", icon: <Book  size={18} /> },
   { label: "Multi Adjustment Stock", icon: <PackageOpen  size={18} /> },
+   { label: "Stock Adjustment Report", icon: <BookOpenText   size={18} /> },
+
   
 
   // Employee Management

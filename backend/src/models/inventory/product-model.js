@@ -131,9 +131,14 @@ export const deleteProduct = async (productId) => {
 
 export const getProductsByBusiness = async (businessId) => {
   const [rows] = await pool.execute(
-    `SELECT p.*, c.name AS category_name
+    `SELECT 
+       p.*, 
+       c.name AS category_name,
+       COALESCE(i.quantity, 0) AS quantity,
+       i.updated_at AS inventory_updated_at
      FROM product_table p
-     LEFT JOIN product_category_table c ON c.category_id = p.category_id
+     LEFT JOIN product_category_table c ON c.category_id = p.category_id 
+     LEFT JOIN inventory_table i ON i.product_id = p.product_id
      WHERE p.business_id = ?`,
     [businessId]
   );

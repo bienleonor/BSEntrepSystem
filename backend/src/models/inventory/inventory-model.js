@@ -53,3 +53,25 @@ export const insertInventoryTransaction = async (
     [business_id, product_id, change_qty, reason, reference, user_id]
   );
 };
+
+
+export const getAllInventoryTransactions = async (businessId) => {
+  const [rows] = await pool.execute(
+    `SELECT it.transaction_id,
+            it.product_id,
+            p.name AS product_name,
+            it.change_qty,
+            it.reason,
+            it.reference,
+            it.user_id,
+            u.username AS username,
+            it.created_at
+     FROM inventory_transactions it
+     JOIN product_table p ON it.product_id = p.product_id
+     LEFT JOIN user_table u ON u.user_id = it.user_id
+     WHERE it.business_id = ?
+     ORDER BY it.created_at DESC`,
+    [businessId]
+  );
+  return rows;
+};
