@@ -156,8 +156,8 @@ export const getactiveProducts = async () => {
   return rows;
 }
 
-//fetch products with inventory details
-export const getInventoryWithProductDetailsByBusiness = async () => {
+// fetch products with inventory details
+export const getInventoryWithProductDetailsByBusiness = async (businessId) => {
   const [rows] = await pool.execute(
     `SELECT 
        p.product_id,
@@ -170,7 +170,8 @@ export const getInventoryWithProductDetailsByBusiness = async () => {
        i.updated_at AS last_restocked
      FROM product_table p
      LEFT JOIN inventory_table i ON p.product_id = i.product_id
-     WHERE p.business_id = ?`
+     WHERE p.business_id = ?`,
+    [businessId]
   );
   return rows;
 };
@@ -232,18 +233,16 @@ export const addInventoryStock = async ({ productId, quantity }) => {
 };
 
 
-
-//wrong
-export const updateinventoryStock = async (productId, quantity) => {
+export const updateInventoryStockByProduct = async (productId, quantity) => {
   const [result] = await pool.execute(
-    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE inventory_id = ?`,
+    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE product_id = ?`,
     [quantity, productId]
   );
   return result;
-}
+};
 
 // Record a stock adjustment (stock out / in) and update inventory quantity accordingly
-export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId, unit_price }) {
+export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId }) {
   const conn = await pool.getConnection();
   await conn.beginTransaction();
   try {
@@ -257,9 +256,9 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
 
     // insert transaction
     await conn.query(
-      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, unit_price, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [businessId, productId, change_qty, reason, reference, userId, unit_price || null]
+      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?,  NOW())`,
+      [businessId, productId, change_qty, reason, reference, userId]
     );
 
     await conn.commit();
@@ -278,6 +277,5 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
 
 
 
-export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getInventoryWithProductDetailsByBusiness, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory };
-
+export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct, getactiveProducts, getInventoryWithProductDetailsByBusiness, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory, updateInventoryStockByProduct };
     

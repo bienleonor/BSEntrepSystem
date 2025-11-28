@@ -4,6 +4,8 @@ import { deleteIngredientsByProduct, addIngredient, getIngredientsByProduct } fr
 export const addOrUpdateRecipe = async (req, res) => {
   try {
     const { productId, ingredients } = req.body;
+    console.log("This is the body", req.body)
+    console.log("This is the ingredients", req.ingredients)
 
     if (!productId || !Array.isArray(ingredients)) {
       return res.status(400).json({ message: 'Invalid payload' });
@@ -17,7 +19,8 @@ export const addOrUpdateRecipe = async (req, res) => {
       await addIngredient({
         productId,
         ingredientProductId: ing.ingredient_product_id,
-        consumptionAmount: ing.consumption_amount
+        consumptionAmount: ing.consumption_amount,
+        ingredientUnitId: ing.ingredient_unit_id
       });
     }
 
