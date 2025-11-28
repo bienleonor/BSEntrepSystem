@@ -299,10 +299,5 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
 }
 
 
-
-
-
-
-
 export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct, getactiveProducts, getInventoryWithProductDetailsByBusiness, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory, updateInventoryStockByProduct };
     
