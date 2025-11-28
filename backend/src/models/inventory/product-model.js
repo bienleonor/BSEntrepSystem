@@ -243,7 +243,7 @@ export const updateinventoryStock = async (productId, quantity) => {
 }
 
 // Record a stock adjustment (stock out / in) and update inventory quantity accordingly
-export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId, unit_price }) {
+export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId, }) {
   const conn = await pool.getConnection();
   await conn.beginTransaction();
   try {
@@ -257,9 +257,9 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
 
     // insert transaction
     await conn.query(
-      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id, unit_price, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [businessId, productId, change_qty, reason, reference, userId, unit_price || null]
+      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id,created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [businessId, productId, change_qty, reason, reference, userId]
     );
 
     await conn.commit();
