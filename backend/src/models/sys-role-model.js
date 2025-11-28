@@ -36,3 +36,9 @@ export const assignRoleToUser = async (userId, roleId) => {
   );
   return result.insertId;
 };
+
+// 🔍 List all system roles
+export const getAllSystemRoles = async () => {
+  const [rows] = await pool.query('SELECT system_role_id, role FROM system_role_table ORDER BY role ASC');
+  return rows;
+};

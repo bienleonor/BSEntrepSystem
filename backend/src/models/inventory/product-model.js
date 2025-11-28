@@ -90,6 +90,29 @@ export const deleteProduct = async (productId) => {
       [productId]
     );
 
+    // Delete dependent rows in recipe/composition tables to satisfy FK constraints
+    // Recipes where this product is the parent (final product)
+    await connection.execute(
+      `DELETE FROM recipe_ingredients_table WHERE product_id = ?`,
+      [productId]
+    );
+    // Recipes where this product is used as an ingredient
+    await connection.execute(
+      `DELETE FROM recipe_ingredients_table WHERE ingredient_product_id = ?`,
+      [productId]
+    );
+
+    // Combo items where this product is the parent composite
+    await connection.execute(
+      `DELETE FROM combo_items_table WHERE parent_product_id = ?`,
+      [productId]
+    );
+    // Combo items where this product is used as a component
+    await connection.execute(
+      `DELETE FROM combo_items_table WHERE component_product_id = ?`,
+      [productId]
+    );
+
     // Now delete the product itself
     const [result] = await connection.execute(
       `DELETE FROM product_table WHERE product_id = ?`,

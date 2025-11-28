@@ -371,7 +371,7 @@ function ProductList() {
       </div>
 
       {/* Edit Modal */}
-      <Popup isOpen={isEditOpen} onClose={handleEditCancel} title="Modify Product">
+      <Popup isOpen={isEditOpen} onClose={handleEditCancel} title="Modify Product" >
         <form onSubmit={handleEditSubmit} className="flex flex-col md:flex-row gap-10 items-start justify-center">
           {/* Image Upload */}
           <label className="w-64 h-64 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 cursor-pointer relative rounded-lg overflow-hidden">

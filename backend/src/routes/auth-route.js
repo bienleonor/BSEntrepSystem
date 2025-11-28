@@ -3,12 +3,21 @@ import { login, register } from '../controllers/auth-controller.js';
 // import { selectBusiness } from "../controllers/business/business-controller.js";
 import { authenticateToken } from '../middlewares/auth-middleware.js';
 import { upgradeUserRole } from '../controllers/sys-user-role-cotroller.js';
+import { getAllSystemRoles } from '../models/sys-role-model.js';
 
 const router = Router();
 
 router.post('/login', login);
 router.post('/register', register);
 router.post("/upgrade-role", upgradeUserRole);
+router.get('/roles', async (req, res) => {
+	try {
+		const roles = await getAllSystemRoles();
+		res.json(roles);
+	} catch (e) {
+		res.status(500).json({ error: e.message });
+	}
+});
 // router.post("/selectbusiness", authenticateToken,selectBusiness);
 
 export default router;

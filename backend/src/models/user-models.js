@@ -26,10 +26,17 @@ export const findUserByUsername = async (username) => {
 
 export const getAllUsers = async () => {
   const [rows] = await pool.execute(
-    `SELECT * FROM user_table`
+    `SELECT 
+       u.user_id,
+       u.username,
+       u.email,
+       r.role AS system_role
+     FROM user_table u
+     LEFT JOIN user_sys_role_table ur ON ur.user_id = u.user_id
+     LEFT JOIN system_role_table r ON r.system_role_id = ur.system_role_id`
   );
   return rows;
-}
+};
 
 // Used for fetching user profile (does NOT return password)
 export const findUserById = async (id) => {
@@ -64,8 +71,37 @@ export const updateUser = async (id, data) => {
 
 
 export const deleteUser = async (id) => {
-  const [result] = await pool.execute(
-    `DELETE FROM user_table WHERE user_id = ?`, [id]
+  // Perform a manual cascade delete within a transaction to satisfy FK constraints.
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Remove role assignments
+    await conn.execute(`DELETE FROM user_sys_role_table WHERE user_id = ?`, [id]);
+    // Remove business position links (employee mappings)
+    await conn.execute(`DELETE FROM business_user_position_table WHERE user_id = ?`, [id]);
+    // Remove extended profile/details
+    await conn.execute(`DELETE FROM user_details_table WHERE user_id = ?`, [id]);
+
+    // Finally remove the user
+    const [result] = await conn.execute(`DELETE FROM user_table WHERE user_id = ?`, [id]);
+
+    await conn.commit();
+    return result; // contains affectedRows
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+};
+
+// Partial username search (case-insensitive depending on collation). Limit for performance.
+export const findUsersByUsernameLike = async (query, limit = 10) => {
+  const like = `%${query}%`;
+  const [rows] = await pool.execute(
+    `SELECT user_id, username FROM user_table WHERE username LIKE ? ORDER BY username ASC LIMIT ?`,
+    [like, Number(limit)]
   );
-  return result;
+  return rows;
 };
