@@ -4,6 +4,8 @@ import {
 } from "../models/inventory/product-model.js";
 import { getIngredientsByProduct } from "../models/inventory/recipe-model.js";
 import { getComboByParent } from "../models/inventory/combo-model.js";
+import { createStockIn, validateSimpleProducts, insertStockInItems } from "../models/inventory/stockin-model.js";
+import { convertAmount } from "../services/unit-service.js"; // ✅ ADD THIS
 
 /**
  * Stock-in (purchase)
@@ -88,14 +90,40 @@ export async function processProduction({ items, businessId, userId }) {
       throw new Error(`Cannot produce simple product: ${product.name}`);
     }
 
-    // 1️⃣ Deduct recipe ingredients
+    // ===========================
+    // 1️⃣ PROCESS RECIPE PRODUCTS
+    // ===========================
     if (product.product_type === "recipe") {
       const ingredients = await getIngredientsByProduct(productId);
+
       for (const ing of ingredients) {
-        const totalQty = ing.consumption_amount * quantity; // already converted in model
+        const ingredientProduct = await getProductById(ing.ingredient_product_id);
+        if (!ingredientProduct) {
+          throw new Error(`Ingredient product ${ing.ingredient_product_id} not found`);
+        }
+
+        const rawUsage = ing.consumption_amount * quantity;
+
+        // Fallback: if recipe unit missing, use inventory unit
+        const fromUnitId = ing.ingredient_unit_id || ingredientProduct.unit_id;
+        const toUnitId = ingredientProduct.unit_id;
+
+        let convertedUsage;
+        try {
+          convertedUsage = await convertAmount(rawUsage, fromUnitId, toUnitId);
+        } catch (err) {
+          if (err.message.includes("Incompatible unit dimensions")) {
+            throw new Error(
+              `Cannot produce ${product.name}: incompatible unit for ingredient ${ingredientProduct.name} (${err.message})`
+            );
+          } else {
+            throw err;
+          }
+        }
+
         await recordInventoryTransactionAndUpdateInventory({
           productId: ing.ingredient_product_id,
-          change_qty: -totalQty,
+          change_qty: -Math.abs(convertedUsage),
           reason: "production",
           reference: `production:${productId}`,
           businessId,
@@ -104,14 +132,39 @@ export async function processProduction({ items, businessId, userId }) {
       }
     }
 
-    // 2️⃣ Deduct combo ingredients
+    // ==============================
+    // 2️⃣ PROCESS COMPOSITE PRODUCTS
+    // ==============================
     if (product.product_type === "composite") {
       const combos = await getComboByParent(productId);
+
       for (const combo of combos) {
-        const totalQty = combo.quantity * quantity;
+        const childProduct = await getProductById(combo.child_product_id);
+        if (!childProduct) {
+          throw new Error(`Component product ${combo.child_product_id} not found`);
+        }
+
+        const rawUsage = combo.quantity * quantity;
+
+        const fromUnitId = combo.unit_id || childProduct.unit_id;
+        const toUnitId = childProduct.unit_id;
+
+        let convertedUsage;
+        try {
+          convertedUsage = await convertAmount(rawUsage, fromUnitId, toUnitId);
+        } catch (err) {
+          if (err.message.includes("Incompatible unit dimensions")) {
+            throw new Error(
+              `Cannot produce ${product.name}: incompatible unit for component ${childProduct.name} (${err.message})`
+            );
+          } else {
+            throw err;
+          }
+        }
+
         await recordInventoryTransactionAndUpdateInventory({
           productId: combo.child_product_id,
-          change_qty: -totalQty,
+          change_qty: -Math.abs(convertedUsage),
           reason: "production",
           reference: `production:${productId}`,
           businessId,
@@ -120,7 +173,9 @@ export async function processProduction({ items, businessId, userId }) {
       }
     }
 
-    // 3️⃣ Add finished product to inventory
+    // =============================
+    // 3️⃣ ADD FINISHED PRODUCT STOCK
+    // =============================
     await recordInventoryTransactionAndUpdateInventory({
       productId,
       change_qty: quantity,

@@ -5,6 +5,7 @@ import { getUnitById, getUnitsByIds } from "../models/inventory/unit-model.js";
  * Throws if dimensions don't match.
  */
 export async function convertAmount(amount, fromUnitId, toUnitId) {
+  console.log("🟡 convertAmount():", { amount, fromUnitId, toUnitId });
   if (fromUnitId === toUnitId) return Number(amount);
 
   const units = await getUnitsByIds([fromUnitId, toUnitId]);
