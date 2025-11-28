@@ -26,3 +26,5 @@ export async function getUnitsByIds(ids) {
 
   return map;
 }
+
+//no catch
