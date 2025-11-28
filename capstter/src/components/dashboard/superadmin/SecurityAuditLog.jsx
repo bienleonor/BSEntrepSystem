@@ -54,8 +54,27 @@ export default function SecurityAuditLog() {
           </button>
         </div>
 
-        {/* Audit Log Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile: Card list */}
+        <div className="space-y-3 md:hidden">
+          {auditLogs.map((log, i) => (
+            <div key={i} className="rounded-lg bg-gray-700/60 border border-gray-700 p-3 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] text-gray-400 font-mono">{log.time.split(' ')[1]}</span>
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-900 ${log.color}`}>{log.status}</span>
+              </div>
+              <div className="text-sm font-medium text-cyan-300 truncate">{log.user}</div>
+              <div className="text-xs text-gray-300 leading-relaxed">{log.action}</div>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-[10px] tracking-wide uppercase px-2 py-0.5 rounded bg-gray-800 text-gray-400">{log.type}</span>
+                {(log.status === 'Warning' || log.status === 'Alert') && (
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Desktop/Table: Table */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-700">
               <tr>

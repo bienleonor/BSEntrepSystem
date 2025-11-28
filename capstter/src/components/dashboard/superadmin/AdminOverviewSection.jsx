@@ -41,11 +41,11 @@ export default function AdminOverviewSection() {
 
   return (
     <section className="mt-6">
-      <h2 className="text-xl font-bold mb-4 text-white">System Metrics & Overview</h2>
+      <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">System Metrics & Overview</h2>
       {loading && <p className="text-gray-300 text-sm">Loading metrics...</p>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {!loading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-black">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-black">
           {cards.map((item) => (
             <OverviewCard
               key={item.title}

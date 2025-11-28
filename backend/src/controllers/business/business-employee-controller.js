@@ -65,6 +65,11 @@ export const removeEmployee = async (req, res) => {
 			return res.status(400).json({ success: false, message: "user_id and business_id are required" });
 		}
 
+		// Prevent removing self
+		if (String(req.user?.user_id) === String(user_id)) {
+			return res.status(400).json({ success: false, message: "You cannot remove yourself from the business." });
+		}
+
 		const result = await removeEmployeeModel(user_id, business_id);
 		res.status(200).json({ success: true, data: result, message: "Employee removed" });
 	} catch (error) {

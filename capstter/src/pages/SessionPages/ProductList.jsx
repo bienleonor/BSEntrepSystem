@@ -307,10 +307,58 @@ function ProductList() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <h1 className="text-6xl font-bold mb-4 text-white">Product List</h1>
-        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="min-w-full table-auto">
+      <div className="p-4 sm:p-6">
+        <h1 className="text-2xl sm:text-3xl lg:text-6xl font-bold mb-4 text-white">Product List</h1>
+
+        {/* Mobile: Card list */}
+        <div className="md:hidden space-y-3">
+          {products.map((product) => (
+            <div key={product.product_id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+              <div className="flex items-start gap-3">
+                {product.picture ? (
+                  <img src={product.picture} alt={product.name} className="w-14 h-14 rounded object-cover flex-shrink-0" loading="lazy" />
+                ) : (
+                  <div className="w-14 h-14 rounded bg-gray-100 grid place-items-center text-gray-400 text-xs flex-shrink-0">No image</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 truncate">{product.name}</div>
+                  <div className="text-xs text-gray-600">Type: {product.product_type || '—'}</div>
+                  <div className="text-sm font-semibold text-gray-800">₱{Number(product.price).toFixed(2)}</div>
+                  <div className="text-xs text-gray-600">Category: {product.category_name || categoriesMap[product.category_id] || '—'}</div>
+                  <div className="text-xs text-gray-600">Qty: {inventoryDetailsMap[product.product_id] ?? '0'} {unitsMap[product.unit_id] || ''}</div>
+                  <div className="text-[11px] text-gray-500">Created: {new Date(product.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-3">
+                <button
+                  onClick={() => handleStatusToggle(product)}
+                  className={`px-3 py-1 rounded text-xs font-medium ${product.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  {product.is_active ? 'Active' : 'Inactive'}
+                </button>
+                <button
+                  onClick={() => handleEditOpen(product)}
+                  className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(product.product_id, product.name)}
+                  className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+          {products.length === 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center text-gray-500">No products found.</div>
+          )}
+        </div>
+
+        {/* Desktop/Tablet: Table */}
+        <div className="hidden md:block bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="min-w-[900px] w-full table-auto">
             <thead className="bg-gray-100">
               <tr className="text-left text-sm text-gray-600">
                 <th className="px-4 py-2">Name</th>
@@ -329,7 +377,7 @@ function ProductList() {
                 <tr key={product.product_id} className="border-t text-sm text-gray-700 hover:bg-gray-50">
                   <td className="px-4 py-2">{product.name}</td>
                   <td className="px-4 py-2">{product.product_type}</td>
-                  <td className="px-4 py-2">₱{product.price}</td>
+                  <td className="px-4 py-2">₱{Number(product.price).toFixed(2)}</td>
                   <td className="px-4 py-2">{product.category_name || categoriesMap[product.category_id] || '—'}</td>
                   <td className="px-4 py-2">{inventoryDetailsMap[product.product_id] ?? '0'}</td>
                   <td className="px-4 py-2">{unitsMap[product.unit_id] || '—'}</td>
@@ -360,7 +408,7 @@ function ProductList() {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="px-4 py-6 text-center text-gray-500">
+                  <td colSpan="9" className="px-4 py-6 text-center text-gray-500">
                     No products found.
                   </td>
                 </tr>
@@ -372,9 +420,9 @@ function ProductList() {
 
       {/* Edit Modal */}
       <Popup isOpen={isEditOpen} onClose={handleEditCancel} title="Modify Product" >
-        <form onSubmit={handleEditSubmit} className="flex flex-col md:flex-row gap-10 items-start justify-center">
+        <form onSubmit={handleEditSubmit} className="flex flex-col md:flex-row gap-6 md:gap-10 items-start justify-center">
           {/* Image Upload */}
-          <label className="w-64 h-64 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 cursor-pointer relative rounded-lg overflow-hidden">
+          <label className="w-40 h-40 md:w-64 md:h-64 border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 cursor-pointer relative rounded-lg overflow-hidden">
             {editForm.imageFile ? (
               <img
                 src={URL.createObjectURL(editForm.imageFile)}
@@ -526,17 +574,17 @@ function ProductList() {
           )}
 
             {/* Buttons */}
-            <div className="flex gap-4 mt-6 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 justify-center w-full">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
+                className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
               >
                 SAVE
               </button>
               <button
                 type="button"
                 onClick={handleEditCancel}
-                className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition"
+                className="w-full sm:w-auto bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition"
               >
                 CANCEL
               </button>

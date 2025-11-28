@@ -94,20 +94,20 @@ const submitSaleHandler = async () => {
 
 
   return (
-    <div className="p-4">
-      <h3 className="text-6xl font-bold mb-4 text-white">POS Terminal</h3>
+    <div className="p-3 sm:p-4">
+      <h3 className="text-2xl sm:text-3xl lg:text-6xl font-bold mb-4 text-white">POS Terminal</h3>
       <ToastContainer position="top-center" autoClose={3000} theme="colored" />
 
-      <div className="flex gap-4">
-        <div className="flex-2 w-2/3">
-          <h4 className="text-xl font-semibold mb-2 text-white">
+      <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
+        <div className="w-full lg:w-2/3">
+          <h4 className="text-lg sm:text-xl font-semibold mb-2 text-white">
             Inventory {loading ? "(loading...)" : ""}
           </h4>
           <InventoryGrid inventory={inventory} onAddToCart={addToCart} loading={loading} />
         </div>
 
-        <div className="flex-1 w-1/3">
-          <h4 className="text-4xl text-white font-semibold mb-2">Cart</h4>
+        <div className="w-full lg:w-1/3 lg:sticky lg:top-4">
+          <h4 className="text-2xl sm:text-3xl lg:text-4xl text-white font-semibold mb-2">Cart</h4>
           <Cart
             inventory={inventory}
             saleDate={saleDate}

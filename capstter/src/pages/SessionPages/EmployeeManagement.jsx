@@ -3,6 +3,7 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import axiosInstance from "../../utils/axiosInstance";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useAuth } from "../../context/AuthContext";
 
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState([]);
@@ -11,6 +12,8 @@ export default function EmployeeManagement() {
   const [editingPosition, setEditingPosition] = useState(null);
   const [loading, setLoading] = useState(false);
   const selectedBusinessId = localStorage.getItem('selectedBusinessId');
+  const { user } = useAuth();
+  const currentUserId = user?.user_id;
 
   useEffect(() => {
     if (!selectedBusinessId) return;
@@ -83,6 +86,9 @@ export default function EmployeeManagement() {
 
   const handleRemove = async (user_id) => {
     if (!selectedBusinessId) return toast.error('No business selected');
+    if (String(user_id) === String(currentUserId)) {
+      return toast.error("You can't remove yourself.");
+    }
     if (!confirm('Remove this employee from the business?')) return;
     try {
       const res = await axiosInstance.delete('/business/removeemployee', {
@@ -104,19 +110,74 @@ export default function EmployeeManagement() {
   return (
     <DashboardLayout>
       <ToastContainer position="top-center" autoClose={3000} />
-      <div className=" bg-slate-300 shadow-lg rounded-lg p-8 max-w-5xl mx-auto">
+      <div className=" bg-slate-300 shadow-lg rounded-lg p-4 sm:p-8 max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-800">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
             Employee Management
           </h1>
           
         </div>
 
-        
+        {/* Mobile: Card list */}
+        <div className="md:hidden space-y-3">
+          {employees.length === 0 ? (
+            <div className="text-center py-6 text-gray-600">
+              {loading ? 'Loading employees...' : 'No employees added yet.'}
+            </div>
+          ) : (
+            employees.map((emp) => (
+              <div key={emp.user_id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500">ID: {emp.user_id}</div>
+                    <div className="font-semibold text-gray-900">{emp.first_name || emp.username} {emp.last_name || ''}</div>
+                    <div className="mt-1 text-sm text-gray-700">
+                      {editingUserId === emp.user_id ? (
+                        <select
+                          value={editingPosition ?? ''}
+                          onChange={(e) => setEditingPosition(e.target.value || null)}
+                          className="border rounded px-2 py-1 w-full"
+                        >
+                          <option value="">-- No position --</option>
+                          {positions.map((pos) => (
+                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.role_name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">{emp.role_name || '--no position--'}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                  {editingUserId === emp.user_id ? (
+                    <>
+                      <button onClick={() => handleSavePosition(emp.user_id)} className="w-full sm:w-auto bg-green-600 text-white px-3 py-2 rounded text-sm">SAVE</button>
+                      <button onClick={handleCancelEdit} className="w-full sm:w-auto bg-gray-500 text-white px-3 py-2 rounded text-sm">CANCEL</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => handleEditClick(emp)} className="w-full sm:w-auto bg-blue-600 text-white px-3 py-2 rounded text-sm">EDIT</button>
+                      <button
+                        onClick={() => handleRemove(emp.user_id)}
+                        disabled={String(emp.user_id) === String(currentUserId)}
+                        title={String(emp.user_id) === String(currentUserId) ? "You can't remove yourself" : undefined}
+                        className={`w-full sm:w-auto px-3 py-2 rounded text-sm ${String(emp.user_id) === String(currentUserId) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white'}`}
+                      >
+                        REMOVE
+                      </button>
+                     
+                    </>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Desktop/Tablet: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
             <thead>
               <tr className="bg-gray-100 text-gray-700">
@@ -169,8 +230,15 @@ export default function EmployeeManagement() {
                       ) : (
                         <>
                           <button onClick={() => handleEditClick(emp)} className="text-blue-600 font-medium hover:underline">EDIT</button>
-                          <button onClick={() => handleRemove(emp.user_id)} className="text-red-600 font-medium hover:underline">REMOVE</button>
-                          <button className="text-gray-600 font-medium hover:underline">VIEW</button>
+                          <button
+                            onClick={() => handleRemove(emp.user_id)}
+                            disabled={String(emp.user_id) === String(currentUserId)}
+                            title={String(emp.user_id) === String(currentUserId) ? "You can't remove yourself" : undefined}
+                            className={`font-medium ${String(emp.user_id) === String(currentUserId) ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:underline'}`}
+                          >
+                            REMOVE
+                          </button>
+                          
                         </>
                       )}
                     </td>
