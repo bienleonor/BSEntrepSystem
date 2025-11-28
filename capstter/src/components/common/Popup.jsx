@@ -13,10 +13,9 @@ export const Popup = ({ isOpen, onClose, title, children, closeOnOutside = true 
     if (!isOpen) return; // guard: do nothing when closed
     const keyHandler = (e) => { if (e.key === "Escape") onClose?.(); };
     window.addEventListener("keydown", keyHandler);
-    const focusable = containerRef.current?.querySelector(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    focusable?.focus();
+    // Prefer first input/select/textarea over close button to avoid "focus lock" perception
+    const preferred = containerRef.current?.querySelector('input, select, textarea');
+    preferred?.focus();
     return () => window.removeEventListener("keydown", keyHandler);
   }, [isOpen, onClose]);
 
@@ -32,9 +31,12 @@ export const Popup = ({ isOpen, onClose, title, children, closeOnOutside = true 
     >
       <div
         ref={containerRef}
-        className="bg-slate-300 rounded-t-xl sm:rounded-lg shadow-lg w-full max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-4xl p-4 sm:p-6 md:p-8 mx-auto relative border border-slate-700 max-h-[90vh] overflow-y-auto scroll-py-6"
+        // Ensure inner container captures pointer events and does not bubble to backdrop
+        onClick={(e) => e.stopPropagation()}
+        className="pointer-events-auto bg-slate-300 rounded-t-xl sm:rounded-lg shadow-lg w-full max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-4xl p-4 sm:p-6 md:p-8 mx-auto relative border border-slate-700 max-h-[90vh] overflow-y-auto scroll-py-6"
       >
         <button
+          tabIndex={-1}
           className="absolute top-2 right-2 w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
           onClick={onClose}
           aria-label="Close popup"

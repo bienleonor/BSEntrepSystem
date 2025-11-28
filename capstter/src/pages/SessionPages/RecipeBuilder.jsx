@@ -54,16 +54,26 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
     onRecipeChange(updated);
   };
 
-  // Normalize initialRecipe into { product_id, qty, unit_id }
+  // Normalize initialRecipe into internal state ONLY when it actually changes.
+  // Avoid calling onRecipeChange here to prevent parent-child update loops.
   useEffect(() => {
-    if (!initialRecipe) return;
+    if (!Array.isArray(initialRecipe)) return;
     const normalized = initialRecipe.map((ing) => ({
       product_id: String(ing.ingredient_product_id ?? ing.product_id ?? ""),
       qty: String(ing.consumption_amount ?? ing.qty ?? ""),
       unit_id: ing.unit_id ?? null,
     }));
-    setIngredients(normalized);
-    onRecipeChange && onRecipeChange(normalized);
+    // Shallow equality check to avoid unnecessary state updates
+    const same =
+      normalized.length === ingredients.length &&
+      normalized.every((n, i) =>
+        n.product_id === ingredients[i].product_id &&
+        n.qty === ingredients[i].qty &&
+        n.unit_id === ingredients[i].unit_id
+      );
+    if (!same) {
+      setIngredients(normalized);
+    }
   }, [initialRecipe]);
 
   if (!productType || productType.toLowerCase() === "simple") return null;
