@@ -1,14 +1,11 @@
 import express from 'express';
 import pool from '../../config/pool.js';
-import { authenticateToken } from '../../middlewares/auth-middleware.js';
-
-
 
 const router = express.Router();
 
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
 try {
-const [rows] = await pool.query('SELECT * FROM v_business_summary WHERE business_id = ?');
+const [rows] = await pool.query('SELECT * FROM v_business_summary');
 res.json(rows);
 } catch (err) {
     console.error(err);
