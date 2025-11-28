@@ -4,6 +4,22 @@ import pool from '../../config/pool.js';
 // Create a stock-in record
  
 export const createStockIn = async ({ businessId, userId, totalAmount }) => {
+  const [result] = await pool.execute(
+    `INSERT INTO stockin_table (business_id, user_id, total_amount, created_at)
+     VALUES (?, ?, ?, NOW())`,
+    [businessId, userId, totalAmount]
+  );
+  return result.insertId;
+};
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
+/**
+ * Validate that all products are simple type
+ * @param {Array} items - [{ productId, quantity, unit_price }]
+ * @throws {Error} if any product is not simple
+ */
+export const validateSimpleProducts = async (items) => {
+  const connection = await pool.getConnection();
+  
   try {
     const [result] = await pool.execute(
       `INSERT INTO stockin_table (business_id, user_id, total_amount, created_at)

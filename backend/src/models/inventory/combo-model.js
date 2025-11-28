@@ -53,5 +53,5 @@ export const deleteComboByParent = async (parentProductId) => {
     throw err;
   }
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 export default { addComboItems, getComboByParent, deleteComboByParent };

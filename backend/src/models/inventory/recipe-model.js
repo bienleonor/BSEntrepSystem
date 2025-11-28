@@ -45,6 +45,5 @@ export const deleteIngredientsByProduct = async (productId) => {
     throw err;
   }
 };
-
-// Exports all functions
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 export default { addIngredient, getIngredientsByProduct, deleteIngredientsByProduct };

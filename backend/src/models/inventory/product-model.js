@@ -10,6 +10,7 @@ export const getUnits = async () => {
     throw err;
   }
 };
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 
 export const addProduct = async (productData) => {
   try {

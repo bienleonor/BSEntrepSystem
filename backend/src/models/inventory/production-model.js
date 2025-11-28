@@ -11,7 +11,7 @@ export const startTransaction = async () => {
     throw err;
   }
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 // Commit and release
 export const commitTransaction = async (conn) => {
   try {
@@ -23,7 +23,7 @@ export const commitTransaction = async (conn) => {
     try { conn.release(); } catch (e) { /* ignore */ }
   }
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 // Rollback and release
 export const rollbackTransaction = async (conn) => {
   try {

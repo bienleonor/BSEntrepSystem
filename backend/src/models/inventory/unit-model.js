@@ -24,15 +24,11 @@ export async function getUnitsByIds(ids) {
       ids
     );
 
-    // Convert array → object for fast lookup
-    const map = {};
-    rows.forEach(u => {
-      map[u.unit_id] = u;
-    });
-
-    return map;
-  } catch (err) {
-    console.error("getUnitsByIds error:", err);
-    throw err;
-  }
+  // Convert array → object for fast lookup
+  const map = {};
+  rows.forEach(u => {
+    map[u.unit_id] = u;
+  });
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
+  return map;
 }
