@@ -26,6 +26,7 @@ import fs from 'fs';
 export const createProduct = async (req, res) => {
   try {
     const { name, businessId, unit_id, price, product_type, category_id } = req.body;
+    console.log("Received product data:", req.body);
 
     // --- VALIDATION ---
     if (!name || !businessId || !unit_id || !price || !req.file) {

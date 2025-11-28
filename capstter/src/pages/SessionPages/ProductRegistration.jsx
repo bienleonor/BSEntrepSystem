@@ -130,16 +130,12 @@ function ProductRegistration() {
     );
 
     try {
-      const res = await axiosInstance.post(
-        `inventory/products`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      // Let the browser set the Content-Type with proper boundary for FormData
+      const res = await axiosInstance.post(`inventory/products`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       toast.success("Product synced successfully!");
       return res.data;
@@ -191,6 +187,7 @@ function ProductRegistration() {
       recipe: recipeIngredients,
       category_id: itemData.category_id || "",
     };
+    console.log("Submitting product:", product);
 
     // OFFLINE MODE
     if (!navigator.onLine) {
