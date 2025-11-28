@@ -46,5 +46,5 @@ export const deleteIngredientsByProduct = async (productId) => {
   );
   return result;
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 export default { addIngredient, getIngredientsByProduct, deleteIngredientsByProduct };

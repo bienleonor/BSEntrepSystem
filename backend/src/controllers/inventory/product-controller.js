@@ -1,4 +1,4 @@
-import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getInventoryWithProductDetailsByBusiness,getActiveInventoryWithProductDetailsByBusiness,addInventoryStock,updateinventoryStock, recordInventoryTransactionAndUpdateInventory } from '../../models/inventory/product-model.js';
+import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,updateProductStatus, getactiveProducts,getInventoryWithProductDetailsByBusiness,getActiveInventoryWithProductDetailsByBusiness } from '../../models/inventory/product-model.js';
 import { addIngredient } from '../../models/inventory/recipe-model.js';
 import { addComboItems } from '../../models/inventory/combo-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed

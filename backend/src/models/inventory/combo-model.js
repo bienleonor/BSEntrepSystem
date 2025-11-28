@@ -42,5 +42,5 @@ export const deleteComboByParent = async (parentProductId) => {
   );
   return result;
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 export default { addComboItems, getComboByParent, deleteComboByParent };

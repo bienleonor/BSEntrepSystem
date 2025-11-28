@@ -1,7 +1,7 @@
 import pool from "../../config/pool.js";
 
 export async function getUnitById(unitId) {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `SELECT unit_id, name, abbreviation, base_unit, conversion_factor FROM unit_table WHERE unit_id = ?`,
     [unitId]
   );
@@ -23,7 +23,7 @@ export async function getUnitsByIds(ids) {
   rows.forEach(u => {
     map[u.unit_id] = u;
   });
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
   return map;
 }
 
