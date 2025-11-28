@@ -41,7 +41,7 @@ export const updateInventoryQty = async (conn, product_id, change) => {
     [change, product_id]
   );
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 export const insertInventoryTransaction = async (
   conn,
   { business_id, product_id, change_qty, reason, reference, user_id }

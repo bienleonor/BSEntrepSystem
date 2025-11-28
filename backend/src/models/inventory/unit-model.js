@@ -23,6 +23,6 @@ export async function getUnitsByIds(ids) {
   rows.forEach(u => {
     map[u.unit_id] = u;
   });
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
   return map;
 }

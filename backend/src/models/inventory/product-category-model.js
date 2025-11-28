@@ -12,7 +12,7 @@ export const fetchProductCategories = async (businessId) => {
         throw error;
     }
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 export const addProductCategory = async (categoryData) => {
   const {
     name = null,

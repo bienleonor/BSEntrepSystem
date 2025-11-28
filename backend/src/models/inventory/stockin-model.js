@@ -13,7 +13,7 @@ export const createStockIn = async ({ businessId, userId, totalAmount }) => {
   );
   return result.insertId;
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 /**
  * Validate that all products are simple type
  * @param {Array} items - [{ productId, quantity, unit_price }]

@@ -7,13 +7,13 @@ export const startTransaction = async () => {
   await connection.beginTransaction();
   return connection;
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 // Commit and release
 export const commitTransaction = async (conn) => {
   await conn.commit();
   conn.release();
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 // Rollback and release
 export const rollbackTransaction = async (conn) => {
   await conn.rollback();

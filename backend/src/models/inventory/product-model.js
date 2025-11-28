@@ -5,7 +5,7 @@ export const getUnits = async () => {
   const [rows] = await pool.execute(`SELECT unit_id, name FROM unit_table`);
   return rows;
 };
-
+//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
 
 export const addProduct = async (productData) => {
   const {
