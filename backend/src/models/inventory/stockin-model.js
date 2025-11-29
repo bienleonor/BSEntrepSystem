@@ -62,8 +62,12 @@ export const insertStockInItems = async (stockinId, items, { businessId = null, 
   for (const item of items) {
     const { productId, quantity, unit_price } = item;
 
+    // Read product and its current inventory unit (unit_id moved to inventory_table)
     const [productRows] = await pool.execute(
-      `SELECT product_id, name, product_type, unit_id FROM product_table WHERE product_id = ?`,
+      `SELECT p.product_id, p.name, p.product_type, i.unit_id
+       FROM product_table p
+       LEFT JOIN inventory_table i ON p.product_id = i.product_id
+       WHERE p.product_id = ?`,
       [productId]
     );
 
@@ -77,7 +81,7 @@ export const insertStockInItems = async (stockinId, items, { businessId = null, 
     }
 
     const qtyChange = Number(quantity);
-    const unitId = product.unit_id || null;
+    const unitId = product.unit_id ?? null;
     const unitCost = Number(unit_price) || 0;
     const totalCost = unitCost * Math.abs(qtyChange);
 
@@ -101,17 +105,37 @@ export const insertStockInItems = async (stockinId, items, { businessId = null, 
  */
 export const insertStockInItemsUnsafe = async (stockinId, items, { businessId = null, userId = null } = {}) => {
   // Unsafe insert: directly create inventory transaction details without product-type validation
-  const details = items.map((item) => {
+  const details = [];
+  // For each item, fetch product/inventory info and only accept client unit_multiplier when product is a pack
+  for (const item of items) {
     const qtyChange = Number(item.quantity);
     const unitCost = Number(item.unit_price) || 0;
-    return {
+
+    // fetch product + inventory row to determine pack status
+    const [prodRows] = await pool.execute(
+      `SELECT p.product_id, p.product_type, i.unit_multiplier FROM product_table p LEFT JOIN inventory_table i ON p.product_id = i.product_id WHERE p.product_id = ?`,
+      [item.productId]
+    );
+
+    if (prodRows.length === 0) throw new Error(`Product ${item.productId} not found`);
+
+    const prod = prodRows[0];
+    const invUnitMultiplier = Number(prod.unit_multiplier ?? 1);
+    const isPack = (invUnitMultiplier > 1) || (String(prod.product_type || '').toLowerCase() === 'pack');
+
+    const providedMultiplier = Number(item.unit_multiplier ?? 1);
+    const unitMultiplier = isPack ? providedMultiplier : 1;
+
+    details.push({
       productId: item.productId,
       qtyChange,
+      // Prefer provided unit_id, otherwise we'll let recordTransactionWithDetails resolve from inventory/product
       unitId: item.unit_id ?? null,
+      unitMultiplier,
       unitCost,
       totalCost: unitCost * Math.abs(qtyChange),
-    };
-  });
+    });
+  }
 
   await recordTransactionWithDetails({
     businessId,
@@ -172,10 +196,12 @@ export const getStockInDetails = async (stockinId) => {
 
   // Get stock-in items with product types
   const [items] = await pool.execute(
-    `SELECT 
+     `SELECT 
        d.detail_id,
        d.product_id,
        d.qty_change AS quantity,
+       d.unit_multiplier,
+       d.total_quantity,
        d.unit_cost AS unit_price,
        d.total_cost AS total_price,
        p.name AS product_name,

@@ -6,6 +6,8 @@ import { getIngredientsByProduct } from "../models/inventory/recipe-model.js";
 import { getComboByParent } from "../models/inventory/combo-model.js";
 import { createStockIn, validateSimpleProducts, insertStockInItems } from "../models/inventory/stockin-model.js";
 import { convertAmount } from "../services/unit-service.js"; // ✅ ADD THIS
+import { recordTransactionWithDetails } from "../models/inventory/inventory-model.js";
+import pool from "../config/pool.js";
 
 /**
  * Stock-in (purchase)
@@ -52,6 +54,7 @@ export async function applyMultiInventoryChange({ items, reason, businessId, use
     });
 
     results.push(res);
+
   }
 
   return results;
@@ -80,9 +83,10 @@ export async function processProduction({ items, businessId, userId }) {
       throw new Error(`Cannot produce simple product: ${product.name}`);
     }
 
-    // ===========================
-    // 1️⃣ PROCESS RECIPE PRODUCTS
-    // ===========================
+    // Build a single transaction (header + details) for this production item
+    const details = [];
+
+    // 1️⃣ PROCESS RECIPE PRODUCTS (consume ingredients)
     if (product.product_type === "recipe") {
       const ingredients = await getIngredientsByProduct(productId);
 
@@ -92,9 +96,8 @@ export async function processProduction({ items, businessId, userId }) {
           throw new Error(`Ingredient product ${ing.ingredient_product_id} not found`);
         }
 
-        const rawUsage = ing.consumption_amount * quantity;
+        const rawUsage = (ing.consumption_amount) * quantity;
 
-        // Fallback: if recipe unit missing, use inventory unit
         const fromUnitId = ing.ingredient_unit_id || ingredientProduct.unit_id;
         const toUnitId = ingredientProduct.unit_id;
 
@@ -111,20 +114,17 @@ export async function processProduction({ items, businessId, userId }) {
           }
         }
 
-        await recordInventoryTransactionAndUpdateInventory({
+        details.push({
           productId: ing.ingredient_product_id,
-          change_qty: -Math.abs(convertedUsage),
-          reason: "production",
-          reference: `production:${productId}`,
-          businessId,
-          userId,
+          qtyChange: -Math.abs(convertedUsage),
+          unitId: toUnitId,
+          unitCost: 0,
+          totalCost: 0,
         });
       }
     }
 
-    // ==============================
-    // 2️⃣ PROCESS COMPOSITE PRODUCTS
-    // ==============================
+    // 2️⃣ PROCESS COMPOSITE PRODUCTS (consume components)
     if (product.product_type === "composite") {
       const combos = await getComboByParent(productId);
 
@@ -152,28 +152,41 @@ export async function processProduction({ items, businessId, userId }) {
           }
         }
 
-        await recordInventoryTransactionAndUpdateInventory({
+        details.push({
           productId: combo.child_product_id,
-          change_qty: -Math.abs(convertedUsage),
-          reason: "production",
-          reference: `production:${productId}`,
-          businessId,
-          userId,
+          qtyChange: -Math.abs(convertedUsage),
+          unitId: toUnitId,
+          unitCost: 0,
+          totalCost: 0,
         });
       }
     }
 
-    // =============================
-    // 3️⃣ ADD FINISHED PRODUCT STOCK
-    // =============================
-    await recordInventoryTransactionAndUpdateInventory({
+    // 3️⃣ ADD FINISHED PRODUCT STOCK (produce finished goods)
+    const finishedUnitId = product.unit_id;
+    details.push({
       productId,
-      change_qty: quantity,
-      reason: "production",
-      reference: `production:${productId}`,
+      qtyChange: Number(quantity),
+      unitId: finishedUnitId,
+      unitCost: 0,
+      totalCost: 0,
+      unitMultiplier: product.unit_multiplier ?? 1,
+    });
+
+    // Record one transaction header + many details atomically
+    const { transactionId } = await recordTransactionWithDetails({
       businessId,
       userId,
+      transactionType: 'production',
+      reference: `production:${productId}`,
+      details,
     });
+
+    // Insert a production_table row for auditing/history
+    await pool.execute(
+      `INSERT INTO production_table (product_id, quantity_produced, user_id, created_at) VALUES (?, ?, ?, NOW())`,
+      [productId, quantity, userId]
+    );
 
     results.push({ productId, productName: product.name, quantityProduced: quantity });
   }

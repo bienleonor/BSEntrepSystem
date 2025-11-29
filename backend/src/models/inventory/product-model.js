@@ -1,5 +1,6 @@
 // models/inventory/product-model.js
 import pool from '../../config/pool.js';
+import { recordTransactionWithDetails } from './inventory-model.js';
 
 export const getUnits = async () => {
   const [rows] = await pool.execute(`SELECT unit_id, name FROM unit_table`);
@@ -12,6 +13,7 @@ export const addProduct = async (productData) => {
     name = null,
     businessId = null,
     unit_id = null,
+    unit_multiplier = undefined,
     price = null,
     picture = null,
     product_type = null,
@@ -29,9 +31,35 @@ export const addProduct = async (productData) => {
   const productId = productResult.insertId;
 
   // ✅ Insert data for quantity managemment of product
+  // Determine whether the selected unit is a pack. If so, require unit_multiplier from caller.
+  let finalUnitMultiplier = 1;
+  if (unit_id) {
+    const [uRows] = await pool.execute(
+      `SELECT name, abbreviation, base_unit FROM unit_table WHERE unit_id = ?`,
+      [unit_id]
+    );
+    const u = uRows[0];
+    const isPack = !!u && (
+      (u.name || '').toString().toLowerCase().includes('pack') ||
+      (u.abbreviation || '').toString().toLowerCase() === 'pack' ||
+      (u.base_unit || '').toString().toLowerCase() === 'pack'
+    );
+
+    if (isPack) {
+      // pack → multiplier must be provided and > 0
+      if (unit_multiplier == null || Number(unit_multiplier) <= 0) {
+        const err = new Error('PACK_MULTIPLIER_REQUIRED');
+        throw err;
+      }
+      finalUnitMultiplier = Number(unit_multiplier);
+    } else {
+      finalUnitMultiplier = 1;
+    }
+  }
+
   await pool.execute(
-    `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id) VALUES (?, ?, NOW(), ?)`,
-    [productId, 0, unit_id]
+    `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id, unit_multiplier, total_quantity) VALUES (?, ?, NOW(), ?, ?, ?)`,
+    [productId, 0, unit_id, finalUnitMultiplier, 0]
   );
 
   return productResult;
@@ -64,14 +92,14 @@ export const getAllProducts = async () => {
 
 export const getProductById = async (productId) => {
     const [rows] = await pool.execute(
-      `SELECT p.*, COALESCE(i.quantity,0) AS quantity, i.unit_id AS unit_id FROM product_table p LEFT JOIN inventory_table i ON i.product_id = p.product_id WHERE p.product_id = ?`,
+      `SELECT p.*, COALESCE(i.quantity,0) AS quantity, i.unit_id AS unit_id, i.unit_multiplier AS unit_multiplier FROM product_table p LEFT JOIN inventory_table i ON i.product_id = p.product_id WHERE p.product_id = ?`,
         [productId]
     );
     return rows[0];
 }
 
 export const updateProduct = async (productId, productData) => {
-    const { name, businessId, unit_id, price, picture, category_id } = productData;
+  const { name, businessId, unit_id, price, picture, category_id, unit_multiplier } = productData;
 
   await pool.execute(
     `UPDATE product_table
@@ -85,17 +113,67 @@ export const updateProduct = async (productId, productData) => {
     `SELECT inventory_id FROM inventory_table WHERE product_id = ?`,
     [productId]
   );
+  // Determine if the provided unit_id is a pack unit (if supplied)
+  let isPack = false;
+  if (unit_id) {
+    const [uRows] = await pool.execute(
+      `SELECT name, abbreviation, base_unit FROM unit_table WHERE unit_id = ?`,
+      [unit_id]
+    );
+    const u = uRows[0];
+    isPack = !!u && (
+      (u.name || '').toString().toLowerCase().includes('pack') ||
+      (u.abbreviation || '').toString().toLowerCase() === 'pack' ||
+      (u.base_unit || '').toString().toLowerCase() === 'pack'
+    );
+  }
 
   if (rows.length > 0) {
-    await pool.execute(
-      `UPDATE inventory_table SET unit_id = ? WHERE product_id = ?`,
-      [unit_id, productId]
-    );
+    if (unit_id) {
+      if (isPack) {
+        // pack → require valid multiplier when explicitly setting pack unit
+        if (unit_multiplier == null || Number(unit_multiplier) <= 0) {
+          const err = new Error('PACK_MULTIPLIER_REQUIRED');
+          throw err;
+        }
+        await pool.execute(
+          `UPDATE inventory_table SET unit_id = ?, unit_multiplier = ? WHERE product_id = ?`,
+          [unit_id, Number(unit_multiplier), productId]
+        );
+      } else {
+        // non-pack → force multiplier to 1
+        await pool.execute(
+          `UPDATE inventory_table SET unit_id = ?, unit_multiplier = 1 WHERE product_id = ?`,
+          [unit_id, productId]
+        );
+      }
+    }
+    // if unit_id not provided, leave inventory row untouched
   } else {
-    await pool.execute(
-      `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id) VALUES (?, ?, NOW(), ?)`,
-      [productId, 0, unit_id]
-    );
+    // create inventory row
+    if (unit_id) {
+      if (isPack) {
+        if (unit_multiplier == null || Number(unit_multiplier) <= 0) {
+          const err = new Error('PACK_MULTIPLIER_REQUIRED');
+          throw err;
+        }
+        await pool.execute(
+          `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id, unit_multiplier) VALUES (?, ?, NOW(), ?, ?)`,
+          [productId, 0, unit_id, Number(unit_multiplier)]
+        );
+      } else {
+        await pool.execute(
+          `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id, unit_multiplier) VALUES (?, ?, NOW(), ?, ?)`,
+          [productId, 0, unit_id, 1]
+        );
+      }
+    } else {
+      // no unit provided → insert basic row
+      await pool.execute(
+        `INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())`,
+        [productId, 0]
+      );
+    }
   }
 };
 
@@ -193,10 +271,16 @@ export const getInventoryWithProductDetailsByBusiness = async (businessId) => {
        i.unit_id,
        p.price,
        p.picture,
-       IFNULL(i.quantity,0) AS quantity,
+       -- Derive displayed product-level quantity from total_quantity when present
+       CASE
+         WHEN i.total_quantity IS NOT NULL THEN FLOOR(i.total_quantity / (COALESCE(i.unit_multiplier,1) * COALESCE(u.conversion_factor,1)))
+         ELSE COALESCE(i.quantity, 0)
+       END AS quantity,
+       IFNULL(i.total_quantity,0) AS total_quantity,
        i.updated_at AS last_restocked
      FROM product_table p
      LEFT JOIN inventory_table i ON p.product_id = i.product_id
+     LEFT JOIN unit_table u ON i.unit_id = u.unit_id
      WHERE p.business_id = ?`,
     [businessId]
   );
@@ -214,10 +298,15 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
          i.unit_id, 
          p.price, 
          p.picture, 
-         i.quantity, 
+         CASE
+           WHEN i.total_quantity IS NOT NULL THEN FLOOR(i.total_quantity / (COALESCE(i.unit_multiplier,1) * COALESCE(u.conversion_factor,1)))
+           ELSE COALESCE(i.quantity, 0)
+         END AS quantity,
+         i.total_quantity, 
          i.updated_at AS last_restocked
        FROM product_table p
        LEFT JOIN inventory_table i ON p.product_id = i.product_id
+       LEFT JOIN unit_table u ON i.unit_id = u.unit_id
        WHERE p.is_active = 1 AND p.business_id = ?`,
       [businessId]
     );
@@ -272,33 +361,35 @@ export const updateinventoryStock = async (productId, quantity) => {
 
 // Record a stock adjustment (stock out / in) and update inventory quantity accordingly
 export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId, }) {
-  const conn = await pool.getConnection();
-  await conn.beginTransaction();
-  try {
-    const changeQtyRounded = Number(change_qty) || 0;
-    // check if inventory exists
-    const [rows] = await conn.query("SELECT * FROM inventory_table WHERE product_id = ? FOR UPDATE", [productId]);
-    if (rows.length > 0) {
-      await conn.query("UPDATE inventory_table SET quantity = quantity + ?, updated_at = NOW() WHERE product_id = ?", [changeQtyRounded, productId]);
-    } else {
-      await conn.query("INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())", [productId, changeQtyRounded]);
-    }
+  // New implementation: resolve unit_id for the product then delegate to recordTransactionWithDetails
+  const qty = Number(change_qty) || 0;
 
-    // insert transaction
-    await conn.query(
-      `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id,created_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [businessId, productId, changeQtyRounded, reason, reference, userId]
-    );
+  // Try to get unit_id from inventory_table
+  const [invRows] = await pool.execute(`SELECT unit_id, unit_multiplier FROM inventory_table WHERE product_id = ?`, [productId]);
+  let unitId = invRows[0]?.unit_id ?? null;
+  const unitMultiplier = invRows[0]?.unit_multiplier ?? 1;
 
-    await conn.commit();
-    conn.release();
-    return { productId, change_qty };
-  } catch (err) {
-    await conn.rollback();
-    conn.release();
-    throw err;
+  // If still missing, fall back to product default unit
+  if (!unitId) {
+    const [pRows] = await pool.execute(`SELECT unit_id FROM product_table WHERE product_id = ?`, [productId]);
+    unitId = pRows[0]?.unit_id ?? null;
   }
+
+  if (!unitId) {
+    throw new Error(`Missing unit_id for product ${productId}. Set a default unit for this product before recording inventory transactions.`);
+  }
+
+  await recordTransactionWithDetails({
+    businessId,
+    userId,
+    transactionType: reason,
+    reference,
+    details: [
+      { productId, qtyChange: qty, unitId, unitCost: 0, totalCost: 0, unitMultiplier }
+    ]
+  });
+
+  return { productId, change_qty };
 }
 
 
