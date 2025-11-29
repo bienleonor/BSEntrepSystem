@@ -15,7 +15,6 @@ export async function getUnitById(unitId) {
 
 // optional bulk fetch
 export async function getUnitsByIds(ids) {
-  try {
     if (!ids || !ids.length) return {};
 
     const placeholders = ids.map(() => "?").join(",");
@@ -33,4 +32,3 @@ export async function getUnitsByIds(ids) {
   return map;
 }
 
-//no catch

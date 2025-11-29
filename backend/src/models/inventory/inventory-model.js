@@ -224,21 +224,6 @@ export const insertInventoryTransaction = async (
   conn,
   { business_id, product_id, change_qty, reason, reference, user_id }
 ) => {
-<<<<<<< HEAD
-  try {
-    const [result] = await conn.execute(
-      `INSERT INTO inventory_transactions_table
-       (business_id, product_id, change_qty, reason, reference, user_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [business_id, product_id, change_qty, reason, reference, user_id]
-    );
-    return result.insertId;
-  } catch (err) {
-    console.error("insertInventoryTransaction error:", err);
-    throw err;
-  }
-};
-=======
   // Insert a transaction header only — product-level data lives in inventory_transaction_details
   await conn.execute(
     `INSERT INTO inventory_transactions
@@ -271,4 +256,3 @@ export const getAllInventoryTransactions = async (businessId) => {
   );
   return rows;
 };
->>>>>>> e84ed12d8f37724e869f6f8a30125bb65bd2d0e6
