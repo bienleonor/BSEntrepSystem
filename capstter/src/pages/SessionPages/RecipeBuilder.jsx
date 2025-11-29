@@ -36,7 +36,7 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
   }, []);
 
   const addIngredientRow = () => {
-    const newIng = { product_id: "", qty: "", unit_id: null };
+    const newIng = { product_id: "", qty: "", ingredient_unit_id: null };
     setIngredients([...ingredients, newIng]);
     onRecipeChange([...ingredients, newIng]);
   };
@@ -49,21 +49,33 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
 
   const updateIngredient = (index, field, value) => {
     const updated = [...ingredients];
-    updated[index][field] = value ?? null; // always default null
+    // allow callers to use 'unit_id' but store as 'ingredient_unit_id'
+    const key = field === 'unit_id' ? 'ingredient_unit_id' : field;
+    updated[index][key] = value ?? null; // always default null
     setIngredients(updated);
     onRecipeChange(updated);
   };
 
-  // Normalize initialRecipe into { product_id, qty, unit_id }
+  // Normalize initialRecipe into internal state ONLY when it actually changes.
+  // Avoid calling onRecipeChange here to prevent parent-child update loops.
   useEffect(() => {
-    if (!initialRecipe) return;
+    if (!Array.isArray(initialRecipe)) return;
     const normalized = initialRecipe.map((ing) => ({
       product_id: String(ing.ingredient_product_id ?? ing.product_id ?? ""),
       qty: String(ing.consumption_amount ?? ing.qty ?? ""),
-      unit_id: ing.unit_id ?? null,
+      ingredient_unit_id: ing.ingredient_unit_id ?? ing.unit_id ?? null,
     }));
-    setIngredients(normalized);
-    onRecipeChange && onRecipeChange(normalized);
+    // Shallow equality check to avoid unnecessary state updates
+    const same =
+      normalized.length === ingredients.length &&
+      normalized.every((n, i) =>
+        n.product_id === ingredients[i].product_id &&
+        n.qty === ingredients[i].qty &&
+        n.unit_id === ingredients[i].unit_id
+      );
+    if (!same) {
+      setIngredients(normalized);
+    }
   }, [initialRecipe]);
 
   if (!productType || productType.toLowerCase() === "simple") return null;
@@ -95,18 +107,19 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
             </select>
 
             {/* Quantity input */}
-            <input
-              type="number"
-              min="1"
-              value={ing.qty}
-              onChange={(e) => updateIngredient(index, "qty", e.target.value)}
-              placeholder="Qty"
-              className="col-span-3 p-2 border rounded"
-            />
+              <input
+                type="number"
+                min="0"                     // allow zero if needed
+                step="0.01"                 // allow decimals, e.g., 0.25, 1.5
+                value={ing.qty}
+                onChange={(e) => updateIngredient(index, "qty", parseFloat(e.target.value))}
+                placeholder="Qty"
+                className="col-span-3 p-2 border rounded"
+              />
 
             {/* Unit select */}
             <select
-              value={ing.unit_id ?? ""}
+              value={ing.ingredient_unit_id ?? ""}
               onChange={(e) => updateIngredient(index, "unit_id", e.target.value || null)}
               className="col-span-3 p-2 rounded border"
             >

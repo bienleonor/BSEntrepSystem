@@ -9,7 +9,11 @@ function reducer(state, action) {
     case "ADD_TO_CART": {
       const { product, qty } = action.payload;
       const currentQty = state[product.product_id]?.quantity || 0;
-      const nextQty = Math.min(product.quantity, currentQty + qty);
+      // compute available packs robustly: prefer product.quantity, else derive from total_quantity/unit_multiplier
+      const available = (product.quantity != null)
+        ? Number(product.quantity)
+        : Math.floor((Number(product.total_quantity ?? 0) || 0) / (Number(product.unit_multiplier ?? 1) || 1));
+      const nextQty = Math.min(available, currentQty + qty);
       return {
         ...state,
         [product.product_id]: {

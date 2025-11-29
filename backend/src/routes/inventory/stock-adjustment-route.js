@@ -4,8 +4,10 @@ import {
   stockOutController,
   correctionController,
   productionController,
+  getInventoryTransactionsController,
 } from "../../controllers/inventory/inventory-controller.js";
 import { authenticateToken } from "../../middlewares/auth-middleware.js";
+import { requireBusinessAccess } from "../../middlewares/business-access.js";
 
 const router = express.Router();
 
@@ -20,5 +22,8 @@ router.post("/correction", authenticateToken, correctionController);
 
 // Production
 router.post("/production", authenticateToken, productionController);
+
+// Get inventory transactions
+router.get("/transactions", authenticateToken, requireBusinessAccess, getInventoryTransactionsController);
 
 export default router;

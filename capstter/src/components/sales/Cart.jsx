@@ -21,11 +21,12 @@ export default function Cart({ inventory, saleDate, setSaleDate, submitSale, sub
             <div className="inline-block flex-none">
               <input
                 type="number"
-                min="1"
+                min="0"
+                step="0.001"
                 value={it.quantity}
                 className="w-20 sm:w-16 border rounded-2xl pl-1 text-center transition-all duration-200 "
                 onChange={(e) => {
-                  const val = parseInt(e.target.value || "0", 10);
+                  const val = parseFloat(e.target.value || "0");
                   const clamped = invItem ? Math.min(invItem.quantity, Math.max(0, val)) : Math.max(0, val);
                   updateCartQty(it.product_id, clamped);
                 }}

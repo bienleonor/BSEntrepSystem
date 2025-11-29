@@ -85,7 +85,7 @@ export const createSale = async (saleData) => {
       );
 
       const [res] = await conn.execute(
-        `UPDATE inventory_table SET quantity = quantity - ? WHERE product_id = ?`,
+        `UPDATE inventory_table SET total_quantity = total_quantity - ? WHERE product_id = ?`,
         [qty, productId]
       );
       if (res.affectedRows === 0) {
@@ -285,7 +285,7 @@ export const cancelSale = async (purchaseId) => {
 
       const [res] = await conn.execute(
         `UPDATE inventory_table 
-         SET quantity = quantity + ? 
+         SET total_quantity = total_quantity + ? 
          WHERE product_id = ?`,
         [qty, item.product_id]
       );

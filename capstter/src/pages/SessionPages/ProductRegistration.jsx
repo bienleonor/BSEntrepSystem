@@ -19,6 +19,7 @@ function ProductRegistration() {
     productType: "",
     price: "",
     image: null,
+    unit_multiplier: "",
     category_id: "",
   });
 
@@ -115,6 +116,7 @@ function ProductRegistration() {
     const formData = new FormData();
     formData.append("name", product.name);
     formData.append("unit_id", product.unit_id);
+    if (product.unit_multiplier) formData.append("unit_multiplier", product.unit_multiplier);
     formData.append("product_type", product.product_type);
     formData.append("price", product.price);
     formData.append("businessId", product.businessId);
@@ -130,16 +132,12 @@ function ProductRegistration() {
     );
 
     try {
-      const res = await axiosInstance.post(
-        `inventory/products`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      // Let the browser set the Content-Type with proper boundary for FormData
+      const res = await axiosInstance.post(`inventory/products`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       toast.success("Product synced successfully!");
       return res.data;
@@ -152,6 +150,16 @@ function ProductRegistration() {
   // 🚀 SUBMIT HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // If selected unit is a pack, ensure unit_multiplier is provided
+    if (itemData.unit_id) {
+      const selUnit = units.find((u) => u.unit_id === itemData.unit_id);
+      const isPack = selUnit && ((selUnit.name || '').toLowerCase().includes('pack') || (selUnit.abbreviation || '').toLowerCase() === 'pack' || (selUnit.base_unit || '').toLowerCase() === 'pack');
+      if (isPack && (!itemData.unit_multiplier || Number(itemData.unit_multiplier) <= 0)) {
+        toast.error('Pack unit selected — please enter the pack size (unit multiplier)');
+        return;
+      }
+    }
 
     const token = getToken();
     const businessId = localStorage.getItem("selectedBusinessId");
@@ -184,6 +192,7 @@ function ProductRegistration() {
     const product = {
       name: itemData.itemName,
       unit_id: itemData.unit_id,
+      unit_multiplier: itemData.unit_multiplier ? Number(itemData.unit_multiplier) : undefined,
       product_type: itemData.productType.toLowerCase(),
       price: itemData.price,
       businessId,
@@ -191,6 +200,8 @@ function ProductRegistration() {
       recipe: recipeIngredients,
       category_id: itemData.category_id || "",
     };
+    console.log("Submitting product:", product);
+    console.log("Recipe ingredients:", recipeIngredients);
 
     // OFFLINE MODE
     if (!navigator.onLine) {
@@ -330,10 +341,17 @@ function ProductRegistration() {
                             <li
                               key={unit.unit_id}
                               onMouseDown={() => {
+                                // when selecting a unit, set unit_id and default unit_multiplier only for pack units
+                                const uname = (unit.name || '').toString().toLowerCase();
+                                const uabbr = (unit.abbreviation || '').toString().toLowerCase();
+                                const ubase = (unit.base_unit || '').toString().toLowerCase();
+                                const isPack = uname === 'pack' || uabbr === 'pack' || ubase === 'pack' || uname.includes('pack');
                                 setItemData((prev) => ({
                                   ...prev,
                                   unit_id: unit.unit_id,
                                   unitSearch: unit.name,
+                                  // For pack units, leave multiplier empty so user must enter pack size
+                                  unit_multiplier: isPack ? (prev.unit_multiplier || '') : '',
                                 }));
                                 setShowUnitDropdown(false);
                               }}
@@ -345,6 +363,28 @@ function ProductRegistration() {
                       </ul>
                     )}
                 </label>
+
+                {/* Unit Multiplier for Pack units */}
+                {itemData.unit_id && (() => {
+                  const sel = units.find((u) => u.unit_id === itemData.unit_id);
+                  const isPack = sel && ((sel.name || '').toLowerCase().includes('pack') || (sel.abbreviation || '').toLowerCase() === 'pack' || (sel.base_unit || '').toLowerCase() === 'pack');
+                  return isPack ? (
+                    <label className="block text-sm font-medium text-gray-700">
+                      Unit Multiplier (pack size)
+                      <input
+                        type="number"
+                        name="unit_multiplier"
+                        placeholder="e.g. 12"
+                        value={itemData.unit_multiplier}
+                        onChange={(e) => setItemData((prev) => ({ ...prev, unit_multiplier: e.target.value }))}
+                        required
+                        min="1"
+                        step="1"
+                        className="mt-1 px-4 py-2 rounded-md border border-gray-300 shadow-sm w-full"
+                      />
+                    </label>
+                  ) : null;
+                })()}
 
                 {/* CATEGORY */}
                 <label className="block text-sm font-medium text-gray-700">

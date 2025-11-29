@@ -17,3 +17,13 @@ export const getInventory = async (businessId, token) => {
     throw new Error("Failed to fetch inventory");
   }
 };
+
+export const getInventoryTransactions = async () => {
+  try {
+    const res = await axiosInstance.get(`/inventory/adjust/transactions`);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to fetch inventory transactions:", err);
+    throw new Error("Failed to fetch inventory transactions");
+  }
+};

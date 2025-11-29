@@ -32,3 +32,5 @@ export async function getUnitsByIds(ids) {
 //NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
   return map;
 }
+
+//no catch
