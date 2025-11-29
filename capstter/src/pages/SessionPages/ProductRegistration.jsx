@@ -188,6 +188,7 @@ function ProductRegistration() {
       category_id: itemData.category_id || "",
     };
     console.log("Submitting product:", product);
+    console.log("Recipe ingredients:", recipeIngredients);
 
     // OFFLINE MODE
     if (!navigator.onLine) {

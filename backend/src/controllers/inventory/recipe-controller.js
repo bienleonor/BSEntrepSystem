@@ -16,8 +16,10 @@ export const addOrUpdateRecipe = async (req, res) => {
     for (const ing of ingredients) {
       await addIngredient({
         productId,
-        ingredientProductId: ing.ingredient_product_id,
-        consumptionAmount: ing.consumption_amount
+        ingredientProductId: ing.ingredient_product_id ?? ing.product_id,
+        // accept both ingredient_unit_id and unit_id from clients
+        ingredientUnitId: ing.ingredient_unit_id ?? ing.unit_id ?? null,
+        consumptionAmount: ing.consumption_amount ?? ing.qty
       });
     }
 

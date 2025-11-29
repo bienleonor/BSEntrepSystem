@@ -242,11 +242,12 @@ export default function POS1() {
                 </div>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
+                  step="0.001"
                   value={it.quantity}
                   className="w-16 border rounded px-1"
                   onChange={(e) => {
-                    const val = parseInt(e.target.value || "0", 10);
+                    const val = parseFloat(e.target.value || "0");
                     const invItem = inventory.find(
                       (i) => i.product_id === it.product_id
                     );

@@ -198,9 +198,10 @@ export default function MultiAdjustment() {
                 <label className="block text-sm">Quantity</label>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
+                  step="0.01"
                   value={item.quantity}
-                  onChange={e => handleItemChange(idx, 'quantity', e.target.value)}
+                  onChange={e => handleItemChange(idx, 'quantity', parseFloat(e.target.value))}
                   required
                   className="w-full p-2 rounded-lg"
                 />

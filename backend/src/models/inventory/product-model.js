@@ -21,17 +21,17 @@ export const addProduct = async (productData) => {
 
   // ✅ Insert product
   const [productResult] = await pool.execute(
-    `INSERT INTO product_table (name, business_id, unit_id, price, picture, product_type, localpath, category_id) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [name, businessId, unit_id, price, picture, product_type, localpath, category_id]
+    `INSERT INTO product_table (name, business_id, price, picture, product_type, localpath, category_id) 
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, businessId, price, picture, product_type, localpath, category_id]
   );
 
   const productId = productResult.insertId;
 
   // ✅ Insert data for quantity managemment of product
   await pool.execute(
-    `INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())`,
-    [productId, 0]
+    `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id) VALUES (?, ?, NOW(), ?)`,
+    [productId, 0, unit_id]
   );
 
   return productResult;
@@ -44,7 +44,7 @@ export const getAllProducts = async () => {
       p.product_id,
       p.name,
       p.business_id,
-      p.unit_id,
+      i.unit_id,
       p.price,
       p.sku,
       p.category_id,
@@ -52,16 +52,19 @@ export const getAllProducts = async () => {
       p.picture,
       p.product_type,
       p.is_active,
-      p.created_at
+      p.created_at,
+      COALESCE(i.quantity,0) AS quantity,
+      i.updated_at AS inventory_updated_at
     FROM product_table p
     LEFT JOIN product_category_table c ON c.category_id = p.category_id
+    LEFT JOIN inventory_table i ON i.product_id = p.product_id
   `);
   return rows;
 };
 
 export const getProductById = async (productId) => {
     const [rows] = await pool.execute(
-      `SELECT * FROM product_table WHERE product_id = ?`,
+      `SELECT p.*, COALESCE(i.quantity,0) AS quantity, i.unit_id AS unit_id FROM product_table p LEFT JOIN inventory_table i ON i.product_id = p.product_id WHERE p.product_id = ?`,
         [productId]
     );
     return rows[0];
@@ -70,12 +73,30 @@ export const getProductById = async (productId) => {
 export const updateProduct = async (productId, productData) => {
     const { name, businessId, unit_id, price, picture, category_id } = productData;
 
-await pool.execute(
-  `UPDATE product_table
-   SET name = ?, business_id = ?, unit_id = ?, price = ?, picture = ?, category_id = ?
-   WHERE product_id = ?`,
-  [name, businessId, unit_id, price, picture, category_id, productId]
-);
+  await pool.execute(
+    `UPDATE product_table
+     SET name = ?, business_id = ?, price = ?, picture = ?, category_id = ?
+     WHERE product_id = ?`,
+    [name, businessId, price, picture, category_id, productId]
+  );
+
+  // ensure inventory row exists and update unit_id
+  const [rows] = await pool.execute(
+    `SELECT inventory_id FROM inventory_table WHERE product_id = ?`,
+    [productId]
+  );
+
+  if (rows.length > 0) {
+    await pool.execute(
+      `UPDATE inventory_table SET unit_id = ? WHERE product_id = ?`,
+      [unit_id, productId]
+    );
+  } else {
+    await pool.execute(
+      `INSERT INTO inventory_table (product_id, quantity, updated_at, unit_id) VALUES (?, ?, NOW(), ?)`,
+      [productId, 0, unit_id]
+    );
+  }
 };
 
 export const deleteProduct = async (productId) => {
@@ -135,7 +156,8 @@ export const getProductsByBusiness = async (businessId) => {
        p.*, 
        c.name AS category_name,
        COALESCE(i.quantity, 0) AS quantity,
-       i.updated_at AS inventory_updated_at
+       i.updated_at AS inventory_updated_at,
+       i.unit_id AS unit_id
      FROM product_table p
      LEFT JOIN product_category_table c ON c.category_id = p.category_id 
      LEFT JOIN inventory_table i ON i.product_id = p.product_id
@@ -162,20 +184,21 @@ export const getactiveProducts = async () => {
 }
 
 //fetch products with inventory details
-export const getInventoryWithProductDetailsByBusiness = async () => {
+export const getInventoryWithProductDetailsByBusiness = async (businessId) => {
   const [rows] = await pool.execute(
     `SELECT 
        p.product_id,
        p.name,
        p.business_id,
-       p.unit_id,
+       i.unit_id,
        p.price,
        p.picture,
-       i.quantity,
+       IFNULL(i.quantity,0) AS quantity,
        i.updated_at AS last_restocked
      FROM product_table p
      LEFT JOIN inventory_table i ON p.product_id = i.product_id
-     WHERE p.business_id = ?`
+     WHERE p.business_id = ?`,
+    [businessId]
   );
   return rows;
 };
@@ -188,7 +211,7 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
          p.product_id, 
          p.name, 
          p.business_id, 
-         p.unit_id, 
+         i.unit_id, 
          p.price, 
          p.picture, 
          i.quantity, 
@@ -252,19 +275,20 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
   const conn = await pool.getConnection();
   await conn.beginTransaction();
   try {
+    const changeQtyRounded = Number(change_qty) || 0;
     // check if inventory exists
     const [rows] = await conn.query("SELECT * FROM inventory_table WHERE product_id = ? FOR UPDATE", [productId]);
     if (rows.length > 0) {
-      await conn.query("UPDATE inventory_table SET quantity = quantity + ?, updated_at = NOW() WHERE product_id = ?", [change_qty, productId]);
+      await conn.query("UPDATE inventory_table SET quantity = quantity + ?, updated_at = NOW() WHERE product_id = ?", [changeQtyRounded, productId]);
     } else {
-      await conn.query("INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())", [productId, change_qty]);
+      await conn.query("INSERT INTO inventory_table (product_id, quantity, updated_at) VALUES (?, ?, NOW())", [productId, changeQtyRounded]);
     }
 
     // insert transaction
     await conn.query(
       `INSERT INTO inventory_transactions (business_id, product_id, change_qty, reason, reference, user_id,created_at)
        VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [businessId, productId, change_qty, reason, reference, userId]
+      [businessId, productId, changeQtyRounded, reason, reference, userId]
     );
 
     await conn.commit();

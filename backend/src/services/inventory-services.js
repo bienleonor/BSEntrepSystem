@@ -24,18 +24,8 @@ export async function addStockIn({ businessId, userId, items }) {
   }
 
   const stockinId = await createStockIn({ businessId, userId, totalAmount });
-  await insertStockInItems(stockinId, items);
-
-  for (const item of items) {
-    await recordInventoryTransactionAndUpdateInventory({
-      productId: item.productId,
-      change_qty: item.quantity,
-      reason: "purchase",
-      businessId,
-      userId,
-      reference: `stockin:${stockinId}`,
-    });
-  }
+  // insertStockInItems will record an inventory transaction header + details and update inventory_table
+  await insertStockInItems(stockinId, items, { businessId, userId });
 
   return { stockinId, totalAmount };
 }
