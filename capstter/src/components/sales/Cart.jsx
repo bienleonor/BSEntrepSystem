@@ -42,7 +42,7 @@ export default function Cart({ inventory, saleDate, setSaleDate, submitSale, sub
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-800">Sale date</label>
         <input
-          type="date"
+          type="date" disabled
           value={saleDate}
           onChange={(e) => setSaleDate(e.target.value)}
           className="mt-1 border rounded px-2 py-2 w-full"

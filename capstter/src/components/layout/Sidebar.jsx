@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book,BookOpenText  } from "lucide-react";
+import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book,BookOpenText,Notebook  } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const menuItems = [
@@ -22,7 +22,9 @@ const menuItems = [
   // Employee Management
   { label: "Employee Management", icon: <Users  size={18} /> },
   { label: "Business Position", icon: <UserRoundCog   size={18} /> },
+  { label: "Business Logs", icon: <Notebook   size={18} /> },
   { label: "Business Setting", icon: <Settings   size={18} /> },
+  
 ];
 
 export default function Sidebar() {

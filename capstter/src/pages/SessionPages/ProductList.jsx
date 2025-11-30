@@ -128,7 +128,15 @@ function ProductList() {
       toast.success("Product deleted successfully.");
     } catch (error) {
       console.error("Delete failed:", error);
-      toast.error(error.response?.data?.message || "Failed to delete product.");
+      // Provide a user-friendly message for FK constraint issues
+      const rawMsg = error.response?.data?.message || error.message || '';
+      let friendly = 'Failed to delete product.';
+      if (/Cannot delete or update a parent row/i.test(rawMsg)) {
+        friendly = 'Cannot delete: product is referenced by existing transactions (purchases, inventory, production, or recipes). Consider deactivating instead.';
+      } else if (/FOREIGN KEY|fk_/i.test(rawMsg)) {
+        friendly = 'Delete blocked by related records. Remove dependent data first or use deactivate.';
+      }
+      toast.error(friendly);
     }
   };
 
@@ -386,7 +394,7 @@ function ProductList() {
                       onClick={() => handleStatusToggle(product)}
                       className="text-sm text-blue-600 hover:underline"
                     >
-                      {product.is_active ? 'Active' : 'Inactive'}
+                      {product.is_active ? 'Inactive' : 'Active'}
                     </button>
                   </td>
                   <td className="px-4 py-2">{new Date(product.created_at).toLocaleDateString()}</td>

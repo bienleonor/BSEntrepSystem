@@ -2,6 +2,8 @@ import { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProduct
 import { addIngredient } from '../../models/inventory/recipe-model.js';
 import { addComboItems } from '../../models/inventory/combo-model.js';
 import cloudinary from '../../config/cloudinary.js'; // adjust path if needed
+import { logBusinessAction } from '../../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
 import fs from 'fs';
 
 //create product without cloudinary
@@ -27,9 +29,15 @@ export const createProduct = async (req, res) => {
   try {
     const { name, businessId, unit_id, price, product_type, category_id } = req.body;
 
+    // Restrict product name characters (letters, numbers, space, hyphen, underscore, period)
+    const NAME_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+    if (!name || !NAME_REGEX.test(name)) {
+      return res.status(400).json({ error: "Invalid product name. Allowed: letters, numbers, spaces, - _ ." });
+    }
+
     // --- VALIDATION ---
-    if (!name || !businessId || !unit_id || !price || !req.file) {
-      return res.status(400).json({ error: "Missing required fields or image." });
+    if (!name || !businessId || !unit_id || !price) {
+      return res.status(400).json({ error: "Missing required fields." });
     }
 
     if (isNaN(price) || Number(price) < 0) {
@@ -37,12 +45,14 @@ export const createProduct = async (req, res) => {
     }
 
     // --- UPLOAD IMAGE ---
-    const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "products",
-      transformation: [{ width: 800, height: 800, crop: "limit" }],
-    });
-
-    const picture = cloudinaryResult.secure_url;
+    let picture = null;
+    if (req.file) {
+      const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products",
+        transformation: [{ width: 800, height: 800, crop: "limit" }],
+      });
+      picture = cloudinaryResult.secure_url;
+    }
 
     // --- STEP 1: CREATE PRODUCT ---
     const result = await addProduct({
@@ -52,7 +62,7 @@ export const createProduct = async (req, res) => {
       price,
       picture,
       product_type,
-      localpath: req.file.path,
+      localpath: req.file?.path || null,
       category_id: category_id || null,
     });
 
@@ -123,13 +133,32 @@ export const createProduct = async (req, res) => {
     }
 
     // --- CLEAN LOCAL FILE ---
-    fs.unlink(req.file.path, () => {});
+    if (req.file?.path) {
+      fs.unlink(req.file.path, () => {});
+    }
 
     // --- RESPONSE ---
     res.status(201).json({
       message: "Product added successfully.",
       productId,
     });
+
+    // Log business action: product created
+    try {
+      await logBusinessAction({
+        business_id: Number(req.businessId || businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.MENU_PRODUCTS,
+        action_id: ACTIONS.CREATE,
+        table_name: 'products',
+        record_id: Number(productId),
+        old_data: null,
+        new_data: { name, unit_id, price, product_type, category_id, picture },
+        req,
+      });
+    } catch (e) {
+      console.warn('business log failed (createProduct):', e?.message);
+    }
 
   } catch (error) {
     console.error("🔥 Error adding product:", error);
@@ -191,6 +220,12 @@ export const modifyProduct = async (req, res) => {
     const { productId } = req.params;
     const { name, businessId, unit_id, price, product_type, picture: pictureFallback, category_id } = req.body;
 
+    // Name validation (if provided)
+    const NAME_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+    if (name && !NAME_REGEX.test(name)) {
+      return res.status(400).json({ error: "Invalid product name. Allowed: letters, numbers, spaces, - _ ." });
+    }
+
     let pictureValue = pictureFallback || null;
     if (req.file) {
       const cloudRes = await cloudinary.uploader.upload(req.file.path, { folder: 'products', transformation: [{ width:800, height:800, crop:'limit' }] });
@@ -198,8 +233,28 @@ export const modifyProduct = async (req, res) => {
       fs.unlink(req.file.path, (err) => { if (err) console.warn('unlink err', err); });
     }
 
+    // Fetch old product (best effort)
+    const old = await getProductById(productId).catch(() => null);
+
     await updateProduct(productId, { name, businessId, unit_id, price, picture: pictureValue, product_type, category_id: category_id || null });
     res.status(200).json({ message: 'Product updated successfully.' });
+
+    // Log business action: product updated
+    try {
+      await logBusinessAction({
+        business_id: Number(req.businessId || businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.MENU_PRODUCTS,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'products',
+        record_id: Number(productId),
+        old_data: old,
+        new_data: { name, unit_id, price, product_type, category_id, picture: pictureValue },
+        req,
+      });
+    } catch (e) {
+      console.warn('business log failed (modifyProduct):', e?.message);
+    }
   } catch (err) {
     console.error('Error updating product:', err);
     res.status(500).json({ error: 'Internal server error.' });
@@ -212,8 +267,26 @@ export const removeProduct = async (req, res) => {
         if (!productId) {
             return res.status(400).json({ error: "Product ID is required." });
         }
+        // Fetch old product (best effort)
+        const old = await getProductById(productId).catch(() => null);
         await deleteProduct(productId);
         res.status(200).json({ message: "Product deleted successfully." });
+
+        try {
+          await logBusinessAction({
+            business_id: Number(req.businessId || old?.business_id || req.body?.businessId),
+            user_id: req.user?.user_id ?? null,
+            module_id: MODULES.MENU_PRODUCTS,
+            action_id: ACTIONS.DELETE,
+            table_name: 'products',
+            record_id: Number(productId),
+            old_data: old,
+            new_data: null,
+            req,
+          });
+        } catch (e) {
+          console.warn('business log failed (removeProduct):', e?.message);
+        }
     } catch (error) {
         console.error("Error deleting product:", error);
         res.status(500).json({ error: "Internal server error." });
@@ -229,8 +302,25 @@ export const toggleProductStatus = async (req, res) => {
       return res.status(400).json({ error: "Invalid status value." });
     }
 
+    const old = await getProductById(productId).catch(() => null);
     await updateProductStatus(productId, is_active);
     res.status(200).json({ message: "Product status updated." });
+
+    try {
+      await logBusinessAction({
+        business_id: Number(req.businessId || old?.business_id || req.body?.businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.MENU_PRODUCTS,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'products',
+        record_id: Number(productId),
+        old_data: old,
+        new_data: { is_active },
+        req,
+      });
+    } catch (e) {
+      console.warn('business log failed (toggleProductStatus):', e?.message);
+    }
   } catch (error) {
     console.error("Error updating product status:", error);
     res.status(500).json({ error: "Internal server error." });

@@ -6,6 +6,10 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import RecipeBuilder from "./RecipeBuilder";
 import axiosInstance from "../../utils/axiosInstance";
 
+// Allowed characters: letters, numbers, space, hyphen, underscore, period
+const NAME_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+const sanitize = (val) => val.replace(/[^A-Za-z0-9\s\-_.]/g, "");
+
 function ProductRegistration() {
   const [units, setUnits] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -65,7 +69,7 @@ function ProductRegistration() {
       });
   }, [navigate]);
 
-  // 📥 INPUT CHANGE
+  // 📥 INPUT CHANGE (no sanitization here; sanitize on SAVE)
   const handleChange = (e) => {
     const { name, value } = e.target;
     setItemData((prev) => ({ ...prev, [name]: value }));
@@ -85,6 +89,7 @@ function ProductRegistration() {
       productType: "",
       price: "",
       image: null,
+      unit_multiplier: "",
       category_id: "",
     });
     setShowUnitDropdown(false);
@@ -125,11 +130,13 @@ function ProductRegistration() {
       formData.append("category_id", product.category_id);
     }
 
-    // convert base64 → real file for uploading
-    formData.append(
-      "picture",
-      dataURLtoFile(product.image, "offline-image.jpg")
-    );
+    // Append picture only when provided
+    if (product.image) {
+      formData.append(
+        "picture",
+        dataURLtoFile(product.image, "offline-image.jpg")
+      );
+    }
 
     try {
       // Let the browser set the Content-Type with proper boundary for FormData
@@ -170,6 +177,13 @@ function ProductRegistration() {
     }
 
     // VALIDATIONS
+    // Sanitize name only on submit
+    const sanitizedName = sanitize(itemData.itemName).trim();
+    if (!sanitizedName) {
+      toast.error("Item name is empty after removing invalid characters.");
+      return;
+    }
+
     if (itemData.productType.toLowerCase() === "recipe") {
       if (recipeIngredients.length === 0) {
         toast.error("Recipe items are required for recipe products.");
@@ -190,13 +204,13 @@ function ProductRegistration() {
     }
 
     const product = {
-      name: itemData.itemName,
+      name: sanitizedName,
       unit_id: itemData.unit_id,
       unit_multiplier: itemData.unit_multiplier ? Number(itemData.unit_multiplier) : undefined,
       product_type: itemData.productType.toLowerCase(),
       price: itemData.price,
       businessId,
-      image: await toBase64(itemData.image),
+      image: itemData.image ? await toBase64(itemData.image) : null,
       recipe: recipeIngredients,
       category_id: itemData.category_id || "",
     };
