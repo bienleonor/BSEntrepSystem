@@ -21,8 +21,7 @@ import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
 import Category from '../pages/SessionPages/Category.jsx'
 import StockAdjustmentReport from '../pages/SessionPages/InventoryMovement.jsx'
 
-
-export const privateRoutes = [
+export const userRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
   { path: '/UserDetails', element: <UserDetails /> },
   { path: '/businessregistration', element: <BusinessRegistration /> },
@@ -37,12 +36,17 @@ export const privateRoutes = [
   { path: '/orderlist', element: <OrderList /> },
   { path: '/recipes', element: <Recipes /> },
   { path: '/category', element: <Category /> },
-  { path: '/busmanage', element: <Busmanage />},
   { path: '/productlist', element: <ProductList />},
   { path: '/productlistcomponent', element: <ProductListComponent />},
   { path: '/pointofsales', element: <PointofSales />},
-  { path: '/superadmin/dashboard', element: <SuperAdminDashboard />},
+
+  { path: '/busmanage', element: <Busmanage />},
   { path: '/employeemanagement', element: <EmployeeManagement />},
   { path: '/businessposition', element: <BusinessPosition />},
   { path: '/businesssetting', element: <BusinessSettings />},
+]
+
+
+export const superAdminRoutes = [
+  { path: '/superadmin/dashboard', element: <SuperAdminDashboard />},
 ]

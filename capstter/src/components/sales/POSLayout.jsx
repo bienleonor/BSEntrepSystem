@@ -70,7 +70,7 @@ const submitSaleHandler = async () => {
     stat_id: statId,
     items: cartItems.map((it) => ({
       product_id: it.product_id,
-      quantity: it.quantity,
+      quantity: it.total_quantity,
       price: it.price,
     })),
   };
