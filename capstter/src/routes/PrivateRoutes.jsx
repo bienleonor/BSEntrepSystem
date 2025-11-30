@@ -19,7 +19,7 @@ import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
 import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
 import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
 import Category from '../pages/SessionPages/Category.jsx'
-import StockAdjustmentReport from '../pages/SessionPages/StockAdjustmentReport.jsx'
+import StockAdjustmentReport from '../pages/SessionPages/InventoryMovement.jsx'
 
 
 export const privateRoutes = [

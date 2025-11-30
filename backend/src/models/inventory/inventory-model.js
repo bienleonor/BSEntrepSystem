@@ -57,6 +57,14 @@ export async function recordTransactionWithDetails({ businessId, userId, transac
 
     const transactionId = hdr.insertId;
 
+    // Also log into stock_adjustments table for audit/history views
+    // Maps transactionType to adjustment_type enum; uses reference as notes
+    await conn.execute(
+      `INSERT INTO stock_adjustments (transaction_id, user_id, adjustment_type, notes, created_at)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [transactionId, userId, transactionType, reference]
+    );
+
     for (const d of details) {
       const productId = d.productId;
       const qtyChange = Number(d.qtyChange) || 0;
@@ -97,6 +105,15 @@ export async function recordTransactionWithDetails({ businessId, userId, transac
       }
 
       const qtyAfter = qtyBefore + qtyChange;
+
+      // Prevent negative inventory: abort if stock-out would drop below zero
+      if (qtyAfter < 0) {
+        const err = new Error(`INSUFFICIENT_STOCK`);
+        // Attach context so controllers can surface helpful messages
+        err.code = 'INSUFFICIENT_STOCK';
+        err.details = { productId, available: qtyBefore, requestedChange: qtyChange };
+        throw err;
+      }
 
       // Determine unit_id for the detail. Prefer provided unit, then existing inventory unit, then product default unit.
       let finalUnitId = providedUnitId;
@@ -242,12 +259,15 @@ export const getAllInventoryTransactions = async (businessId) => {
             p.name AS product_name,
             d.qty_change AS change_qty,
             t.transaction_type AS reason,
-            t.reference,
+            COALESCE(t.reference, sa.adjustment_type) AS reference,
+            sa.adjustment_type,
+            sa.notes,
             t.user_id,
             u.username AS username,
             t.created_at
      FROM inventory_transactions t
      JOIN inventory_transaction_details d ON d.invent_transact_id = t.transaction_id
+     LEFT JOIN stock_adjustments sa ON sa.transaction_id = t.transaction_id
      LEFT JOIN product_table p ON d.product_id = p.product_id
      LEFT JOIN user_table u ON u.user_id = t.user_id
      WHERE t.business_id = ?

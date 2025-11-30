@@ -196,6 +196,31 @@ export const deleteProduct = async (productId) => {
       [productId]
     );
 
+    // Delete production records referencing this product (e.g. production batches)
+    // This addresses FK fk_prodId_prodtable in production_table
+    await connection.execute(
+      `DELETE FROM production_table WHERE product_id = ?`,
+      [productId]
+    );
+
+    // Delete purchase item rows that reference this product (fk_productid_producttbl in purchase_items_table)
+    await connection.execute(
+      `DELETE FROM purchase_items_table WHERE product_id = ?`,
+      [productId]
+    );
+
+    // Delete product cost history rows referencing this product (fk_prodid_prodcostbl)
+    await connection.execute(
+      `DELETE FROM product_cost_table WHERE product_id = ?`,
+      [productId]
+    );
+
+    // Delete inventory transaction detail rows that reference this product (fk_productId_inventTransactDetailTbl)
+    await connection.execute(
+      `DELETE FROM inventory_transaction_details WHERE product_id = ?`,
+      [productId]
+    );
+
     // Delete dependent rows in recipe/composition tables to satisfy FK constraints
     // Recipes where this product is the parent (final product)
     await connection.execute(
@@ -320,7 +345,7 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
        FROM product_table p
        LEFT JOIN inventory_table i ON p.product_id = i.product_id
        LEFT JOIN unit_table u ON i.unit_id = u.unit_id
-       WHERE p.is_active = 1 AND p.business_id = ?`,
+       WHERE p.is_active = 0 AND p.business_id = ?`,
       [businessId]
     );
     

@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../utils/axiosInstance.js';
 
+// Allowed characters for category name / description: letters, numbers, space, hyphen, underscore, period
+const TEXT_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+const sanitize = (val) => val.replace(/[^A-Za-z0-9\s\-_.]/g, '');
+
 // CategoryWrapper lists product categories for a business and allows creating new ones.
 // It attempts to derive businessId from (in order): props, route params, auth context, localStorage.
 const CategoryWrapper = ({ businessId: propBusinessId }) => {
@@ -42,14 +46,28 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
       setCreateError('Business ID unavailable');
       return;
     }
-    if (!name.trim()) {
-      setCreateError('Name is required');
+    // Sanitize on submit only
+    const sanitizedName = sanitize(name.trim());
+    if (!sanitizedName) {
+      setCreateError('Name is required after removing invalid characters');
+      return;
+    }
+    if (!TEXT_REGEX.test(sanitizedName)) {
+      setCreateError('Invalid characters in name. Use letters, numbers, spaces, - _ .');
+      return;
+    }
+
+    // Description optional; sanitize but allow empty
+    const sanitizedDescriptionRaw = description.trim();
+    const sanitizedDescription = sanitize(sanitizedDescriptionRaw);
+    if (sanitizedDescriptionRaw && !TEXT_REGEX.test(sanitizedDescription)) {
+      setCreateError('Description has invalid characters. Use letters, numbers, spaces, - _ .');
       return;
     }
     setCreating(true);
     setCreateError(null);
     try {
-      const payload = { name: name.trim(), description: description.trim(), businessId };
+      const payload = { name: sanitizedName, description: sanitizedDescription, businessId };
       // Correct endpoint under /api/inventory
       const res = await axiosInstance.post(`/inventory/product-categories`, payload);
       // Optimistically add new category shell (backend returns insertId)

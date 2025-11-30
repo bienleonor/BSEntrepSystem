@@ -27,9 +27,15 @@ export const createProduct = async (req, res) => {
   try {
     const { name, businessId, unit_id, price, product_type, category_id } = req.body;
 
+    // Restrict product name characters (letters, numbers, space, hyphen, underscore, period)
+    const NAME_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+    if (!name || !NAME_REGEX.test(name)) {
+      return res.status(400).json({ error: "Invalid product name. Allowed: letters, numbers, spaces, - _ ." });
+    }
+
     // --- VALIDATION ---
-    if (!name || !businessId || !unit_id || !price || !req.file) {
-      return res.status(400).json({ error: "Missing required fields or image." });
+    if (!name || !businessId || !unit_id || !price) {
+      return res.status(400).json({ error: "Missing required fields." });
     }
 
     if (isNaN(price) || Number(price) < 0) {
@@ -37,12 +43,14 @@ export const createProduct = async (req, res) => {
     }
 
     // --- UPLOAD IMAGE ---
-    const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "products",
-      transformation: [{ width: 800, height: 800, crop: "limit" }],
-    });
-
-    const picture = cloudinaryResult.secure_url;
+    let picture = null;
+    if (req.file) {
+      const cloudinaryResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products",
+        transformation: [{ width: 800, height: 800, crop: "limit" }],
+      });
+      picture = cloudinaryResult.secure_url;
+    }
 
     // --- STEP 1: CREATE PRODUCT ---
     const result = await addProduct({
@@ -52,7 +60,7 @@ export const createProduct = async (req, res) => {
       price,
       picture,
       product_type,
-      localpath: req.file.path,
+      localpath: req.file?.path || null,
       category_id: category_id || null,
     });
 
@@ -123,7 +131,9 @@ export const createProduct = async (req, res) => {
     }
 
     // --- CLEAN LOCAL FILE ---
-    fs.unlink(req.file.path, () => {});
+    if (req.file?.path) {
+      fs.unlink(req.file.path, () => {});
+    }
 
     // --- RESPONSE ---
     res.status(201).json({
@@ -190,6 +200,12 @@ export const modifyProduct = async (req, res) => {
   try {
     const { productId } = req.params;
     const { name, businessId, unit_id, price, product_type, picture: pictureFallback, category_id } = req.body;
+
+    // Name validation (if provided)
+    const NAME_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+    if (name && !NAME_REGEX.test(name)) {
+      return res.status(400).json({ error: "Invalid product name. Allowed: letters, numbers, spaces, - _ ." });
+    }
 
     let pictureValue = pictureFallback || null;
     if (req.file) {

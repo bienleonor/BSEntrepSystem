@@ -17,6 +17,8 @@ export default function MultiAdjustment() {
   const [products, setProducts] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  // For correction mode: allow user to choose add or subtract
+  const [correctionMode, setCorrectionMode] = useState('subtract'); // 'add' | 'subtract'
   
   const getUserIdFromToken = () => {
     const token = localStorage.getItem("token");
@@ -49,8 +51,22 @@ export default function MultiAdjustment() {
     }
     try {
       const res = await axiosInstance.get(`/inventory/businesses/${biz}/products`);
-      setProducts(res.data);
-      return res.data;
+      const all = Array.isArray(res.data) ? res.data : [];
+      // Filter by adjustment type
+      const filtered = all.filter(p => {
+        const t = String(type);
+        const pt = String(p.product_type || '').toLowerCase();
+        if (t === 'add') {
+          return pt === 'simple';
+        }
+        if (t === 'production') {
+          return pt === 'recipe' || pt === 'composite';
+        }
+        // For spoilage/waste/correction, allow all types by default
+        return true;
+      });
+      setProducts(filtered);
+      return filtered;
     } catch (e) {
       toast.error("Failed to load products.");
       return [];
@@ -69,6 +85,8 @@ export default function MultiAdjustment() {
           quantity: "",
           unit_price: type === 'add' ? (Number(data[0].unit_cost) || 0) : undefined,
         }]);
+      } else {
+        setItems([]);
       }
     })();
   }, [type]);
@@ -116,8 +134,9 @@ export default function MultiAdjustment() {
     const userId = getUserIdFromToken();
     if (!userId) return toast.error("Missing user info");
 
-    // Determine sign: correction should MINUS the stock
-    const isStockOut = type === 'spoilage' || type === 'waste' || type === 'correction';
+    // Determine sign: correction can be add or subtract; others fixed
+    const isStockOut = type === 'spoilage' || type === 'waste' || (type === 'correction' && correctionMode === 'subtract');
+    const isCorrectionAdd = type === 'correction' && correctionMode === 'add';
 
     const payload = {
       businessId,
@@ -126,12 +145,14 @@ export default function MultiAdjustment() {
         if (!i.quantity || Number(i.quantity) <= 0)
           throw new Error(`Quantity for ${i.name} must be greater than 0`);
 
-        return {
+        const payloadItem = {
           productId: Number(i.productId),
           // Send negative quantity for stock-out/correction to reduce stock
           quantity: isStockOut ? -Math.abs(Number(i.quantity)) : Math.abs(Number(i.quantity)),
           ...(type === 'add' ? { unit_price: Number(i.unit_price) || 0 } : {})
         };
+        // For correction-add, quantity should be positive (already handled by isStockOut calc)
+        return payloadItem;
       })
     };
 
@@ -152,13 +173,24 @@ export default function MultiAdjustment() {
       toast.success(`${modeLabel} successful`);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || "Action failed.");
+      const apiError = err.response?.data?.error || err.message || "Action failed.";
+      // Special-case insufficient stock errors
+      if (apiError.includes('INSUFFICIENT_STOCK')) {
+        const details = err.response?.data?.details;
+        const msg = details?.productId
+          ? `Insufficient stock for product ${details.productId}. Available: ${details.available}, requested change: ${details.requestedChange}.`
+          : 'Insufficient stock to complete the operation.';
+        toast.warn(msg);
+      } else {
+        toast.error(apiError);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleTypeChange = (e) => setType(e.target.value);
+  const handleCorrectionModeChange = (e) => setCorrectionMode(e.target.value);
 
   return (
     <DashboardLayout>
@@ -174,6 +206,16 @@ export default function MultiAdjustment() {
             ))}
           </select>
         </div>
+
+        {type === 'correction' && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Correction Mode</label>
+            <select value={correctionMode} onChange={handleCorrectionModeChange} className="w-full p-2 rounded-lg">
+              <option value="add">Add to stock</option>
+              <option value="subtract">Subtract from stock</option>
+            </select>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {items.map((item, idx) => (
