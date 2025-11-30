@@ -11,6 +11,7 @@ import ProductList from '../pages/SessionPages/ProductList.jsx'
 import ProductListComponent from '../components/inventory/ProductListComponent.jsx'
 import PointofSales from '../pages/SessionPages/PointofSales.jsx'
 import SuperAdminDashboard from '../pages/SuperAdminPages/SuperAdminDashboard.jsx'
+import RBACManagement from '../pages/SuperAdminPages/RBACManagement.jsx'
 import MultiAdjustment from '../pages/SessionPages/MultiAdjustment.jsx'
 import AccessCode from '../pages/SessionPages/AccessCode.jsx'
 import ChooseRole from "../pages/ChooseRole"
@@ -49,4 +50,5 @@ export const userRoutes = [
 
 export const superAdminRoutes = [
   { path: '/superadmin/dashboard', element: <SuperAdminDashboard />},
+  { path: '/superadmin/rbac', element: <RBACManagement />},
 ]

@@ -5,8 +5,20 @@ import path from 'path';
 
 export const getSettings = async (req, res) => {
   try {
-    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId;
-    if (!businessId) return res.status(400).json({ error: 'Missing business id' });
+    const businessId =
+      req.headers['x-business-id'] ||
+      req.params?.businessId ||
+      req.query?.businessId ||
+      req.body?.businessId;
+
+    if (!businessId) {
+      // Superadmin may visit pages without a selected business; return an empty payload instead of error
+      const role = (req.user?.system_role || '').toLowerCase();
+      if (role === 'superadmin') {
+        return res.json({ success: true, settings: null, note: 'No business selected' });
+      }
+      return res.status(400).json({ error: 'Missing business id' });
+    }
 
     const settings = await getBusinessSettings(businessId);
     res.json({ success: true, settings });
@@ -18,7 +30,7 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const businessId = req.headers['x-business-id'] || req.body.businessId;
+    const businessId = req.headers['x-business-id'] || req.params?.businessId || req.body?.businessId;
     if (!businessId) return res.status(400).json({ error: 'Missing business id' });
 
     const { businessName, businessType } = req.body;
