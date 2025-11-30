@@ -22,6 +22,7 @@ import profitAnalysisRoutes from './routes/analysis/profit.js';
 import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
 import summaryAnalysisRoutes from './routes/analysis/summary.js';
 import adminMetricsRoute from './routes/admin-metrics-route.js';
+import rbacRoute from './routes/rbac-route.js';
 import businessLogsRoute from './routes/business/business-logs-route.js';
 
 const app = express();
@@ -30,7 +31,8 @@ app.use(express.json());
 app.use(cors({
   origin: 'http://localhost:5173', // or '*' if you want to allow all
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Business-Id'],
+  // include common capitalizations for custom header to avoid preflight issues
+  allowedHeaders: ['Content-Type','Authorization','X-Business-Id','X-Business-ID','x-business-id'],
   credentials: true
 }));
 
@@ -60,11 +62,18 @@ app.use('/api/analysis/profit', profitAnalysisRoutes);
 app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
 app.use('/api/analysis/summary', summaryAnalysisRoutes);
 app.use('/api/admin/metrics', adminMetricsRoute);
+app.use('/api', rbacRoute);
 
 
-// ✅ Debug middleware to see all incoming requests
+// ✅ Debug middleware to see incoming requests (avoid 'undefined' body for GET)
 app.use((req, res, next) => {
-  console.log("Incoming request:", req.method, req.url, req.body);
+  const businessId = req.headers['x-business-id'] || null;
+  const payload = {
+    businessId,
+    query: req.query,
+  };
+  if (req.method !== 'GET') payload.body = req.body;
+  console.log(`Incoming ${req.method} ${req.url}`, payload);
   next();
 });
 

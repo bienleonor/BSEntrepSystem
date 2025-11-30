@@ -1,4 +1,4 @@
-// role-model.js
+// sys-role-model.js
 import pool from '../config/pool.js';
 
 // 🔍 Get full role info by role name (e.g., 'admin')
