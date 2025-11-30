@@ -1,13 +1,8 @@
 import './App.css'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { publicRoutes } from "../src/routes/PublicRoutes"
-import { privateRoutes } from '../src/routes/PrivateRoutes'
-
-// ✅ Auth wrapper
-const ProtectedRoute = ({ element }) => {
-  const isAuthenticated = localStorage.getItem('token') // Replace with real auth logic
-  return isAuthenticated ? element : <Navigate to="/Login" replace />
-}
+import { userRoutes, superAdminRoutes } from '../src/routes/PrivateRoutes'
+import ProtectedRoute from './routes/ProtectedRoute'
 
 function App() {
   return (
@@ -17,9 +12,22 @@ function App() {
         <Route key={path} path={path} element={element} />
       ))}
 
-      {/* Protected routes */}
-      {privateRoutes.map(({ path, element }) => (
-        <Route key={path} path={path} element={<ProtectedRoute element={element} />} />
+      {/* User-accessible routes (regular users, admin, superuser, superadmin) */}
+      {userRoutes.map(({ path, element }) => (
+        <Route
+          key={path}
+          path={path}
+          element={<ProtectedRoute allowedRoles={["user", "superuser", "admin", "superadmin"]} element={element} />}
+        />
+      ))}
+
+      {/* Super-admin only routes */}
+      {superAdminRoutes.map(({ path, element }) => (
+        <Route
+          key={path}
+          path={path}
+          element={<ProtectedRoute allowedRoles={["superadmin", "admin"]} element={element} />}
+        />
       ))}
     </Routes>
   )
