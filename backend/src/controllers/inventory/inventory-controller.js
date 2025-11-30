@@ -3,6 +3,8 @@ import {
   applyMultiInventoryChange,
   processProduction, 
 } from "../../services/inventory-services.js";
+import { logBusinessAction } from '../../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
 
 import { getAllInventoryTransactions } from "../../models/inventory/inventory-model.js";
 
@@ -35,6 +37,20 @@ export const stockInController = async (req, res) => {
       message: "Stock added successfully",
       data: result
     });
+
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.CREATE,
+        table_name: 'inventory_table',
+        record_id: 0,
+        old_data: null,
+        new_data: { items_count: items.length, type: 'stock_in' },
+        req,
+      });
+    } catch (e) {}
 
   } catch (err) {
     console.error("❌ Stock-in error:", err);
@@ -93,6 +109,20 @@ export const stockOutController = async (req, res) => {
       data: result
     });
 
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'inventory_table',
+        record_id: 0,
+        old_data: null,
+        new_data: { items_count: items.length, type: 'stock_out', reason },
+        req,
+      });
+    } catch (e) {}
+
   } catch (err) {
     console.error("❌ Stock-out error:", err);
     res.status(500).json({ 
@@ -138,6 +168,20 @@ export const correctionController = async (req, res) => {
       data: result
     });
 
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'inventory_table',
+        record_id: 0,
+        old_data: null,
+        new_data: { items_count: items.length, type: 'correction' },
+        req,
+      });
+    } catch (e) {}
+
   } catch (err) {
     console.error("❌ Correction error:", err);
     res.status(500).json({ 
@@ -176,6 +220,20 @@ export const productionController = async (req, res) => {
       message: "Production recorded successfully",
       data: result
     });
+
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.CREATE,
+        table_name: 'inventory_table',
+        record_id: 0,
+        old_data: null,
+        new_data: { items_count: items.length, type: 'production' },
+        req,
+      });
+    } catch (e) {}
 
   } catch (err) {
     console.error("❌ Production error:", err);

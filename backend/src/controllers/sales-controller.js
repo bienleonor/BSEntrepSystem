@@ -1,5 +1,7 @@
 //sales-controller.js
-import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder,getFinishOrderByBusiness } from '../models/sales-model.js';
+import { getSalesTotal,createSale,getAllOrders,getAllOrdersByBusiness,cancelSale,finishOrder,getFinishOrderByBusiness, getOrderItemsByPurchaseId } from '../models/sales-model.js';
+import { logBusinessAction } from '../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../constants/modules-actions.js';
 
 export const makesale = async (req, res) => {
   try {
@@ -10,8 +12,58 @@ export const makesale = async (req, res) => {
     const user_id = req.user?.user_id;
     if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
 
-    const saleData = { user_id, total_amount, items, business_id };
+    const bizId = Number(req.businessId || business_id);
+    const saleData = { user_id, total_amount, items, business_id: bizId };
     const sale = await createSale(saleData);
+
+    // Fire-and-forget logging (don't block response)
+    (async () => {
+      try {
+        // Log the purchase (sale) record
+        await logBusinessAction({
+          business_id: bizId,
+          user_id,
+          module_id: MODULES.SALES,
+          action_id: ACTIONS.CREATE,
+          table_name: 'purchases_table',
+          record_id: Number(sale.sale_id || 0),
+          old_data: null,
+          new_data: { sale_id: sale.sale_id, total_amount, items_count: items.length, receipt_no: sale.custom_receipt_no },
+          req,
+        });
+
+        // Log each purchase item and related inventory decrement
+        const createdItems = await getOrderItemsByPurchaseId(sale.sale_id);
+        for (const it of createdItems) {
+          await logBusinessAction({
+            business_id: bizId,
+            user_id,
+            module_id: MODULES.SALES,
+            action_id: ACTIONS.CREATE,
+            table_name: 'purchase_items_table',
+            record_id: Number(it.itemId || 0),
+            old_data: null,
+            new_data: { purchase_id: it.purchaseId, product_id: it.product_id, quantity: it.quantity, price: it.price },
+            req,
+          });
+
+          await logBusinessAction({
+            business_id: bizId,
+            user_id,
+            module_id: MODULES.INVENTORY,
+            action_id: ACTIONS.UPDATE,
+            table_name: 'inventory_table',
+            record_id: Number(it.product_id || 0),
+            old_data: null,
+            new_data: { product_id: it.product_id, delta: -Math.abs(Number(it.quantity || 0)) },
+            req,
+          });
+        }
+      } catch (e) {
+        console.warn('sales logging (create) failed:', e?.message);
+      }
+    })();
+
     return res.status(201).json(sale);
 
   } catch (err) {
@@ -94,6 +146,45 @@ export const cancelSaleController = async (req, res) => {
 
     try {
       await cancelSale(purchaseId);
+
+      // Fire-and-forget logs for cancel + inventory restoration
+      (async () => {
+        try {
+          const bizId = Number(req.businessId || 0);
+          const userId = req.user?.user_id ?? null;
+
+          await logBusinessAction({
+            business_id: bizId,
+            user_id: userId,
+            module_id: MODULES.SALES,
+            action_id: ACTIONS.CANCEL,
+            table_name: 'transaction_table',
+            record_id: Number(purchaseId),
+            old_data: { purchase_id: Number(purchaseId) },
+            new_data: null,
+            req,
+          });
+
+          // Per-item inventory restore logs
+          const items = await getOrderItemsByPurchaseId(purchaseId);
+          for (const it of items) {
+            await logBusinessAction({
+              business_id: bizId,
+              user_id: userId,
+              module_id: MODULES.INVENTORY,
+              action_id: ACTIONS.UPDATE,
+              table_name: 'inventory_table',
+              record_id: Number(it.product_id || 0),
+              old_data: null,
+              new_data: { product_id: it.product_id, delta: Math.abs(Number(it.quantity || 0)) },
+              req,
+            });
+          }
+        } catch (e) {
+          console.warn('sales logging (cancel) failed:', e?.message);
+        }
+      })();
+
       return res.status(200).json({
         success: true,
         message: `Sale ${purchaseId} canceled successfully`
@@ -116,6 +207,26 @@ export const finishOrderController = async (req, res) => {
 
   try {
     await finishOrder(purchaseId);
+
+    // Fire-and-forget transaction finish log
+    (async () => {
+      try {
+        await logBusinessAction({
+          business_id: Number(req.businessId || 0),
+          user_id: req.user?.user_id ?? null,
+          module_id: MODULES.SALES,
+          action_id: ACTIONS.UPDATE,
+          table_name: 'transaction_table',
+          record_id: Number(purchaseId),
+          old_data: null,
+          new_data: { purchase_id: Number(purchaseId), status: 'finished' },
+          req,
+        });
+      } catch (e) {
+        console.warn('sales logging (finish) failed:', e?.message);
+      }
+    })();
+
     return res.status(200).json({
       success: true,
       message: `Order ${purchaseId} finished successfully`

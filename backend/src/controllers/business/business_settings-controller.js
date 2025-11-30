@@ -1,4 +1,6 @@
 import { updateBusinessInfo, upsertBusinessSetting, getBusinessSettings,getBusinessLogo } from '../../models/business/business-settings_model.js';
+import { logBusinessAction } from '../../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
 import { findBusinessByUserId } from '../../models/business/business-model.js';
 import fs from 'fs';
 import path from 'path';
@@ -36,6 +38,9 @@ export const updateSettings = async (req, res) => {
     }
 
     // Update business name/category
+    let oldBusiness = null;
+    try { oldBusiness = await getBusinessSettings(businessId); } catch {}
+
     if (businessName || businessType) {
       await updateBusinessInfo(businessId, businessName || null, businessType || null);
     }
@@ -55,13 +60,28 @@ export const updateSettings = async (req, res) => {
     }
     
     // Upsert business setting (logo blob) only if a new logo was uploaded
-      if (logoBlob !== null) {
+    if (logoBlob !== null) {
       await upsertBusinessSetting(businessId, logoBlob);
     }
 
 
     const settings = await getBusinessSettings(businessId);
     res.json({ success: true, message: 'Settings updated', settings });
+
+    // Log update action
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.BUSINESS_MANAGEMENT,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'business_table',
+        record_id: Number(businessId),
+        old_data: oldBusiness,
+        new_data: settings,
+        req,
+      });
+    } catch (e) { console.warn('logBusinessAction (updateSettings) failed', e.message); }
   } catch (err) {
     console.error('updateSettings error', err);
     res.status(500).json({ success: false, message: 'Server error' });

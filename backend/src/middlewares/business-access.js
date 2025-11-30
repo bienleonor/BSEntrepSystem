@@ -3,9 +3,9 @@ import { findBusinessByUserId } from "../models/business/business-model.js";
 export const requireBusinessAccess = async (req, res, next) => {
   try {
     // 1️⃣ Read header and params
-    const headerBizRaw = req.get('X-Business-Id') || req.headers['x-business-id'];
+    const headerBizRaw = req.get('X-Business-Id') || req.get('X-Business-ID') || req.headers['x-business-id'] || req.headers['x-business-id'];
     const headerBiz = headerBizRaw ? String(headerBizRaw).trim() : null;
-    const paramBiz = req.params?.businessId ? String(req.params.businessId).trim() : null;
+    const paramBiz = (req.params?.businessId || req.params?.business_id) ? String(req.params.businessId || req.params.business_id).trim() : null;
 
     // 2️⃣ Ensure authentication ran
     if (!req.user) {
@@ -20,7 +20,8 @@ export const requireBusinessAccess = async (req, res, next) => {
     }
 
     // 3️⃣ Determine businessId to use (header > param)
-    const bizIdRaw = headerBiz || paramBiz;
+    const bodyBiz = req.body?.businessId || req.body?.business_id || null;
+    const bizIdRaw = headerBiz || paramBiz || bodyBiz;
     if (!bizIdRaw) {
       return res.status(400).json({ error: "Missing business id" });
     }

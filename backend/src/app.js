@@ -22,6 +22,7 @@ import profitAnalysisRoutes from './routes/analysis/profit.js';
 import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
 import summaryAnalysisRoutes from './routes/analysis/summary.js';
 import adminMetricsRoute from './routes/admin-metrics-route.js';
+import businessLogsRoute from './routes/business/business-logs-route.js';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/users-details', UserDetailsRoutes);
 app.use("/api/access-code", accessCodeRoute);
 app.use('/api/business', registerBusiness);
+app.use('/api/business', businessLogsRoute);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', productroutes);
 app.use('/api/inventory', recipeRoutes);

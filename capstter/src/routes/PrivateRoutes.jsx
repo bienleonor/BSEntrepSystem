@@ -19,7 +19,8 @@ import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
 import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
 import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
 import Category from '../pages/SessionPages/Category.jsx'
-import StockAdjustmentReport from '../pages/SessionPages/InventoryMovement.jsx'
+import StockAdjustmentReport from '../pages/SessionPages/StockAdjustmentReport.jsx'
+import BussinesLogs from '../pages/SessionPages/BussinesLogs.jsx'
 
 export const userRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
@@ -41,6 +42,7 @@ export const userRoutes = [
   { path: '/pointofsales', element: <PointofSales />},
 
   { path: '/busmanage', element: <Busmanage />},
+  { path: '/businesslogs', element: <BussinesLogs />},
   { path: '/employeemanagement', element: <EmployeeManagement />},
   { path: '/businessposition', element: <BusinessPosition />},
   { path: '/businesssetting', element: <BusinessSettings />},
