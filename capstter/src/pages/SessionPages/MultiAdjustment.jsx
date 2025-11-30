@@ -67,7 +67,7 @@ export default function MultiAdjustment() {
           name: data[0].name,
           quantityAvailable: data[0].quantity || 0,
           quantity: "",
-          unit_price: type === 'add' ? 0 : undefined,
+          unit_price: type === 'add' ? (Number(data[0].unit_cost) || 0) : undefined,
         }]);
       }
     })();
@@ -82,6 +82,9 @@ export default function MultiAdjustment() {
       if (sel) {
         newItems[index].name = sel.name;
         newItems[index].quantityAvailable = sel.quantity || 0;
+        if (type === 'add') {
+          newItems[index].unit_price = Number(sel.unit_cost) || 0;
+        }
         // Do not auto-map unit_price from product price; keep user input
       }
     }
@@ -97,7 +100,7 @@ export default function MultiAdjustment() {
       name: first.name,
       quantityAvailable: first.quantity || 0,
       quantity: "",
-      unit_price: type === 'add' ? 0 : undefined,
+      unit_price: type === 'add' ? (Number(first.unit_cost) || 0) : undefined,
     }]);
   };
 

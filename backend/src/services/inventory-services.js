@@ -85,6 +85,8 @@ export async function processProduction({ items, businessId, userId }) {
 
     // Build a single transaction (header + details) for this production item
     const details = [];
+    // Track total batch cost derived from ingredients/components
+    let totalBatchCost = 0;
 
     // 1️⃣ PROCESS RECIPE PRODUCTS (consume ingredients)
     if (product.product_type === "recipe") {
@@ -114,12 +116,22 @@ export async function processProduction({ items, businessId, userId }) {
           }
         }
 
+        // Fetch latest unit cost of ingredient (fallback to product.price or 0)
+        const [costRowsIng] = await pool.execute(
+          `SELECT cost FROM product_cost_table WHERE product_id = ? ORDER BY valid_from DESC LIMIT 1`,
+          [ing.ingredient_product_id]
+        );
+        const ingredientUnitCost = Number(costRowsIng[0]?.cost ?? ingredientProduct.price ?? 0);
+        const ingredientTotalCost = ingredientUnitCost * Math.abs(convertedUsage);
+
+        totalBatchCost += ingredientTotalCost;
+
         details.push({
           productId: ing.ingredient_product_id,
           qtyChange: -Math.abs(convertedUsage),
           unitId: toUnitId,
-          unitCost: 0,
-          totalCost: 0,
+          unitCost: ingredientUnitCost,
+          totalCost: ingredientTotalCost,
         });
       }
     }
@@ -152,24 +164,37 @@ export async function processProduction({ items, businessId, userId }) {
           }
         }
 
+        const [costRowsComp] = await pool.execute(
+          `SELECT cost FROM product_cost_table WHERE product_id = ? ORDER BY valid_from DESC LIMIT 1`,
+          [combo.child_product_id]
+        );
+        const componentUnitCost = Number(costRowsComp[0]?.cost ?? childProduct.price ?? 0);
+        const componentTotalCost = componentUnitCost * Math.abs(convertedUsage);
+
+        totalBatchCost += componentTotalCost;
+
         details.push({
           productId: combo.child_product_id,
           qtyChange: -Math.abs(convertedUsage),
           unitId: toUnitId,
-          unitCost: 0,
-          totalCost: 0,
+          unitCost: componentUnitCost,
+          totalCost: componentTotalCost,
         });
       }
     }
 
     // 3️⃣ ADD FINISHED PRODUCT STOCK (produce finished goods)
     const finishedUnitId = product.unit_id;
+    // Compute unit cost for finished product from totalBatchCost
+    const finishedUnitCost = quantity > 0 ? (totalBatchCost / Number(quantity)) : 0;
+    const finishedTotalCost = finishedUnitCost * Number(quantity);
+
     details.push({
       productId,
       qtyChange: Number(quantity),
       unitId: finishedUnitId,
-      unitCost: 0,
-      totalCost: 0,
+      unitCost: finishedUnitCost,
+      totalCost: finishedTotalCost,
       unitMultiplier: product.unit_multiplier ?? 1,
     });
 
@@ -187,6 +212,14 @@ export async function processProduction({ items, businessId, userId }) {
       `INSERT INTO production_table (product_id, quantity_produced, user_id, created_at) VALUES (?, ?, ?, NOW())`,
       [productId, quantity, userId]
     );
+
+    // Record the derived finished product unit cost into product_cost_table
+    if (finishedUnitCost > 0) {
+      await pool.execute(
+        `INSERT INTO product_cost_table (product_id, cost, valid_from) VALUES (?, ?, NOW())`,
+        [productId, finishedUnitCost]
+      );
+    }
 
     results.push({ productId, productName: product.name, quantityProduced: quantity });
   }

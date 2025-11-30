@@ -74,6 +74,13 @@ export const getAllProducts = async () => {
       p.business_id,
       i.unit_id,
       p.price,
+      -- latest unit cost from product_cost_table
+      (
+        SELECT pc.cost FROM product_cost_table pc
+        WHERE pc.product_id = p.product_id
+        ORDER BY pc.valid_from DESC
+        LIMIT 1
+      ) AS unit_cost,
       p.sku,
       p.category_id,
       c.name AS name,
@@ -235,7 +242,13 @@ export const getProductsByBusiness = async (businessId) => {
        c.name AS category_name,
        COALESCE(i.quantity, 0) AS quantity,
        i.updated_at AS inventory_updated_at,
-       i.unit_id AS unit_id
+       i.unit_id AS unit_id,
+       (
+         SELECT pc.cost FROM product_cost_table pc
+         WHERE pc.product_id = p.product_id
+         ORDER BY pc.valid_from DESC
+         LIMIT 1
+       ) AS unit_cost
      FROM product_table p
      LEFT JOIN product_category_table c ON c.category_id = p.category_id 
      LEFT JOIN inventory_table i ON i.product_id = p.product_id
