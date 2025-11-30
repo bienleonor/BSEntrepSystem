@@ -3,15 +3,10 @@ import pool from '../../config/pool.js';
 import { recordTransactionWithDetails } from './inventory-model.js';
 
 export const getUnits = async () => {
-  try {
-    const [rows] = await pool.execute(`SELECT * FROM unit_table ORDER BY name`);
-    return rows;
-  } catch (err) {
-    console.error("getUnits error:", err);
-    throw err;
-  }
+  const [rows] = await pool.execute(`SELECT unit_id, name FROM unit_table`);
+  return rows;
 };
-//NO TRY CATCH HERE, HANDLE ERRORS IN CONTROLLER
+
 
 export const addProduct = async (productData) => {
   const {
@@ -70,6 +65,7 @@ export const addProduct = async (productData) => {
   return productResult;
 };
 
+
 export const getAllProducts = async () => {
   const [rows] = await pool.execute(`
     SELECT 
@@ -94,20 +90,13 @@ export const getAllProducts = async () => {
   return rows;
 };
 
-
-
 export const getProductById = async (productId) => {
-  try {
     const [rows] = await pool.execute(
       `SELECT p.*, COALESCE(i.quantity,0) AS quantity, i.unit_id AS unit_id, i.unit_multiplier AS unit_multiplier FROM product_table p LEFT JOIN inventory_table i ON i.product_id = p.product_id WHERE p.product_id = ?`,
         [productId]
     );
-    return rows[0] || null;
-  } catch (err) {
-    console.error("getProductById error:", err);
-    throw err;
-  }
-};
+    return rows[0];
+}
 
 export const updateProduct = async (productId, productData) => {
   const { name, businessId, unit_id, price, picture, category_id, unit_multiplier } = productData;
@@ -239,33 +228,38 @@ export const deleteProduct = async (productId) => {
   }
 };
 
-
+export const getProductsByBusiness = async (businessId) => {
+  const [rows] = await pool.execute(
+    `SELECT 
+       p.*, 
+       c.name AS category_name,
+       COALESCE(i.quantity, 0) AS quantity,
+       i.updated_at AS inventory_updated_at,
+       i.unit_id AS unit_id
+     FROM product_table p
+     LEFT JOIN product_category_table c ON c.category_id = p.category_id 
+     LEFT JOIN inventory_table i ON i.product_id = p.product_id
+     WHERE p.business_id = ?`,
+    [businessId]
+  );
+    return rows;
+}
 
 export const updateProductStatus = async (productId, isActive) => {
-  try {
-    const [result] = await pool.execute(
-      `UPDATE product_table SET is_active = ?, updated_at = NOW() WHERE product_id = ?`,
-      [isActive ? 1 : 0, productId]
-    );
-    return result;
-  } catch (err) {
-    console.error("updateProductStatus error:", err);
-    throw err;
-  }
+  const [result] = await pool.execute(
+    `UPDATE product_table SET is_active = ? WHERE product_id = ?`,
+    [isActive, productId]
+  );
+  return result;
 };
 
 //every active products in product table to inventory table
 export const getactiveProducts = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT * FROM product_table WHERE is_active = 1`
-    );
-    return rows;
-  } catch (err) {
-    console.error("getactiveProducts error:", err);
-    throw err;
-  }
-};
+  const [rows] = await pool.execute(
+    `SELECT * FROM product_table WHERE is_active = 1`
+  );
+  return rows;
+}
 
 //fetch products with inventory details
 export const getInventoryWithProductDetailsByBusiness = async (businessId) => {
@@ -355,13 +349,15 @@ export const addInventoryStock = async ({ productId, quantity }) => {
 };
 
 
-export const updateInventoryStockByProduct = async (productId, quantity) => {
+
+//wrong
+export const updateinventoryStock = async (productId, quantity) => {
   const [result] = await pool.execute(
-    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE product_id = ?`,
+    `UPDATE inventory_table SET quantity = ?, updated_at = NOW() WHERE inventory_id = ?`,
     [quantity, productId]
   );
   return result;
-};
+}
 
 // Record a stock adjustment (stock out / in) and update inventory quantity accordingly
 export async function recordInventoryTransactionAndUpdateInventory({ productId, change_qty, reason, reference, businessId, userId, }) {
@@ -397,5 +393,11 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
 }
 
 
-export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct, getactiveProducts, getInventoryWithProductDetailsByBusiness, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory, updateInventoryStockByProduct };
+
+
+
+
+
+export default { addProduct, getProductsByBusiness, getUnits, getAllProducts, getProductById, updateProduct, deleteProduct,getactiveProducts, getInventoryWithProductDetailsByBusiness, addInventoryStock, getActiveInventoryWithProductDetailsByBusiness, updateProductStatus, recordInventoryTransactionAndUpdateInventory };
+
     

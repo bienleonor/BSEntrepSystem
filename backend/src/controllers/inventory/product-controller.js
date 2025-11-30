@@ -25,8 +25,7 @@ import fs from 'fs';
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, businessId, unit_id, price, product_type, category_id, unit_multiplier } = req.body;
-    console.log("Received product data:", req.body);
+    const { name, businessId, unit_id, price, product_type, category_id } = req.body;
 
     // --- VALIDATION ---
     if (!name || !businessId || !unit_id || !price || !req.file) {
@@ -50,7 +49,6 @@ export const createProduct = async (req, res) => {
       name,
       businessId,
       unit_id,
-      unit_multiplier: unit_multiplier ? Number(unit_multiplier) : undefined,
       price,
       picture,
       product_type,
@@ -135,9 +133,6 @@ export const createProduct = async (req, res) => {
 
   } catch (error) {
     console.error("🔥 Error adding product:", error);
-    if (error && error.message === 'PACK_MULTIPLIER_REQUIRED') {
-      return res.status(400).json({ error: 'Pack unit requires unit_multiplier' });
-    }
     res.status(500).json({ error: "Internal server error." });
   }
 };
@@ -194,7 +189,7 @@ export const fetchProductById = async (req, res) => {
 export const modifyProduct = async (req, res) => {
   try {
     const { productId } = req.params;
-    const { name, businessId, unit_id, price, product_type, picture: pictureFallback, category_id, unit_multiplier } = req.body;
+    const { name, businessId, unit_id, price, product_type, picture: pictureFallback, category_id } = req.body;
 
     let pictureValue = pictureFallback || null;
     if (req.file) {
@@ -203,13 +198,10 @@ export const modifyProduct = async (req, res) => {
       fs.unlink(req.file.path, (err) => { if (err) console.warn('unlink err', err); });
     }
 
-    await updateProduct(productId, { name, businessId, unit_id, unit_multiplier: unit_multiplier ? Number(unit_multiplier) : undefined, price, picture: pictureValue, product_type, category_id: category_id || null });
+    await updateProduct(productId, { name, businessId, unit_id, price, picture: pictureValue, product_type, category_id: category_id || null });
     res.status(200).json({ message: 'Product updated successfully.' });
   } catch (err) {
     console.error('Error updating product:', err);
-    if (err && err.message === 'PACK_MULTIPLIER_REQUIRED') {
-      return res.status(400).json({ error: 'Pack unit requires unit_multiplier' });
-    }
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
