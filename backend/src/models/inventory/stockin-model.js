@@ -84,6 +84,14 @@ export const insertStockInItems = async (stockinId, items, { businessId = null, 
     const totalCost = unitCost * Math.abs(qtyChange);
 
     details.push({ productId, qtyChange, unitId, unitCost, totalCost });
+
+    // If a unit price is provided, record it into product_cost_table
+    if (!Number.isNaN(unitCost) && unitCost > 0) {
+      await pool.execute(
+        `INSERT INTO product_cost_table (product_id, cost, valid_from) VALUES (?, ?, NOW())`,
+        [productId, unitCost]
+      );
+    }
   }
 
   // Create inventory transaction with reference to the stockin header
@@ -133,6 +141,14 @@ export const insertStockInItemsUnsafe = async (stockinId, items, { businessId = 
       unitCost,
       totalCost: unitCost * Math.abs(qtyChange),
     });
+
+    // Record unit price into product_cost_table when provided
+    if (!Number.isNaN(unitCost) && unitCost > 0) {
+      await pool.execute(
+        `INSERT INTO product_cost_table (product_id, cost, valid_from) VALUES (?, ?, NOW())`,
+        [item.productId, unitCost]
+      );
+    }
   }
 
   await recordTransactionWithDetails({

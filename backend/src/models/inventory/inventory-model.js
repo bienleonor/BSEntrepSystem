@@ -241,7 +241,7 @@ export const getAllInventoryTransactions = async (businessId) => {
             d.product_id,
             p.name AS product_name,
             d.qty_change AS change_qty,
-            t.transaction_type,
+            t.transaction_type AS reason,
             t.reference,
             t.user_id,
             u.username AS username,
