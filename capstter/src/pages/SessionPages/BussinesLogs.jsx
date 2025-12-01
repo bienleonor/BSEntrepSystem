@@ -10,6 +10,7 @@ const BussinesLogs = () => {
     const [pageSize, setPageSize] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [sortFilter, setSortFilter] = useState('latest'); // latest | oldest | user | module | action | table | record
+    const [selectedDate, setSelectedDate] = useState('');
 
     const MODULE_NAMES = {
         1: 'business management',
@@ -51,6 +52,36 @@ const BussinesLogs = () => {
         };
         fetchLogs();
     }, []);
+
+    // SalesLog-style helpers
+    const formatLocalDateInput = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const getAvailableDateRange = () => {
+        if (!logs || !logs.length) {
+            return { minDate: '', maxDate: '' };
+        }
+        const dates = logs
+          .map(l => l.created_at ? new Date(l.created_at) : null)
+          .filter(d => d !== null)
+          .sort((a, b) => a.getTime() - b.getTime());
+        if (!dates.length) return { minDate: '', maxDate: '' };
+        const minDate = formatLocalDateInput(dates[0]);
+        const maxDate = formatLocalDateInput(dates[dates.length - 1]);
+        return { minDate, maxDate };
+    };
+
+    const hasDataForSelectedDate = () => {
+        if (!selectedDate) return false;
+        const target = new Date(selectedDate + 'T00:00:00');
+        return logs.some(l => l.created_at && new Date(l.created_at).toDateString() === target.toDateString());
+    };
+
+    const { minDate, maxDate } = getAvailableDateRange();
 
         const filtered = logs.filter(l => {
         if (!search) return true;
@@ -109,7 +140,7 @@ const BussinesLogs = () => {
             <div className="p-4 sm:p-6">
                 <h1 className="text-3xl sm:text-6xl font-bold mb-4 text-white">Business Logs</h1>
 
-                <div className="mb-4 flex flex-col sm:flex-row gap-4">
+                                <div className="mb-4 flex flex-col sm:flex-row gap-4">
                     <div className="flex flex-col w-full sm:w-auto">
                         <label className="text-white mb-1">Search:</label>
                         <input
@@ -136,6 +167,43 @@ const BussinesLogs = () => {
                             <option value="record">Record ID</option>
                         </select>
                     </div>
+                                        <div className="flex flex-col w-full sm:w-auto">
+                                            <label className="text-white mb-1">Export Date:</label>
+                                            <input
+                                                type="date"
+                                                value={selectedDate}
+                                                onChange={(e) => setSelectedDate(e.target.value)}
+                                                min={minDate}
+                                                max={maxDate}
+                                                className={`px-3 py-2 rounded-md w-full sm:w-60 ${selectedDate && !hasDataForSelectedDate() ? 'border border-red-500' : ''}`}
+                                            />
+                                            
+                                        </div>
+                                        <div className="flex items-end w-full sm:w-auto">
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!selectedDate) return;
+                                                        try {
+                                                            const businessId = localStorage.getItem('selectedBusinessId');
+                                                            const url = `${axiosInstance.defaults.baseURL}/business/${businessId}/logs/export?date=${encodeURIComponent(selectedDate)}`;
+                                                            const resp = await axiosInstance.get(url, { responseType: 'blob' });
+                                                            const blobUrl = window.URL.createObjectURL(new Blob([resp.data], { type: 'text/csv' }));
+                                                            const a = document.createElement('a');
+                                                            a.href = blobUrl;
+                                                            a.download = `business_logs_${businessId}_${selectedDate}.csv`;
+                                                            document.body.appendChild(a);
+                                                            a.click();
+                                                            a.remove();
+                                                            window.URL.revokeObjectURL(blobUrl);
+                                                        } catch (e) {
+                                                            console.error(e);
+                                                            alert('Failed to export CSV');
+                                                        }
+                                                    }}
+                                                    disabled={!selectedDate || !hasDataForSelectedDate()}
+                                                    className={`px-3 py-2 rounded-md text-sm ${!selectedDate ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}
+                                                >Export CSV</button>
+                                        </div>
                 </div>
 
                 {loading && <p className="text-sm text-white">Loading logs…</p>}

@@ -80,7 +80,7 @@ const menuItems = [
   { label: "Product List", icon: <PackageOpen  size={18} /> },
   { label: "Category", icon: <Book  size={18} /> },
   { label: "Multi Adjustment Stock", icon: <PackageOpen  size={18} /> },
-  
+  { label: "Audit Logs", icon: <NotebookText size={18} /> },
 
   // Employee Management
   { label: "Employee Management", icon: <Users  size={18} /> },

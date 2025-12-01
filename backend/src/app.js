@@ -22,9 +22,15 @@ import profitAnalysisRoutes from './routes/analysis/profit.js';
 import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
 import summaryAnalysisRoutes from './routes/analysis/summary.js';
 import adminMetricsRoute from './routes/admin-metrics-route.js';
+
 import rbacRoute from './routes/rbac-route.js';
 import businessLogsRoute from './routes/business/business-logs-route.js';
+<<<<<<< HEAD
 import businessPositionsRoute from './routes/business/business-positions-route.js';
+=======
+import auditLogsRoute from './routes/admin/audit-logs-route.js';
+import auditRequestMiddleware from './middlewares/audit-request-middleware.js';
+>>>>>>> 45572c7787d7933a6fabf7ed339ff8730da1a508
 
 const app = express();
 
@@ -38,6 +44,8 @@ app.use(cors({
 }));
 
 
+// App-level audit logging (non-blocking, logs after response)
+app.use(auditRequestMiddleware);
 
 // Register routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +57,7 @@ app.use('/api/business', registerBusiness);
 app.use('/api/business', businessLogsRoute);
 app.use('/api/business/positions', businessPositionsRoute);
 
+app.use('/api/admin', auditLogsRoute);
 app.use('/api/sales', salesRoutes);
 app.use('/api/inventory', productroutes);
 app.use('/api/inventory', recipeRoutes);
@@ -66,7 +75,12 @@ app.use('/api/analysis/profit', profitAnalysisRoutes);
 app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
 app.use('/api/analysis/summary', summaryAnalysisRoutes);
 app.use('/api/admin/metrics', adminMetricsRoute);
+<<<<<<< HEAD
 app.use('/api/rbac', rbacRoute);
+=======
+
+app.use('/api', rbacRoute);
+>>>>>>> 45572c7787d7933a6fabf7ed339ff8730da1a508
 
 
 // ✅ Debug middleware to see incoming requests (avoid 'undefined' body for GET)
