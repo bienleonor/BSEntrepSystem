@@ -17,10 +17,7 @@ import stockadjustment from './routes/inventory/stock-adjustment-route.js';
 
 import Categoryroutes from './routes/inventory/product-category-route.js';
 
-import salesAnalysisRoutes from './routes/analysis/sales.js';
-import profitAnalysisRoutes from './routes/analysis/profit.js';
-import inventoryAnalysisRoutes from './routes/analysis/inventory.js';
-import summaryAnalysisRoutes from './routes/analysis/summary.js';
+import analysisRoutes from './routes/analysis/index.js';
 import adminMetricsRoute from './routes/admin-metrics-route.js';
 
 import rbacRoute from './routes/rbac-route.js';
@@ -68,11 +65,8 @@ app.use('/api/inventory', Categoryroutes);
 app.use('/uploads', express.static('uploads'));
 
 
-// KPI routes
-app.use('/api/analysis/sales', salesAnalysisRoutes);
-app.use('/api/analysis/profit', profitAnalysisRoutes);
-app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
-app.use('/api/analysis/summary', summaryAnalysisRoutes);
+// KPI routes - consolidated analysis
+app.use('/api/analysis', analysisRoutes);
 app.use('/api/admin/metrics', adminMetricsRoute);
 app.use('/api/rbac', rbacRoute);
 

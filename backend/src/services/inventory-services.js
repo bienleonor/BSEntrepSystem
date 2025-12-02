@@ -141,9 +141,9 @@ export async function processProduction({ items, businessId, userId }) {
       const combos = await getComboByParent(productId);
 
       for (const combo of combos) {
-        const childProduct = await getProductById(combo.child_product_id);
+        const childProduct = await getProductById(combo.component_product_id);
         if (!childProduct) {
-          throw new Error(`Component product ${combo.child_product_id} not found`);
+          throw new Error(`Component product ${combo.component_product_id} not found`);
         }
 
         const rawUsage = combo.quantity * quantity;
@@ -166,7 +166,7 @@ export async function processProduction({ items, businessId, userId }) {
 
         const [costRowsComp] = await pool.execute(
           `SELECT cost FROM product_cost_table WHERE product_id = ? ORDER BY valid_from DESC LIMIT 1`,
-          [combo.child_product_id]
+          [combo.component_product_id]
         );
         const componentUnitCost = Number(costRowsComp[0]?.cost ?? childProduct.price ?? 0);
         const componentTotalCost = componentUnitCost * Math.abs(convertedUsage);
@@ -174,7 +174,7 @@ export async function processProduction({ items, businessId, userId }) {
         totalBatchCost += componentTotalCost;
 
         details.push({
-          productId: combo.child_product_id,
+          productId: combo.component_product_id,
           qtyChange: -Math.abs(convertedUsage),
           unitId: toUnitId,
           unitCost: componentUnitCost,

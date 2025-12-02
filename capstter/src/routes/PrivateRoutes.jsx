@@ -17,6 +17,7 @@ import AccessCode from '../pages/SessionPages/AccessCode.jsx'
 import ChooseRole from "../pages/ChooseRole"
 import EmployeeManagement from '../pages/SessionPages/EmployeeManagement.jsx'
 import BusinessPosition from '../pages/SessionPages/BusinessPosition.jsx'
+import PositionPermissions from '../pages/SessionPages/PositionPermissions.jsx'
 import BusinessSettings from '../pages/SessionPages/BusinessSettings.jsx'
 import ProductRegistration from '../pages/SessionPages/ProductRegistration.jsx'
 import Category from '../pages/SessionPages/Category.jsx'
@@ -48,6 +49,7 @@ export const userRoutes = [
   { path: '/businesslogs', element: <BussinesLogs />},
   { path: '/employeemanagement', element: <EmployeeManagement />},
   { path: '/businessposition', element: <BusinessPosition />},
+  { path: '/positionpermissions', element: <PositionPermissions />},
   { path: '/businesssetting', element: <BusinessSettings />},
 ]
 

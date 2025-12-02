@@ -141,11 +141,11 @@ export default function EmployeeManagement() {
                         >
                           <option value="">-- No position --</option>
                           {positions.map((pos) => (
-                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.role_name}</option>
+                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.position_name}</option>
                           ))}
                         </select>
                       ) : (
-                        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">{emp.role_name || '--no position--'}</span>
+                        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">{emp.position_name || '--no position--'}</span>
                       )}
                     </div>
                   </div>
@@ -214,11 +214,11 @@ export default function EmployeeManagement() {
                         >
                           <option value="">-- No position --</option>
                           {positions.map((pos) => (
-                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.role_name}</option>
+                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.position_name}</option>
                           ))}
                         </select>
                       ) : (
-                        emp.role_name || '--no position--'
+                        emp.position_name || '--no position--'
                       )}
                     </td>
                     <td className="border px-4 py-2 space-x-3">

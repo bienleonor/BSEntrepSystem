@@ -266,6 +266,7 @@ export const getProductsByBusiness = async (businessId) => {
        p.*, 
        c.name AS category_name,
        COALESCE(i.quantity, 0) AS quantity,
+       COALESCE(i.total_quantity, 0) AS total_quantity,
        i.updated_at AS inventory_updated_at,
        i.unit_id AS unit_id,
        (

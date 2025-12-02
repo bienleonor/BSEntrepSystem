@@ -14,8 +14,6 @@ function ProductList() {
   const [categories, setCategories] = useState([]);
   const [categoriesMap, setCategoriesMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [inventoryDetailsMap, setInventoryDetailsMap] = useState({});
-
   // Edit modal state
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -52,28 +50,17 @@ function ProductList() {
         setLoading(true);
 
         // Parallel requests using Promise.all
-        const [productsRes, unitsRes, categoriesRes, inventoryDetailsRes] = await Promise.all([
+        const [productsRes, unitsRes, categoriesRes] = await Promise.all([
           axiosInstance.get(`/inventory/businesses/${businessId}/products`),
           axiosInstance.get('/inventory/units'),
           axiosInstance.get(`/inventory/${businessId}/product-categories`),
-          axiosInstance.get('/inventory/products/inventory-details'),
         ]);
-
 
         // Build units map for easy lookup
         const unitMap = {};
         unitsRes.data.forEach(unit => {
           unitMap[unit.unit_id] = unit.name;
         });
-
-       // Build inventory details map (product_id -> quantity)
-        const invMap = {};
-        (inventoryDetailsRes.data || []).forEach(item => {
-          const pid = item.product_id ?? item.productId ?? item.id;
-          const qty = item.quantity ?? item.qty ?? item.total ?? 0;
-          if (pid != null) invMap[pid] = qty;
-        });
-        setInventoryDetailsMap(invMap);
 
         setUnits(unitsRes.data);
         setUnitsMap(unitMap);
@@ -333,7 +320,7 @@ function ProductList() {
                   <div className="text-xs text-gray-600">Type: {product.product_type || '—'}</div>
                   <div className="text-sm font-semibold text-gray-800">₱{Number(product.price).toFixed(2)}</div>
                   <div className="text-xs text-gray-600">Category: {product.category_name || categoriesMap[product.category_id] || '—'}</div>
-                  <div className="text-xs text-gray-600">Qty: {inventoryDetailsMap[product.product_id] ?? '0'} {unitsMap[product.unit_id] || ''}</div>
+                  <div className="text-xs text-gray-600">Qty: {product.total_quantity ?? 0} {unitsMap[product.unit_id] || ''}</div>
                   <div className="text-[11px] text-gray-500">Created: {new Date(product.created_at).toLocaleDateString()}</div>
                 </div>
               </div>
@@ -387,7 +374,7 @@ function ProductList() {
                   <td className="px-4 py-2">{product.product_type}</td>
                   <td className="px-4 py-2">₱{Number(product.price).toFixed(2)}</td>
                   <td className="px-4 py-2">{product.category_name || categoriesMap[product.category_id] || '—'}</td>
-                  <td className="px-4 py-2">{inventoryDetailsMap[product.product_id] ?? '0'}</td>
+                  <td className="px-4 py-2">{product.total_quantity ?? 0}</td>
                   <td className="px-4 py-2">{unitsMap[product.unit_id] || '—'}</td>
                   <td className="px-4 py-2">
                     <button

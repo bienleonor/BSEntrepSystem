@@ -14,6 +14,14 @@ import {
   assignPosition,
   unassignPosition,
   getUserPosition,
+  // Permission Overrides (per-business customization)
+  listPositionsWithStatus,
+  getEffectivePositionPermissions,
+  getAvailablePermissions,
+  addPermissionOverride,
+  removePermissionOverride,
+  resetPositionOverrides,
+  getPositionOverrides,
 } from '../../controllers/business/business-positions-controller.js'
 
 const router = Router()
@@ -38,13 +46,38 @@ router.put('/:id', editPosition)
 router.delete('/:id', deletePosition)
 
 // ============================================
-// POSITION PERMISSIONS (SuperAdmin only)
+// POSITION PERMISSIONS - PRESET (SuperAdmin only)
 // ============================================
 
-// Position permissions mapping
+// Position preset permissions mapping
 router.get('/:id/permissions', listPositionPermissions)
 router.post('/:id/permissions', addPositionPermission)
 router.delete('/:id/permissions/:featureActionId', removePositionPermission)
+
+// ============================================
+// PERMISSION OVERRIDES (Per-Business Customization)
+// ============================================
+
+// Get all positions with override status for a business
+router.get('/business/:businessId/override-status', listPositionsWithStatus)
+
+// Get effective permissions (preset + ADD overrides - REMOVE overrides)
+router.get('/business/:businessId/positions/:positionId/effective-permissions', getEffectivePositionPermissions)
+
+// Get available permissions that can be added (not in preset, not already added)
+router.get('/business/:businessId/positions/:positionId/available-permissions', getAvailablePermissions)
+
+// Get current overrides for a position
+router.get('/business/:businessId/positions/:positionId/overrides', getPositionOverrides)
+
+// Add a permission override (ADD or REMOVE)
+router.post('/business/:businessId/positions/:positionId/overrides', addPermissionOverride)
+
+// Remove a specific permission override (restore to preset for that permission)
+router.delete('/business/:businessId/positions/:positionId/overrides/:featureActionId', removePermissionOverride)
+
+// Reset ALL overrides for a position (restore to full preset)
+router.delete('/business/:businessId/positions/:positionId/overrides', resetPositionOverrides)
 
 // ============================================
 // BUSINESS-SPECIFIC USER POSITION ASSIGNMENTS

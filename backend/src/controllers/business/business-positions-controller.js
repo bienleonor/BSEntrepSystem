@@ -14,6 +14,15 @@ import {
   removeUserFromPosition,
   getUserPositionInBusiness,
   getPositionById,
+  // Permission Overrides (per-business customization)
+  hasOverrides,
+  getOverrides,
+  getEffectivePermissions,
+  addOverride,
+  removeOverride,
+  resetOverrides,
+  getPositionsWithOverrideStatus,
+  getAvailablePermissionsToAdd,
 } from '../../models/business/business-positions-model.js'
 
 function getBusinessId(req) {
@@ -309,6 +318,169 @@ export async function getUserPosition(req, res) {
       return res.status(404).json({ error: 'User not found in this business' })
     }
     res.json(position)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+// ============================================
+// PERMISSION OVERRIDES (Per-Business Customization)
+// ============================================
+
+/**
+ * Get all positions with override status for a business
+ * GET /api/business/:businessId/positions/override-status
+ */
+export async function listPositionsWithStatus(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const rows = await getPositionsWithOverrideStatus(businessId)
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Get effective permissions for a position in a business
+ * Returns preset + ADD overrides - REMOVE overrides
+ * GET /api/business/:businessId/positions/:positionId/effective-permissions
+ */
+export async function getEffectivePositionPermissions(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const { positionId } = req.params
+    const result = await getEffectivePermissions(businessId, positionId)
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Get available permissions that can be added (not in preset, not already added)
+ * GET /api/business/:businessId/positions/:positionId/available-permissions
+ */
+export async function getAvailablePermissions(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const { positionId } = req.params
+    const rows = await getAvailablePermissionsToAdd(businessId, positionId)
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Add a permission override (ADD or REMOVE)
+ * POST /api/business/:businessId/positions/:positionId/overrides
+ * Body: { feature_action_id, override_type: 'ADD' | 'REMOVE' }
+ */
+export async function addPermissionOverride(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const { positionId } = req.params
+    const { feature_action_id, override_type } = req.body
+    
+    if (!feature_action_id) {
+      return res.status(400).json({ error: 'feature_action_id is required' })
+    }
+    if (!override_type || !['ADD', 'REMOVE'].includes(override_type)) {
+      return res.status(400).json({ error: 'override_type must be ADD or REMOVE' })
+    }
+    
+    const result = await addOverride(businessId, positionId, feature_action_id, override_type)
+    res.status(201).json({ success: true, ...result })
+  } catch (e) {
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(404).json({ error: 'Position or feature_action not found' })
+    }
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Remove a permission override (restore to preset behavior for that permission)
+ * DELETE /api/business/:businessId/positions/:positionId/overrides/:featureActionId
+ */
+export async function removePermissionOverride(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const { positionId, featureActionId } = req.params
+    const result = await removeOverride(businessId, positionId, featureActionId)
+    res.json({ success: true, ...result })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Reset all overrides for a position (restore to preset)
+ * DELETE /api/business/:businessId/positions/:positionId/overrides
+ */
+export async function resetPositionOverrides(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const { positionId } = req.params
+    const result = await resetOverrides(businessId, positionId)
+    res.json({ success: true, ...result })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Get current overrides for a position
+ * GET /api/business/:businessId/positions/:positionId/overrides
+ */
+export async function getPositionOverrides(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+  
+  try {
+    const { positionId } = req.params
+    const overrides = await getOverrides(businessId, positionId)
+    const hasAny = overrides.length > 0
+    res.json({ 
+      isCustomized: hasAny, 
+      overrides,
+      addCount: overrides.filter(o => o.override_type === 'ADD').length,
+      removeCount: overrides.filter(o => o.override_type === 'REMOVE').length
+    })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }

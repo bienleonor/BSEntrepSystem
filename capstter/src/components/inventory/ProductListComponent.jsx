@@ -88,7 +88,7 @@ const ProductListComponent = () => {
                   <div className="font-medium text-gray-900 truncate">{p.name}</div>
                   <div className="text-xs text-gray-600">Unit: {unitsMap[p.unit_id] || "—"}</div>
                   <div className="text-sm font-semibold text-gray-800">₱{Number(p.price).toFixed(2)}</div>
-                  <div className="text-xs text-gray-600">Qty: {p.quantity ?? "—"}</div>
+                  <div className="text-xs text-gray-600">Qty: {p.total_quantity ?? "—"}</div>
                   <div className="text-[11px] text-gray-500">Restocked: {p.last_restocked ? new Date(p.last_restocked).toLocaleDateString() : "—"}</div>
                 </div>
               </div>
@@ -114,7 +114,7 @@ const ProductListComponent = () => {
                     <td className="p-3 border-b border-gray-200">{p.name}</td>
                     <td className="p-3 border-b border-gray-200">{unitsMap[p.unit_id] || "—"}</td>
                     <td className="p-3 border-b border-gray-200">₱{Number(p.price).toFixed(2)}</td>
-                    <td className="p-3 border-b border-gray-200">{p.quantity ?? "—"}</td>
+                    <td className="p-3 border-b border-gray-200">{p.total_quantity ?? "—"}</td>
                     <td className="p-3 border-b border-gray-200">
                       {p.last_restocked ? new Date(p.last_restocked).toLocaleDateString() : "—"}
                     </td>

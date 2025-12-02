@@ -482,6 +482,106 @@ export async function fetchUserPositionInBusiness(businessId, userId) {
 }
 
 // ============================================
+// PERMISSION OVERRIDES (Per-Business Customization)
+// ============================================
+
+/**
+ * Get all positions with override status for a business
+ */
+export async function fetchPositionsWithOverrideStatus(businessId) {
+  try {
+    const { data } = await axiosInstance.get(`/business/positions/business/${businessId}/override-status`)
+    return Array.isArray(data) ? data : []
+  } catch (e) {
+    console.warn('fetchPositionsWithOverrideStatus error', e)
+    return []
+  }
+}
+
+/**
+ * Get effective permissions for a position in a business
+ * Returns preset + ADD overrides - REMOVE overrides
+ */
+export async function fetchEffectivePermissions(businessId, positionId) {
+  try {
+    const { data } = await axiosInstance.get(`/business/positions/business/${businessId}/positions/${positionId}/effective-permissions`)
+    return data
+  } catch (e) {
+    console.warn('fetchEffectivePermissions error', e)
+    return { isCustomized: false, permissions: [], overrides: { added: [], removed: [] } }
+  }
+}
+
+/**
+ * Get available permissions that can be added (not in preset, not already added)
+ */
+export async function fetchAvailablePermissions(businessId, positionId) {
+  try {
+    const { data } = await axiosInstance.get(`/business/positions/business/${businessId}/positions/${positionId}/available-permissions`)
+    return Array.isArray(data) ? data : []
+  } catch (e) {
+    console.warn('fetchAvailablePermissions error', e)
+    return []
+  }
+}
+
+/**
+ * Get current overrides for a position
+ */
+export async function fetchPositionOverrides(businessId, positionId) {
+  try {
+    const { data } = await axiosInstance.get(`/business/positions/business/${businessId}/positions/${positionId}/overrides`)
+    return data
+  } catch (e) {
+    console.warn('fetchPositionOverrides error', e)
+    return { isCustomized: false, overrides: [], addCount: 0, removeCount: 0 }
+  }
+}
+
+/**
+ * Add a permission override (ADD or REMOVE)
+ * @param {string} overrideType - 'ADD' or 'REMOVE'
+ */
+export async function addPermissionOverride(businessId, positionId, featureActionId, overrideType) {
+  try {
+    const { data } = await axiosInstance.post(`/business/positions/business/${businessId}/positions/${positionId}/overrides`, {
+      feature_action_id: featureActionId,
+      override_type: overrideType
+    })
+    return data
+  } catch (e) {
+    console.warn('addPermissionOverride error', e)
+    throw e
+  }
+}
+
+/**
+ * Remove a permission override (restore to preset for that permission)
+ */
+export async function removePermissionOverride(businessId, positionId, featureActionId) {
+  try {
+    const { data } = await axiosInstance.delete(`/business/positions/business/${businessId}/positions/${positionId}/overrides/${featureActionId}`)
+    return data
+  } catch (e) {
+    console.warn('removePermissionOverride error', e)
+    throw e
+  }
+}
+
+/**
+ * Reset ALL overrides for a position (restore to full preset)
+ */
+export async function resetPositionOverrides(businessId, positionId) {
+  try {
+    const { data } = await axiosInstance.delete(`/business/positions/business/${businessId}/positions/${positionId}/overrides`)
+    return data
+  } catch (e) {
+    console.warn('resetPositionOverrides error', e)
+    throw e
+  }
+}
+
+// ============================================
 // EXPORTS
 // ============================================
 
@@ -535,7 +635,7 @@ export default {
   updateBusinessPosition,
   deleteBusinessPosition,
   
-  // Position Permissions
+  // Position Permissions (Preset)
   fetchPositionPermissions,
   addPositionPermission,
   removePositionPermission,
@@ -549,4 +649,13 @@ export default {
   assignUserPosition,
   unassignUserPosition,
   fetchUserPositionInBusiness,
+
+  // Permission Overrides (Per-Business)
+  fetchPositionsWithOverrideStatus,
+  fetchEffectivePermissions,
+  fetchAvailablePermissions,
+  fetchPositionOverrides,
+  addPermissionOverride,
+  removePermissionOverride,
+  resetPositionOverrides,
 }

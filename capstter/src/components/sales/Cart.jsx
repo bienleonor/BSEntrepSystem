@@ -27,7 +27,8 @@ export default function Cart({ inventory, saleDate, setSaleDate, submitSale, sub
                 className="w-20 sm:w-16 border rounded-2xl pl-1 text-center transition-all duration-200 "
                 onChange={(e) => {
                   const val = parseFloat(e.target.value || "0");
-                  const clamped = invItem ? Math.min(invItem.quantity, Math.max(0, val)) : Math.max(0, val);
+                  const maxQty = invItem ? Number(invItem.total_quantity ?? invItem.quantity ?? 0) : 0;
+                  const clamped = invItem ? Math.min(maxQty, Math.max(0, val)) : Math.max(0, val);
                   updateCartQty(it.product_id, clamped);
                 }}
               />

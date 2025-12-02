@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getToken } from "./token";
+import { getToken, removeToken } from "./token";
 
 const axiosInstance = axios.create({
   baseURL: "http://localhost:5000/api",
@@ -24,5 +24,24 @@ axiosInstance.interceptors.request.use((config) => {
 
   return config;
 });
+
+// Handle expired tokens - redirect to login
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Token is invalid or expired
+      console.log('Token expired or invalid, redirecting to login...');
+      removeToken();
+      localStorage.removeItem("user");
+      localStorage.removeItem("businesses");
+      localStorage.removeItem("selectedBusinessId");
+      
+      // Redirect to login page
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;
