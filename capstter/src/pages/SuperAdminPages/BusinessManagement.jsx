@@ -7,6 +7,11 @@ const BusinessManagement = () => {
   const [businesses, setBusinesses] = useState([]);
   const [filter, setFilter] = useState('ALL');
   const [deletingId, setDeletingId] = useState(null);
+  const [viewingBiz, setViewingBiz] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [empError, setEmpError] = useState(null);
+  const [employeesRequested, setEmployeesRequested] = useState(false);
 
   const fetchBusinesses = useCallback(async () => {
     try {
@@ -97,7 +102,12 @@ const BusinessManagement = () => {
                 <td className="p-2">{biz.code}</td>
                 <td className="p-2">{biz.status}</td>
                 <td className="p-2 space-x-2">
-                  <button className="bg-green-500 text-white px-2 py-1 rounded">View</button>
+                  <button
+                    onClick={() => setViewingBiz(biz)}
+                    className="bg-green-500 text-white px-2 py-1 rounded"
+                  >
+                    View
+                  </button>
                   <button className="bg-yellow-500 text-white px-2 py-1 rounded">Edit</button>
                   <button
                     onClick={() => handleDeleteBusiness(biz.id)}
@@ -111,6 +121,90 @@ const BusinessManagement = () => {
             ))}
           </tbody>
         </table>
+
+        {viewingBiz && (
+          <OrderPopup
+            isOpen={!!viewingBiz}
+            title={viewingBiz.name}
+            onClose={() => setViewingBiz(null)}
+          >
+            <div className="space-y-3">
+              <button
+                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded"
+                onClick={() => {
+                  const load = async () => {
+                    setEmployeesRequested(true);
+                    setLoadingEmployees(true);
+                    setEmpError(null);
+                    setEmployees([]);
+                    try {
+                      // Mirror EmployeeManagement.jsx response handling
+                      const res = await axiosInstance.get(`/business/employees/${viewingBiz.id}`);
+                      let dataPayload = [];
+                      if (res?.data?.success) {
+                        dataPayload = res.data.data || [];
+                      } else if (Array.isArray(res?.data)) {
+                        dataPayload = res.data;
+                      }
+                      setEmployees(Array.isArray(dataPayload) ? dataPayload : []);
+                    } catch (e) {
+                      console.error('Failed to load employees', e);
+                      setEmpError('Failed to load employees');
+                    } finally {
+                      setLoadingEmployees(false);
+                    }
+                  };
+                  load();
+                }}
+              >
+                View Employees
+              </button>
+              <button
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
+                onClick={() => {
+                  setViewingBiz(null);
+                  window.dispatchEvent(new CustomEvent('navigate:view-products', { detail: { businessId: viewingBiz.id } }));
+                }}
+              >
+                View Products
+              </button>
+            </div>
+            {employeesRequested && (
+              <div className="mt-4 border-t pt-4">
+                <h3 className="text-md font-semibold mb-2">Employees</h3>
+                {loadingEmployees && <div className="text-sm text-gray-600">Loading employees…</div>}
+                {empError && <div className="text-sm text-red-600">{empError}</div>}
+                {!loadingEmployees && !empError && employees.length === 0 && (
+                  <div className="text-sm text-gray-600">No employees found.</div>
+                )}
+                {!loadingEmployees && !empError && employees.length > 0 && (
+                  <div className="max-h-64 overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left">
+                          <th className="py-1 pr-2">User</th>
+                          <th className="py-1 pr-2">Name</th>
+                          <th className="py-1 pr-2">Contact</th>
+                          <th className="py-1 pr-2">Position</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employees.map((e) => (
+                          <tr key={`${e.user_id}-${e.business_id}`} className="border-t">
+                            <td className="py-1 pr-2">{e.username || '—'}</td>
+                            <td className="py-1 pr-2">{[e.first_name, e.last_name].filter(Boolean).join(' ') || '—'}</td>
+                            <td className="py-1 pr-2">{e.contact_no || '—'}</td>
+                            <td className="py-1 pr-2">{e.position_name || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </OrderPopup>
+        )}
       </div>
     </SuperAdminLayout>
   );

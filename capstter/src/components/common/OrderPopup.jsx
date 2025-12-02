@@ -8,15 +8,21 @@ export const OrderPopup = ({
   closeOnOutside = true
 }) => {
   const containerRef = useRef(null);
+  const openedAtRef = useRef(0);
 
   const handleBackdropClick = (e) => {
     if (!closeOnOutside) return;
-    if (e.target === e.currentTarget) onClose?.();
+    if (e.target !== e.currentTarget) return;
+    // Prevent immediate closing on the same click that opened the popup
+    const sinceOpen = Date.now() - openedAtRef.current;
+    if (sinceOpen < 120) return; // debounce threshold (ms)
+    onClose?.();
   };
 
   // Keep hook order stable; only act when open
   useEffect(() => {
     if (!isOpen) return;
+    openedAtRef.current = Date.now();
     const keyHandler = (e) => { if (e.key === "Escape") onClose?.(); };
     window.addEventListener("keydown", keyHandler);
     const focusable = containerRef.current?.querySelector(
