@@ -5,9 +5,13 @@ import { getEffectivePermissions } from '../repositories/permissionRepository.js
 export function requirePermission(permissionKey) {
   return async (req, res, next) => {
     try {
-      console.log('Checking permission for key:', permissionKey)
       if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
       
+      // BYPASS for superadmin - they have access to everything
+      const userRole = (req.user.system_role || '').toLowerCase()
+      if (userRole === 'superadmin') {
+        return next()
+      }
         
       // Try to use already attached permissions (e.g., computed at login or previous middleware)
       let permissions = Array.isArray(req.user.permissions) ? req.user.permissions : null
@@ -30,7 +34,6 @@ export function requirePermission(permissionKey) {
     }
   }
 }
-
 // Simple system role guard
 export function requireSystemRole(...allowedRoles) {
   return (req, res, next) => {
