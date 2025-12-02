@@ -34,7 +34,6 @@ export function requirePermission(permissionKey) {
     }
   }
 }
-
 // Simple system role guard
 export function requireSystemRole(...allowedRoles) {
   return (req, res, next) => {

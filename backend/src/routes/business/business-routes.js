@@ -48,7 +48,6 @@ router.post('/assign-position', authenticateToken, assignPosition);
 // Remove employee
 router.delete('/removeemployee', authenticateToken, removeEmployee);
 
-router.get(
-  "/access-code", authenticateToken, requireBusinessAccess, getBusinessAccessCode );
+router.get("/access-code", authenticateToken, requireBusinessAccess, getBusinessAccessCode );
 
 export default router;

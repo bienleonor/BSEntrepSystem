@@ -223,25 +223,25 @@ const AuditLogs = () => {
             />
           </div>
           <div className="flex flex-col w-full sm:w-auto">
-            <label className="text-white mb-1">Sort by:</label>
+            <label className="text-white mb-1 ">Sort by:</label>
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value); resetToFirst(); }}
-              className="px-3 py-2 rounded-md w-full sm:w-60"
+              className="px-3 py-2 rounded-md w-full sm:w-60 dark:bg-gray-800"
             >
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col w-full sm:w-auto">
             <label className="text-white mb-1">Export Date:</label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ">
               <input
                 type="date"
                 value={exportDate}
                 onChange={(e) => setExportDate(e.target.value)}
                 min={minDate}
                 max={maxDate}
-                className={`px-3 py-2 rounded-md w-full sm:w-60 ${exportDate && !hasDataForDate(exportDate) ? 'border border-red-500' : ''}`}
+                className={`px-3 py-2  rounded-md w-full sm:w-60 ${exportDate && !hasDataForDate(exportDate) ? 'border border-red-500' : ''}`}
               />
               <button
                 onClick={exportCSVByDate}
@@ -263,8 +263,8 @@ const AuditLogs = () => {
         {!loading && !error && totalItems > 0 && (
           <>
             {/* Desktop table */}
-            <div className="hidden sm:block bg-bronze rounded-lg shadow-md overflow-x-auto">
-              <table className="min-w-full table-auto text-sm">
+            <div className="hidden sm:block dark:bg-gray-800 rounded-lg shadow-md overflow-x-auto ">
+              <table className="min-w-full table-auto text-sm ">
                 <thead className="bg-bronze-100">
                   <tr className="text-left text-sm text-white">
                     <th className="px-4 py-2">Log ID</th>
@@ -281,7 +281,7 @@ const AuditLogs = () => {
                 </thead>
                 <tbody>
                   {pageSlice.map(log => (
-                    <tr key={log.log_id} className="border-t text-sm bg-white text-gray-700 hover:bg-gray-50">
+                    <tr key={log.log_id} className="border-t text-sm dark:bg-gray-800 text-white-700 hover:bg-gray-700">
                       <td className="px-4 py-2">{log.log_id}</td>
                       <td className="px-4 py-2">{log.business_id || '-'}</td>
                       <td className="px-4 py-2">{log.username || '-'}</td>
