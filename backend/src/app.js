@@ -26,7 +26,6 @@ import adminMetricsRoute from './routes/admin-metrics-route.js';
 import rbacRoute from './routes/rbac-route.js';
 import businessLogsRoute from './routes/business/business-logs-route.js';
 import auditLogsRoute from './routes/admin/audit-logs-route.js';
-import auditRequestMiddleware from './middlewares/audit-request-middleware.js';
 
 const app = express();
 
@@ -40,8 +39,6 @@ app.use(cors({
 }));
 
 
-// App-level audit logging (non-blocking, logs after response)
-app.use(auditRequestMiddleware);
 
 // Register routes
 app.use('/api/auth', authRoutes);

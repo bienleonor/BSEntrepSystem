@@ -1,114 +1,133 @@
+// middleware/audit-request-middleware.js
+// Generic request-level audit helper attaching a lightweight API to req.audit.
+// Controllers or services call req.audit.commit({ ... }) once they know record details.
+// Falls back to automatic logging for mutating HTTP verbs when commit() was not invoked.
+
 import { MODULES, ACTIONS } from '../constants/modules-actions.js';
 import { logAuditBusinessAction } from '../services/audit-logs-service.js';
 
-// Basic module inference by URL prefix
-const inferModule = (url = '') => {
-  if (url.startsWith('/api/business')) return MODULES.BUSINESS_MANAGEMENT;
-  if (url.startsWith('/api/inventory')) return MODULES.INVENTORY;
-  if (url.startsWith('/api/sales')) return MODULES.SALES;
-  if (url.startsWith('/api/users') || url.startsWith('/api/users-details') || url.startsWith('/api/auth')) return MODULES.SYSTEM;
-  if (url.startsWith('/api/admin')) return MODULES.SYSTEM;
-  return MODULES.SYSTEM;
+const METHOD_ACTION_MAP = {
+	POST: ACTIONS.CREATE,
+	PUT: ACTIONS.UPDATE,
+	PATCH: ACTIONS.UPDATE,
+	DELETE: ACTIONS.DELETE,
+	GET: ACTIONS.READ,
 };
 
-// Table name from path segments (resource name best-effort)
-const inferTableName = (url = '') => {
-  try {
-    const path = url.split('?')[0];
-    const parts = path.split('/').filter(Boolean); // remove empty
-    // parts: ['api','<module>','<resource>', ...]
-    const resource = parts[2] || parts[1] || 'system';
-    return String(resource).replace(/-/g, '_');
-  } catch {
-    return 'system';
-  }
+// Heuristic module mapping based on the URL path prefix.
+// Adjust / extend as your route structure evolves.
+const resolveModuleId = (path = '') => {
+	if (/\/business(\/|$)/i.test(path)) return MODULES.BUSINESS_MANAGEMENT;
+	if (/\/inventory(\/|$)/i.test(path)) return MODULES.INVENTORY;
+	if (/\/menu|\/product|\/products|\/items/i.test(path)) return MODULES.MENU_PRODUCTS;
+	if (/\/sales(\/|$)/i.test(path)) return MODULES.SALES;
+	return MODULES.SYSTEM; // default fallback
 };
 
-const inferAction = (req) => {
-  const url = req.originalUrl || req.url || '';
-  if (/\/export(\b|\?|\/.|$)/i.test(url)) return ACTIONS.EXPORT;
-  switch ((req.method || 'GET').toUpperCase()) {
-    case 'POST': return ACTIONS.CREATE;
-    case 'PUT':
-    case 'PATCH': return ACTIONS.UPDATE;
-    case 'DELETE': return ACTIONS.DELETE;
-    default: return ACTIONS.READ;
-  }
+// Decide whether to auto-log read operations (GET) without explicit commit.
+const shouldAuditReads = () => process.env.AUDIT_READS === '1' || process.env.AUDIT_READS === 'true';
+
+// Utility to shallow-clone plain objects safely for logging (avoid circular refs).
+const safeSnapshot = (data) => {
+	if (data === null || data === undefined) return null;
+	if (Array.isArray(data)) return data.slice(0, 50); // cap large arrays
+	if (typeof data === 'object') {
+		const out = {};
+		const keys = Object.keys(data).slice(0, 50);
+		for (const k of keys) {
+			const v = data[k];
+			if (v === null) out[k] = null; else if (['string','number','boolean'].includes(typeof v)) out[k] = v; else out[k] = '[object]';
+		}
+		return out;
+	}
+	return data;
 };
 
-// Try best-effort to capture a record id
-const inferRecordId = (req) => {
-  // Prefer explicit params the router set
-  const paramValues = req?.params ? Object.values(req.params) : [];
-  for (const v of paramValues) {
-    if (v === undefined || v === null) continue;
-    if (/^\d+$/.test(String(v))) return Number(v);
-  }
-  // Fallback: last numeric-like segment in path
-  const path = (req.originalUrl || req.url || '').split('?')[0];
-  const parts = path.split('/').filter(Boolean).reverse();
-  for (const seg of parts) {
-    if (/^\d+$/.test(seg)) return Number(seg);
-  }
-  return null;
-};
+export const auditRequestMiddleware = () => {
+	return (req, res, next) => {
+		const startTime = Date.now();
+		const method = (req.method || 'GET').toUpperCase();
+		const action_id = METHOD_ACTION_MAP[method] || ACTIONS.READ;
+		const module_id = resolveModuleId(req.path || req.originalUrl || '');
+		const user_id = req.user?.user_id || req.user?.id || null;
+		const business_id = req.businessId || req.body?.business_id || req.body?.businessId || null;
 
-// Skip noisy or self-referential endpoints
-const shouldSkip = (req) => {
-  const url = req.originalUrl || '';
-  // Avoid logging audit log reads/exports themselves
-  if (url.startsWith('/api/admin/audit-logs')) return true;
-  // Optionally skip pure listing of logs
-  if (/\/logs(\/|$)/.test(url) && /\/business\//.test(url)) return false; // keep business logs
-  // Skip static
-  if (url.startsWith('/uploads/')) return true;
-  return false;
-};
+		// Internal state holder, can be mutated by controllers before response finishes.
+		const state = {
+			committed: false,
+			module_id,
+			action_id,
+			table_name: null,
+			record_id: null,
+			old_data: null,
+			new_data: null,
+		};
 
-export const auditRequestMiddleware = (req, res, next) => {
-  // Attach after-response hook
-  res.on('finish', async () => {
-    try {
-      if (shouldSkip(req)) return;
-      // Only log successful operations
-      if (res.statusCode < 200 || res.statusCode >= 400) return;
+		// Expose helper to controller code.
+		req.audit = {
+			// Set core fields (table_name, record_id, action override optionally)
+			setTarget: ({ table_name, record_id, action_id: overrideAction, module_id: overrideModule }) => {
+				if (table_name) state.table_name = table_name;
+				if (record_id !== undefined) state.record_id = record_id;
+				if (overrideAction) state.action_id = overrideAction;
+				if (overrideModule) state.module_id = overrideModule;
+			},
+			// Provide snapshots of data before & after mutation
+			setData: ({ old_data, new_data }) => {
+				if (old_data !== undefined) state.old_data = safeSnapshot(old_data);
+				if (new_data !== undefined) state.new_data = safeSnapshot(new_data);
+			},
+			// Final explicit commit (preferred for accuracy)
+			commit: async (extra = {}) => {
+				if (state.committed) return; // idempotent
+				state.committed = true;
+				const payload = {
+					business_id: extra.business_id || business_id,
+					user_id: extra.user_id || user_id,
+					module_id: extra.module_id || state.module_id,
+						action_id: extra.action_id || state.action_id,
+					table_name: extra.table_name || state.table_name || deriveTableName(req),
+					record_id: extra.record_id ?? state.record_id ?? null,
+					old_data: extra.old_data !== undefined ? extra.old_data : state.old_data,
+					new_data: extra.new_data !== undefined ? extra.new_data : state.new_data,
+					req,
+				};
+				// Basic required field guard (model also enforces)
+				if (!payload.business_id || !payload.user_id || !payload.module_id || !payload.action_id) {
+					return; // skip incomplete context
+				}
+				try { await logAuditBusinessAction(payload); } catch {/* swallow */}
+			},
+		};
 
-      const module_id = inferModule(req.originalUrl || req.url || '');
-      const action_id = inferAction(req);
-      const table_name = inferTableName(req.originalUrl || req.url || '');
-      let record_id = inferRecordId(req);
+		// Derive a table name from route pattern (heuristic)
+		function deriveTableName(rq) {
+			const path = rq.path || rq.originalUrl || '';
+			// e.g., /api/users/123 -> users_table
+			const firstSegment = path.split('?')[0].split('/').filter(Boolean)[0];
+			if (!firstSegment) return null;
+			return firstSegment.replace(/-/g, '_') + '_table';
+		}
 
-      const businessHeader = req.headers['x-business-id'] || req.headers['x-business-id'.toLowerCase()] || null;
-      let business_id = businessHeader ? Number(businessHeader) : (req.user?.business_id ?? null);
-      if (business_id == null || Number.isNaN(Number(business_id))) business_id = 0; // system context
-      const user_id = req.user?.user_id ?? null;
+		// Auto-commit after response finishes if conditions met.
+		res.on('finish', async () => {
+			if (state.committed) return; // controller already committed
+			const status = res.statusCode;
+			// Only log successful mutations or successful reads if enabled.
+			const isSuccess = status < 400;
+			const isMutating = [ACTIONS.CREATE, ACTIONS.UPDATE, ACTIONS.DELETE].includes(state.action_id);
+			const isRead = state.action_id === ACTIONS.READ;
+			if (!isSuccess) return;
+			if (!isMutating && !(isRead && shouldAuditReads())) return;
+			// Provide minimal new_data for creation/update/delete when not explicitly set.
+			if (!state.new_data && isMutating) {
+				state.new_data = safeSnapshot(req.body);
+			}
+			await req.audit.commit();
+		});
 
-      // Require user context; business_id may be system-level (0) for some actions
-      if (!user_id) return;
-
-      // Enforce record_id presence for mutating actions; for READ/EXPORT allow 0
-      const mutating = action_id === ACTIONS.CREATE || action_id === ACTIONS.UPDATE || action_id === ACTIONS.DELETE || action_id === ACTIONS.CANCEL || action_id === ACTIONS.ARCHIVE;
-      if (record_id == null && mutating) return; // skip if we can't identify a specific record on write actions
-      if (record_id == null) record_id = 0; // non-mutating: use 0 as generic id
-
-      await logAuditBusinessAction({
-        business_id,
-        user_id,
-        module_id,
-        action_id,
-        table_name,
-        record_id,
-        // old_data/new_data not available generically at app level
-        req,
-      });
-    } catch (e) {
-      // Never block the response due to audit issues
-      // eslint-disable-next-line no-console
-      console.error('auditRequestMiddleware error:', e?.message);
-    }
-  });
-
-  next();
+		next();
+	};
 };
 
 export default auditRequestMiddleware;

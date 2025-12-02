@@ -6,8 +6,6 @@ import { findRoleById, findRoleByUserId, assignRoleToUser, findRoleByName } from
 import { getEffectivePermissions } from '../repositories/permissionRepository.js';
 import { findBusinessByUserId } from '../models/business/business-model.js';
 import { fetchUserDetailsById } from "../models/user-details-model.js";
-import { MODULES, ACTIONS } from '../constants/modules-actions.js';
-import { logAuditBusinessAction } from '../services/audit-logs-service.js';
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -119,24 +117,6 @@ export const register = async (req, res) => {
 
     // 3️⃣ Assign role to user
     await assignRoleToUser(userId, defaultRole.system_role_id);
-
-    // 4️⃣ Audit: system-level user registration
-    try {
-      const businessHeader = req.headers['x-business-id'] || null;
-      const business_id = businessHeader ? Number(businessHeader) : 0; // 0 = system context
-      await logAuditBusinessAction({
-        business_id,
-        user_id: userId,
-        module_id: MODULES.SYSTEM,
-        action_id: ACTIONS.CREATE,
-        table_name: 'user_table',
-        record_id: userId,
-        new_data: { username, email },
-        req,
-      });
-    } catch (e) {
-      console.warn('Audit log (register) failed:', e?.message || e);
-    }
 
     return res.status(201).json({
       message: "User registered successfully",

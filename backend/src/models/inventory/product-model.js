@@ -417,7 +417,7 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
     throw new Error(`Missing unit_id for product ${productId}. Set a default unit for this product before recording inventory transactions.`);
   }
 
-  await recordTransactionWithDetails({
+  const { transactionId } = await recordTransactionWithDetails({
     businessId,
     userId,
     transactionType: reason,
@@ -427,7 +427,7 @@ export async function recordInventoryTransactionAndUpdateInventory({ productId, 
     ]
   });
 
-  return { productId, change_qty };
+  return { transactionId, productId, change_qty };
 }
 
 

@@ -45,9 +45,9 @@ export const stockInController = async (req, res) => {
         module_id: MODULES.INVENTORY,
         action_id: ACTIONS.CREATE,
         table_name: 'inventory_table',
-        record_id: 0,
+        record_id: Number(result?.transactionId ?? 0),
         old_data: null,
-        new_data: { items_count: items.length, type: 'stock_in' },
+        new_data: { items_count: items.length, type: 'stock_in', stockin_id: Number(result?.stockinId ?? 0), transaction_id: Number(result?.transactionId ?? 0) },
         req,
       });
     } catch (e) {}
@@ -116,9 +116,9 @@ export const stockOutController = async (req, res) => {
         module_id: MODULES.INVENTORY,
         action_id: ACTIONS.UPDATE,
         table_name: 'inventory_table',
-        record_id: 0,
+        record_id: Number((result && result[0] && result[0].transactionId) ? result[0].transactionId : 0),
         old_data: null,
-        new_data: { items_count: items.length, type: 'stock_out', reason },
+        new_data: { items_count: items.length, type: 'stock_out', reason, transaction_ids: (result || []).map(r => r.transactionId).filter(Boolean) },
         req,
       });
     } catch (e) {}
@@ -175,9 +175,9 @@ export const correctionController = async (req, res) => {
         module_id: MODULES.INVENTORY,
         action_id: ACTIONS.UPDATE,
         table_name: 'inventory_table',
-        record_id: 0,
+        record_id: Number((result && result[0] && result[0].transactionId) ? result[0].transactionId : 0),
         old_data: null,
-        new_data: { items_count: items.length, type: 'correction' },
+        new_data: { items_count: items.length, type: 'correction', transaction_ids: (result || []).map(r => r.transactionId).filter(Boolean) },
         req,
       });
     } catch (e) {}
@@ -228,9 +228,9 @@ export const productionController = async (req, res) => {
         module_id: MODULES.INVENTORY,
         action_id: ACTIONS.CREATE,
         table_name: 'inventory_table',
-        record_id: 0,
+        record_id: Number((result && result[0] && result[0].transactionId) ? result[0].transactionId : 0),
         old_data: null,
-        new_data: { items_count: items.length, type: 'production' },
+        new_data: { items_count: items.length, type: 'production', transaction_ids: (result || []).map(r => r.transactionId).filter(Boolean) },
         req,
       });
     } catch (e) {}

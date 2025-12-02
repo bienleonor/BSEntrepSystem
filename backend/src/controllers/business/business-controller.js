@@ -2,6 +2,8 @@ import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "
 import { generateToken } from "../../utils/generate-token.js";
 import { addEmployeeModel } from "../../models/business/business-employee-model.js";
 import { findAccessCodeByBusiness } from "../../models/access-codes-model.js";
+import { MODULES, ACTIONS } from "../../constants/modules-actions.js";
+import { logAuditBusinessAction } from "../../services/audit-logs-service.js";
 
 
 
@@ -20,6 +22,22 @@ export const registerBusiness = async (req, res) => {
     const OWNER_POSITION_ID = 1; // Change this if your Owner = different ID
 
     await addEmployeeModel(owner_id, insertedId, OWNER_POSITION_ID);
+
+    // Audit log for business registration (explicit commit ensures business_id present)
+    try {
+      await logAuditBusinessAction({
+        business_id: insertedId,
+        user_id: owner_id,
+        module_id: MODULES.BUSINESS_MANAGEMENT,
+        action_id: ACTIONS.CREATE,
+        table_name: 'business_table',
+        record_id: insertedId,
+        new_data: { business_name, business_cat_id, owner_id },
+        req,
+      });
+    } catch (e) {
+      console.warn('Failed to audit business registration:', e?.message);
+    }
 
     res.status(201).json({
       success: true,
