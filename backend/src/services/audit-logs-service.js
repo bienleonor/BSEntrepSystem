@@ -1,4 +1,5 @@
 import { insertAuditBusinessLog, getUnifiedAuditLogs } from '../models/audit-model.js';
+import { ACTIONS } from '../constants/modules-actions.js';
 
 const toJson = (data) => {
   if (data === undefined || data === null) return '{}';
@@ -23,6 +24,9 @@ export const logAuditBusinessAction = async ({
   const ip_address = req?.ip || req?.headers?.['x-forwarded-for'] || '';
   const user_agent = req?.headers?.['user-agent'] || '';
   try {
+    // Globally disable READ audits as requested
+    if (action_id === ACTIONS.READ) return null;
+
     return await insertAuditBusinessLog({
       business_id,
       user_id,
@@ -36,8 +40,7 @@ export const logAuditBusinessAction = async ({
       user_agent,
     });
   } catch (e) {
-    // Fail silently so business log isn't blocked.
-    console.error('Failed to insert audit log', e?.message);
+    console.error('Failed to insert audit log (unified)', e?.message);
     return null;
   }
 };

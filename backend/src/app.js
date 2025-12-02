@@ -29,6 +29,12 @@ import businessPositionsRoute from './routes/business/business-positions-route.j
 import auditLogsRoute from './routes/admin/audit-logs-route.js';
 import auditRequestMiddleware from './middlewares/audit-request-middleware.js';
 
+import businessPositionsRoute from './routes/business/business-positions-route.js';
+
+import auditLogsRoute from './routes/admin/audit-logs-route.js';
+import auditRequestMiddleware from './middlewares/audit-request-middleware.js';
+
+
 const app = express();
 
 app.use(express.json());
@@ -41,8 +47,6 @@ app.use(cors({
 }));
 
 
-// App-level audit logging (non-blocking, logs after response)
-app.use(auditRequestMiddleware);
 
 // Register routes
 app.use('/api/auth', authRoutes);
@@ -74,6 +78,7 @@ app.use('/api/analysis/summary', summaryAnalysisRoutes);
 app.use('/api/admin/metrics', adminMetricsRoute);
 app.use('/api/rbac', rbacRoute);
 
+app.use('/api', rbacRoute);
 
 
 // ✅ Debug middleware to see incoming requests (avoid 'undefined' body for GET)

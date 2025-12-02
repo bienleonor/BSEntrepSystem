@@ -14,8 +14,8 @@ export const createAuditLog = async (businessId, userId, transactionType, refere
 // Expects the audit_logs table to have these columns added:
 // module_id, action_id, table_name, record_id, old_data, new_data, ip_address, user_agent
 export const insertAuditBusinessLog = async (log) => {
-  // Allow system-level logs without a business_id (NULL) for actions like register/login
-  const required = ['user_id','module_id','action_id','table_name'];
+  // Relax requirements: allow table_name and record_id to be null for READ/list events
+  const required = ['business_id','user_id','module_id','action_id'];
   for (const f of required) {
     if (log[f] === undefined || log[f] === null) {
       throw new Error(`Missing required audit log field: ${f}`);
@@ -23,12 +23,12 @@ export const insertAuditBusinessLog = async (log) => {
   }
 
   const {
-    business_id = 0,
+    business_id,
     user_id,
     module_id,
     action_id,
-    table_name,
-    record_id = null,
+    table_name = '',
+    record_id = 0,
     old_data = '{}',
     new_data = '{}',
     ip_address = '',
@@ -43,13 +43,17 @@ export const insertAuditBusinessLog = async (log) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
   `;
 
+  // Coerce nullish values to satisfy NOT NULL columns
+  const tableNameSafe = table_name ?? '';
+  const recordIdSafe = record_id ?? 0;
+
   const params = [
-    (business_id == null ? 0 : business_id),
+    business_id,
     user_id,
     module_id,
     action_id,
-    table_name,
-    (record_id == null ? 0 : record_id),
+    tableNameSafe,
+    recordIdSafe,
     old_data,
     new_data,
     ip_address,
@@ -84,6 +88,42 @@ export const getUnifiedAuditLogs = async ({ limit = 200, offset = 0 }) => {
   `;
   const [rows] = await pool.query(query, [Number(limit), Number(offset)]);
   return rows;
+};
+
+// Check for a similar audit row within a time window to avoid duplicates.
+export const hasRecentSimilarAudit = async ({
+  business_id,
+  user_id,
+  module_id,
+  action_id,
+  table_name,
+  record_id,
+  since, // JavaScript Date object
+}) => {
+  const q = `
+    SELECT log_id
+    FROM audit_logs
+    WHERE business_id = ?
+      AND user_id = ?
+      AND module_id = ?
+      AND action_id = ?
+      AND table_name = ?
+      AND record_id = ?
+      AND created_at >= ?
+    ORDER BY log_id DESC
+    LIMIT 1
+  `;
+  const params = [
+    business_id,
+    user_id,
+    module_id,
+    action_id,
+    table_name ?? '',
+    record_id ?? 0,
+    since,
+  ];
+  const [rows] = await pool.query(q, params);
+  return rows.length > 0;
 };
 
 // Legacy fetch (original fields) retained if still needed.

@@ -95,13 +95,14 @@ export const insertStockInItems = async (stockinId, items, { businessId = null, 
   }
 
   // Create inventory transaction with reference to the stockin header
-  await recordTransactionWithDetails({
+  const { transactionId } = await recordTransactionWithDetails({
     businessId,
     userId,
     transactionType: 'purchase',
     reference: `stockin:${stockinId}`,
     details,
   });
+  return { transactionId };
 };
 
 /**

@@ -27,9 +27,9 @@ export async function addStockIn({ businessId, userId, items }) {
 
   const stockinId = await createStockIn({ businessId, userId, totalAmount });
   // insertStockInItems will record an inventory transaction header + details and update inventory_table
-  await insertStockInItems(stockinId, items, { businessId, userId });
+  const { transactionId } = await insertStockInItems(stockinId, items, { businessId, userId });
 
-  return { stockinId, totalAmount };
+  return { stockinId, transactionId, totalAmount };
 }
 
 /**
@@ -221,7 +221,7 @@ export async function processProduction({ items, businessId, userId }) {
       );
     }
 
-    results.push({ productId, productName: product.name, quantityProduced: quantity });
+    results.push({ transactionId, productId, productName: product.name, quantityProduced: quantity });
   }
 
   return results;
