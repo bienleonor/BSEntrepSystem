@@ -868,10 +868,10 @@ const BusinessManagement = () => {
           >
             <form onSubmit={handleEditSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Business Name</label>
+                <label className="block text-sm font-medium text-white">Business Name</label>
                 <input
                   type="text"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
                   value={editBusinessName}
                   onChange={(e) => setEditBusinessName(e.target.value)}
                   required
@@ -879,9 +879,9 @@ const BusinessManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Business Type</label>
+                <label className="block text-sm font-medium text-white">Business Type</label>
                 <select
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm dark:bg-gray-800"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
                   value={editBusinessType}
                   onChange={(e) => setEditBusinessType(e.target.value)}
                   required
@@ -900,26 +900,26 @@ const BusinessManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 ">Access Code</label>
+                <label className="block text-sm font-medium text-white">Access Code</label>
                 <input
                   type="text"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-100 text-gray-700"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-200 text-gray-800"
                   value={editAccessCode}
                   readOnly
                 />
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-300 mt-1">
                   Share this code with employees to join the business.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Logo</label>
+                <label className="block text-sm font-medium text-white mb-2">Upload Logo</label>
                 <div className="flex items-center gap-3">
                   <input type="file" accept="image/*" id="edit-logo-upload" className="hidden" onChange={(e) => setEditLogo(e.target.files?.[0] || null)} />
-                  <label htmlFor="edit-logo-upload" className="cursor-pointer dark:bg-gray-800 px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-200 text-sm">
+                  <label htmlFor="edit-logo-upload" className="cursor-pointer bg-white px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-sm text-gray-900">
                     {editLogo ? 'Change Logo' : 'Upload Logo'}
                   </label>
-                  {editLogo && <span className="text-sm text-gray-600">{editLogo.name}</span>}
+                  {editLogo && <span className="text-sm text-gray-300">{editLogo.name}</span>}
                 </div>
                 {editLogoPreview && (
                   <div className="mt-3">
@@ -929,7 +929,7 @@ const BusinessManagement = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={closeEditPopup} className="px-3 py-2 rounded border text-sm">Cancel</button>
+                <button type="button" onClick={closeEditPopup} className="px-3 py-2 rounded border border-gray-400 text-sm text-white hover:bg-white/10">Cancel</button>
                 <button type="submit" disabled={editSaving} className={`px-3 py-2 rounded text-sm text-white ${editSaving ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
                   {editSaving ? 'Saving…' : 'Save'}
                 </button>

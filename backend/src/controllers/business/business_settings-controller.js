@@ -36,17 +36,20 @@ export const updateSettings = async (req, res) => {
     if (!businessId) return res.status(400).json({ error: 'Missing business id' });
 
     const { businessName, businessType } = req.body;
+    const userRole = (req.user?.system_role || '').toLowerCase();
 
-    // Optional: verify user owns the business
-    try {
-      const owned = await findBusinessByUserId(req.user.user_id);
-      const owns = owned.some(b => String(b.business_id) === String(businessId));
-      if (!owns) {
-        // Not owner: allow update? For now require ownership
+    // Superadmin can update any business; others must own it
+    if (userRole !== 'superadmin') {
+      try {
+        const owned = await findBusinessByUserId(req.user.user_id);
+        const owns = owned.some(b => String(b.business_id) === String(businessId));
+        if (!owns) {
+          return res.status(403).json({ error: 'Not authorized to update this business' });
+        }
+      } catch (err) {
+        console.error('ownership check failed', err);
         return res.status(403).json({ error: 'Not authorized to update this business' });
       }
-    } catch (err) {
-      console.error('ownership check failed', err);
     }
 
     // Update business name/category
