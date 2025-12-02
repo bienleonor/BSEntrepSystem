@@ -3,15 +3,19 @@ import pool from '../../config/pool.js'
 
 export const findBusinessByUserId = async (user_id) => {
   const [rows] = await pool.execute(
-    `SELECT b.business_id, b.business_name, b.business_cat_id
+    `SELECT b.business_id, b.business_name, b.business_cat_id,
+            bu.bus_pos_id, bp.role_name AS position_name,
+            bu.date_joined
      FROM business_table b
      INNER JOIN business_user_position_table bu
        ON b.business_id = bu.business_id
+     LEFT JOIN business_position_table bp
+       ON bp.business_pos_id = bu.bus_pos_id
      WHERE bu.user_id = ?`,
     [user_id]
   );
 
-  return rows; // returns array of businesses the user is part of
+  return rows; // returns array of businesses with position info
 };
 
 

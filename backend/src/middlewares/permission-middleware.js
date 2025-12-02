@@ -5,8 +5,10 @@ import { getEffectivePermissions } from '../repositories/permissionRepository.js
 export function requirePermission(permissionKey) {
   return async (req, res, next) => {
     try {
+      console.log('Checking permission for key:', permissionKey)
       if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
-
+      
+        
       // Try to use already attached permissions (e.g., computed at login or previous middleware)
       let permissions = Array.isArray(req.user.permissions) ? req.user.permissions : null
 

@@ -27,7 +27,7 @@ import fs from 'fs';
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, businessId, unit_id, price, product_type, category_id } = req.body;
+    const { name, businessId, unit_id, price, product_type, category_id, unit_multiplier } = req.body;
 
     // Restrict product name characters (letters, numbers, space, hyphen, underscore, period)
     const NAME_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
@@ -59,6 +59,10 @@ export const createProduct = async (req, res) => {
       name,
       businessId,
       unit_id,
+      // unit_multiplier may be required for pack units
+      unit_multiplier: (unit_multiplier !== undefined && unit_multiplier !== null && unit_multiplier !== '')
+        ? Number(unit_multiplier)
+        : undefined,
       price,
       picture,
       product_type,

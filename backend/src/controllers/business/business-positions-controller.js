@@ -1,15 +1,19 @@
 import { findBusinessByUserId } from '../../models/business/business-model.js'
 import {
+  getAllPositions,
   getPositionsByBusiness,
+  getUserPositionsByBusiness,
   insertPosition,
   deletePositionById,
+  updatePosition,
   getPositionPermissions,
   addPermissionToPosition,
   removePermissionFromPosition,
-  listPresets,
-  createPreset,
-  deletePreset,
-  getPresetsByIds,
+  removePermissionById,
+  assignUserToPosition,
+  removeUserFromPosition,
+  getUserPositionInBusiness,
+  getPositionById,
 } from '../../models/business/business-positions-model.js'
 
 function getBusinessId(req) {
@@ -37,12 +41,30 @@ async function ensureOwnership(req, res, businessId) {
   }
 }
 
+/**
+ * List all available positions (global position templates)
+ * GET /api/business/positions/all
+ */
+export async function listAllPositions(req, res) {
+  try {
+    const rows = await getAllPositions()
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * List positions used in a specific business
+ * GET /api/business/:businessId/positions
+ */
 export async function listPositions(req, res) {
   const businessId = getBusinessId(req)
   if (!businessId) {
     const role = (req.user?.system_role || '').toLowerCase()
     if (role === 'superadmin') {
-      return res.json([])
+      // Superadmin can list all positions if no business specified
+      return listAllPositions(req, res)
     }
     return res.status(400).json({ error: 'Missing business id' })
   }
@@ -55,176 +77,238 @@ export async function listPositions(req, res) {
   }
 }
 
-// Presets are global templates stored in business_position_table with business_id IS NULL
-export async function listPositionPresets(req, res) {
+/**
+ * List all user-position assignments in a business
+ * GET /api/business/:businessId/positions/users
+ */
+export async function listUserPositions(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
   try {
-    const rows = await listPresets()
+    const rows = await getUserPositionsByBusiness(businessId)
     res.json(rows)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 }
 
-export async function createPositionPreset(req, res) {
-  try {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role !== 'superadmin') return res.status(403).json({ error: 'Only superadmin can create presets' })
-
-    const { position_name, description } = req.body
-    if (!position_name) return res.status(400).json({ error: 'position_name is required' })
-    const presetId = await createPreset(position_name, description)
-    res.status(201).json({ position_id: presetId, position_name, description })
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
-}
-
-export async function deletePositionPreset(req, res) {
-  try {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role !== 'superadmin') return res.status(403).json({ error: 'Only superadmin can delete presets' })
-
-    const { id } = req.params
-    const affected = await deletePreset(id)
-    res.json({ success: true, affectedRows: affected })
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
-}
-
-// Clone selected presets into a specific business
-export async function clonePresetsToBusiness(req, res) {
-  const role = (req.user?.system_role || '').toLowerCase()
-  if (role !== 'superadmin') return res.status(403).json({ error: 'Only superadmin can clone presets' })
-
-  const businessId = req.headers['x-business-id'] || req.body?.businessId
-  if (!businessId) return res.status(400).json({ error: 'Missing business id' })
-
-  const { presetIds } = req.body
-  if (!presetIds || !Array.isArray(presetIds) || presetIds.length === 0) {
-    return res.status(400).json({ error: 'presetIds array is required' })
-  }
-
-  try {
-    const presets = await getPresetsByIds(presetIds)
-    if (!presets.length) return res.status(404).json({ error: 'No presets found' })
-
-    const inserted = []
-    for (const p of presets) {
-      const newId = await insertPosition(businessId, p.position_name, p.description)
-      inserted.push({ preset_id: p.position_id, new_position_id: newId })
-    }
-
-    res.status(201).json({ success: true, inserted })
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
-}
-
+/**
+ * Create a new position (requires superadmin)
+ * POST /api/business/positions
+ */
 export async function createPosition(req, res) {
-  const businessId = getBusinessId(req)
-  if (!businessId) {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role === 'superadmin') {
-      return res.status(400).json({ error: 'Select a business to create positions' })
-    }
-    return res.status(400).json({ error: 'Missing business id' })
-  }
-  if (!(await ensureOwnership(req, res, businessId))) return
   try {
-    const { position_name, description } = req.body
-    if (!position_name) return res.status(400).json({ error: 'position_name is required' })
-    const positionId = await insertPosition(businessId, position_name, description)
-    res.status(201).json({ position_id: positionId, business_id: Number(businessId), position_name, description })
+    const role = (req.user?.system_role || '').toLowerCase()
+    if (role !== 'superadmin') {
+      return res.status(403).json({ error: 'Only superadmin can create positions' })
+    }
+
+    const { role_name } = req.body
+    if (!role_name) return res.status(400).json({ error: 'role_name is required' })
+
+    const positionId = await insertPosition(role_name)
+    res.status(201).json({ business_pos_id: positionId, role_name })
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Position with this name already exists' })
+    }
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Update a position (requires superadmin)
+ * PUT /api/business/positions/:id
+ */
+export async function editPosition(req, res) {
+  try {
+    const role = (req.user?.system_role || '').toLowerCase()
+    if (role !== 'superadmin') {
+      return res.status(403).json({ error: 'Only superadmin can update positions' })
+    }
+
+    const { id } = req.params
+    const { role_name } = req.body
+    if (!role_name) return res.status(400).json({ error: 'role_name is required' })
+
+    const affected = await updatePosition(id, role_name)
+    if (affected === 0) {
+      return res.status(404).json({ error: 'Position not found' })
+    }
+    res.json({ success: true, business_pos_id: Number(id), role_name })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 }
 
+/**
+ * Delete a position (requires superadmin)
+ * DELETE /api/business/positions/:id
+ */
 export async function deletePosition(req, res) {
-  const businessId = getBusinessId(req)
-  if (!businessId) {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role === 'superadmin') {
-      return res.status(400).json({ error: 'Select a business to delete positions' })
-    }
-    return res.status(400).json({ error: 'Missing business id' })
-  }
-  if (!(await ensureOwnership(req, res, businessId))) return
   try {
+    const role = (req.user?.system_role || '').toLowerCase()
+    if (role !== 'superadmin') {
+      return res.status(403).json({ error: 'Only superadmin can delete positions' })
+    }
+
     const { id } = req.params
-    const affected = await deletePositionById(businessId, id)
+    const affected = await deletePositionById(id)
     res.json({ success: true, affectedRows: affected })
   } catch (e) {
     if (e.code === 'ER_ROW_IS_REFERENCED_2') {
-      return res.status(409).json({ error: 'Position has assigned users or permissions' })
+      return res.status(409).json({ error: 'Position is in use by users or has permissions assigned' })
     }
     res.status(500).json({ error: e.message })
   }
 }
 
-export async function listPositionPermissions(req, res) {
-  const businessId = getBusinessId(req)
-  if (!businessId) {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role === 'superadmin') {
-      return res.json([])
-    }
-    return res.status(400).json({ error: 'Missing business id' })
-  }
-  if (!(await ensureOwnership(req, res, businessId))) return
+/**
+ * Get a single position by ID
+ * GET /api/business/positions/:id
+ */
+export async function getPosition(req, res) {
   try {
     const { id } = req.params
-    const rows = await getPositionPermissions(id, businessId)
+    const position = await getPositionById(id)
+    if (!position) {
+      return res.status(404).json({ error: 'Position not found' })
+    }
+    res.json(position)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * List permissions for a position
+ * GET /api/business/positions/:id/permissions
+ */
+export async function listPositionPermissions(req, res) {
+  try {
+    const { id } = req.params
+    const rows = await getPositionPermissions(id)
     res.json(rows)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 }
 
+/**
+ * Add a permission to a position (requires superadmin)
+ * POST /api/business/positions/:id/permissions
+ */
 export async function addPositionPermission(req, res) {
-  const businessId = getBusinessId(req)
-  if (!businessId) {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role === 'superadmin') {
-      return res.status(400).json({ error: 'Select a business to add permissions' })
-    }
-    return res.status(400).json({ error: 'Missing business id' })
-  }
-  if (!(await ensureOwnership(req, res, businessId))) return
   try {
+    const role = (req.user?.system_role || '').toLowerCase()
+    if (role !== 'superadmin') {
+      return res.status(403).json({ error: 'Only superadmin can modify position permissions' })
+    }
+
     const { id } = req.params
     const { feature_action_id } = req.body
     if (!feature_action_id) return res.status(400).json({ error: 'feature_action_id is required' })
 
-    try {
-      const insertedId = await addPermissionToPosition(businessId, id, feature_action_id)
-      res.status(201).json({ business_permission_id: insertedId })
-    } catch (e) {
-      if (e.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ error: 'Permission already assigned to position' })
-      }
-      throw e
+    const insertedId = await addPermissionToPosition(id, feature_action_id)
+    res.status(201).json({ bus_permission_id: insertedId })
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Permission already assigned to position' })
     }
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(404).json({ error: 'Position or feature_action not found' })
+    }
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Remove a permission from a position (requires superadmin)
+ * DELETE /api/business/positions/:id/permissions/:featureActionId
+ */
+export async function removePositionPermission(req, res) {
+  try {
+    const role = (req.user?.system_role || '').toLowerCase()
+    if (role !== 'superadmin') {
+      return res.status(403).json({ error: 'Only superadmin can modify position permissions' })
+    }
+
+    const { id, featureActionId } = req.params
+    const affected = await removePermissionFromPosition(id, featureActionId)
+    res.json({ success: true, affectedRows: affected })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 }
 
-export async function removePositionPermission(req, res) {
+/**
+ * Assign a user to a position within a business
+ * POST /api/business/:businessId/positions/assign
+ */
+export async function assignPosition(req, res) {
   const businessId = getBusinessId(req)
   if (!businessId) {
-    const role = (req.user?.system_role || '').toLowerCase()
-    if (role === 'superadmin') {
-      return res.status(400).json({ error: 'Select a business to remove permissions' })
-    }
     return res.status(400).json({ error: 'Missing business id' })
   }
   if (!(await ensureOwnership(req, res, businessId))) return
+
   try {
-    const { id, featureActionId } = req.params
-    const affected = await removePermissionFromPosition(businessId, id, featureActionId)
+    const { user_id, position_id } = req.body
+    if (!user_id || !position_id) {
+      return res.status(400).json({ error: 'user_id and position_id are required' })
+    }
+
+    const updatedBy = req.user?.user_id || null
+    const result = await assignUserToPosition(user_id, businessId, position_id, updatedBy)
+    res.status(201).json({ success: true, affected: result })
+  } catch (e) {
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(404).json({ error: 'User, business, or position not found' })
+    }
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Remove a user's position in a business
+ * DELETE /api/business/:businessId/positions/assign/:userId
+ */
+export async function unassignPosition(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  if (!(await ensureOwnership(req, res, businessId))) return
+
+  try {
+    const { userId } = req.params
+    const affected = await removeUserFromPosition(userId, businessId)
     res.json({ success: true, affectedRows: affected })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+/**
+ * Get a user's position in a specific business
+ * GET /api/business/:businessId/positions/user/:userId
+ */
+export async function getUserPosition(req, res) {
+  const businessId = getBusinessId(req)
+  if (!businessId) {
+    return res.status(400).json({ error: 'Missing business id' })
+  }
+  
+  try {
+    const { userId } = req.params
+    const position = await getUserPositionInBusiness(userId, businessId)
+    if (!position) {
+      return res.status(404).json({ error: 'User not found in this business' })
+    }
+    res.json(position)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
