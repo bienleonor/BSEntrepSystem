@@ -25,15 +25,12 @@ import adminMetricsRoute from './routes/admin-metrics-route.js';
 
 import rbacRoute from './routes/rbac-route.js';
 import businessLogsRoute from './routes/business/business-logs-route.js';
-<<<<<<< HEAD
+
 import businessPositionsRoute from './routes/business/business-positions-route.js';
-=======
+
 import auditLogsRoute from './routes/admin/audit-logs-route.js';
-<<<<<<< HEAD
-=======
 import auditRequestMiddleware from './middlewares/audit-request-middleware.js';
->>>>>>> 45572c7787d7933a6fabf7ed339ff8730da1a508
->>>>>>> a3c791ecbde3316bd48c97bfed30b14dad963fd6
+
 
 const app = express();
 
@@ -76,12 +73,9 @@ app.use('/api/analysis/profit', profitAnalysisRoutes);
 app.use('/api/analysis/inventory', inventoryAnalysisRoutes);
 app.use('/api/analysis/summary', summaryAnalysisRoutes);
 app.use('/api/admin/metrics', adminMetricsRoute);
-<<<<<<< HEAD
 app.use('/api/rbac', rbacRoute);
-=======
 
 app.use('/api', rbacRoute);
->>>>>>> 45572c7787d7933a6fabf7ed339ff8730da1a508
 
 
 // ✅ Debug middleware to see incoming requests (avoid 'undefined' body for GET)
