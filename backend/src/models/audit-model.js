@@ -1,4 +1,5 @@
 import pool from '../config/pool.js';
+import { ACTIONS } from '../constants/modules-actions.js';
 
 // Legacy simple audit log (kept for backward compatibility if still used elsewhere)
 export const createAuditLog = async (businessId, userId, transactionType, referenceId, details) => {
@@ -10,15 +11,21 @@ export const createAuditLog = async (businessId, userId, transactionType, refere
   await pool.query(query, values);
 };
 
-// New unified structure mirroring business_logs.
-// Expects the audit_logs table to have these columns added:
-// module_id, action_id, table_name, record_id, old_data, new_data, ip_address, user_agent
+
 export const insertAuditBusinessLog = async (log) => {
-  // Relax requirements: allow table_name and record_id to be null for READ/list events
-  const required = ['business_id','user_id','module_id','action_id'];
-  for (const f of required) {
+
+  const requiredBase = ['user_id','module_id','action_id'];
+  for (const f of requiredBase) {
     if (log[f] === undefined || log[f] === null) {
       throw new Error(`Missing required audit log field: ${f}`);
+    }
+  }
+
+  const deletingBusiness =
+    (log?.table_name === 'business_table') && (log?.action_id === ACTIONS.DELETE);
+  if (!deletingBusiness) {
+    if (log['business_id'] === undefined || log['business_id'] === null) {
+      throw new Error(`Missing required audit log field: business_id`);
     }
   }
 

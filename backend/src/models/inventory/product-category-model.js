@@ -31,7 +31,21 @@ export const addProductCategory = async (categoryData) => {
   }
 };
 
+export const removeProductCategory = async ({ categoryId, businessId }) => {
+  try {
+    const [result] = await pool.execute(
+      `DELETE FROM product_category_table WHERE category_id = ? AND business_id = ?`,
+      [categoryId, businessId]
+    );
+    return result.affectedRows || 0;
+  } catch (error) {
+    console.error("removeProductCategory error:", error);
+    throw error;
+  }
+};
+
 export default {
   fetchProductCategories,
   addProductCategory,
+  removeProductCategory,
 };

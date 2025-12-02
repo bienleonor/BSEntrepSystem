@@ -23,6 +23,7 @@ import Category from '../pages/SessionPages/Category.jsx'
 import StockAdjustmentReport from '../pages/SessionPages/StockAdjustmentReport.jsx'
 import BussinesLogs from '../pages/SessionPages/BussinesLogs.jsx'
 import AuditLogs from '../pages/SuperAdminPages/AuditLogs.jsx'
+import BusinessManagement from '../pages/SuperAdminPages/BusinessManagement.jsx'
 
 export const userRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
@@ -55,4 +56,6 @@ export const superAdminRoutes = [
   { path: '/superadmin/dashboard', element: <SuperAdminDashboard />},
   { path: '/superadmin/rbac', element: <RBACManagement />},
   { path: '/superadmin/auditlogs', element: <AuditLogs />},
+  { path: '/superadmin/businessmanagement', element: <BusinessManagement />},
+
 ]
