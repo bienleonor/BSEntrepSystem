@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import DashboardLayout from '../../components/layout/DashboardLayout'
+import SuperAdminLayout from '../../components/layout/SuperAdminLayout'
 import {
   fetchSystemRoles,
   createSystemRole,
@@ -523,10 +523,10 @@ export default function RBACManagement() {
   }
 
   return (
-    <DashboardLayout>
+    <SuperAdminLayout>
       <div className="p-4 md:p-6">
         <h1 className="text-2xl font-bold mb-4">RBAC Management</h1>
-        <div className="flex gap-2 flex-wrap mb-6">
+        <div className="flex gap-2 flex-wrap mb-6 text-black">
           {tabs.map(t => (
             <button
               key={t.key}
@@ -535,11 +535,11 @@ export default function RBACManagement() {
             >{t.label}</button>
           ))}
         </div>
-        <div className="bg-white rounded border p-4 shadow-sm">
+        <div className="bg-white text-gray-900 rounded border p-4 shadow-sm">
           {renderActive()}
         </div>
         <ToastContainer position="top-center" autoClose={2500} />
       </div>
-    </DashboardLayout>
+    </SuperAdminLayout>
   )
 }

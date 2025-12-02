@@ -46,7 +46,81 @@ export const BusinessRegister = async (data) => {
   return result.insertId;
 };
 
+export const Getallbusinesses = async (statusFilter = null) => {
+  // Build dynamic query to optionally filter by status (1=ACTIVE, 0=OFFLINE)
+  let query = `
+    SELECT 
+      b.business_id, 
+      b.business_name, 
+      b.business_cat_id, 
+      COALESCE(ac.status, 0) AS status,
+      u.username AS owner
+    FROM business_table b
+    INNER JOIN user_table u ON b.owner_id = u.user_id
+    LEFT JOIN (
+      SELECT business_id, MAX(is_active) AS status
+      FROM access_codes_table
+      GROUP BY business_id
+    ) ac ON ac.business_id = b.business_id
+  `;
 
+  const params = [];
+  if (statusFilter !== null && statusFilter !== undefined) {
+    query += ` WHERE COALESCE(ac.status, 0) = ?`;
+    params.push(statusFilter);
+  }
+
+  const [rows] = await pool.execute(query, params);
+  return rows;
+};
+
+export const deleteBusinessById = async (businessId) => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    // Detach audit logs to avoid FK constraint (set business_id to NULL)
+    try {
+      await conn.execute(
+        `UPDATE audit_logs SET business_id = NULL WHERE business_id = ?`,
+        [businessId]
+      );
+    } catch (e) {
+      // If DB schema doesn't allow NULLs or FK doesn't support SET NULL, fallback to deleting logs
+      await conn.execute(
+        `DELETE FROM audit_logs WHERE business_id = ?`,
+        [businessId]
+      );
+    }
+
+    // Delete dependent rows
+    await conn.execute(
+      `DELETE FROM access_codes_table WHERE business_id = ?`,
+      [businessId]
+    );
+
+    await conn.execute(
+      `DELETE FROM business_user_position_table WHERE business_id = ?`,
+      [businessId]
+    );
+
+    // Finally delete the business row
+    const [result] = await conn.execute(
+      `DELETE FROM business_table WHERE business_id = ?`,
+      [businessId]
+    );
+
+    await conn.commit();
+    return result.affectedRows > 0;
+  } catch (error) {
+    if (conn) await conn.rollback();
+    console.error('Error deleting business:', error);
+    return false;
+  } finally {
+    if (conn) await conn.release();
+  }
+};
 
 
 

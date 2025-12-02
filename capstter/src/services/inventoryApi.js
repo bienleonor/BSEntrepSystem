@@ -27,3 +27,19 @@ export const getInventoryTransactions = async () => {
     throw new Error("Failed to fetch inventory transactions");
   }
 };
+
+export const deleteProductCategory = async (categoryId, businessId, token) => {
+  try {
+    const res = await axiosInstance.delete(
+      `/inventory/product-categories/${categoryId}`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        data: { businessId },
+      }
+    );
+    return res.data;
+  } catch (err) {
+    console.error("Failed to delete product category:", err);
+    throw new Error(err?.response?.data?.message || "Failed to delete product category");
+  }
+};

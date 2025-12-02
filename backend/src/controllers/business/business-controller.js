@@ -1,4 +1,4 @@
-import { BusinessRegister, GetBusinessCategories, findBusinessByUserId  } from "../../models/business/business-model.js"
+import { BusinessRegister, GetBusinessCategories, findBusinessByUserId,Getallbusinesses,deleteBusinessById } from "../../models/business/business-model.js"
 import { generateToken } from "../../utils/generate-token.js";
 import { addEmployeeModel } from "../../models/business/business-employee-model.js";
 import { findAccessCodeByBusiness } from "../../models/access-codes-model.js";
@@ -117,3 +117,56 @@ export const getBusinessAccessCode = async (req, res) => {
 //   res.json({ token });
 // };
 
+export const getAllBusinessescontroller = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    // Map frontend status strings to numeric DB values
+    // 'ACTIVE' -> 1, 'OFFLINE' -> 0, otherwise undefined (no filter)
+    let statusFilter = null;
+    if (typeof status === 'string') {
+      const s = status.toUpperCase();
+      if (s === 'ACTIVE') statusFilter = 1;
+      else if (s === 'OFFLINE') statusFilter = 0;
+    } else if (status === 1 || status === 0) {
+      statusFilter = status;
+    }
+
+    const businesses = await Getallbusinesses(statusFilter);
+    res.status(200).json(businesses);
+  } catch (error) {
+    console.error("Error fetching all businesses:", error);
+    res.status(500).json({ error: "Failed to load all businesses." });
+  }
+};
+
+export const deleteBusinessController = async (req, res) => {
+  try {
+    const { businessId } = req.params;  
+    if (!businessId) {
+      return res.status(400).json({ error: "Missing businessId parameter." });
+    } 
+    // Log the delete action before removing the business
+    try {
+      await logAuditBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id,
+        module_id: MODULES.BUSINESS_MANAGEMENT,
+        action_id: ACTIONS.DELETE,
+        table_name: 'business_table',
+        record_id: Number(businessId),
+        old_data: { business_id: Number(businessId) },
+        new_data: null,
+        req,
+      });
+    } catch (e) {
+      console.warn('Failed to audit business deletion:', e?.message);
+    }
+
+    await deleteBusinessById(businessId);
+    res.status(200).json({ success: true, message: "Business deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting business:", error);
+    res.status(500).json({ error: "Failed to delete business." });
+  } 
+};

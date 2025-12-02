@@ -1,6 +1,7 @@
 import {
   fetchProductCategories,
   addProductCategory,
+  removeProductCategory,
 } from '../../models/inventory/product-category-model.js';
 import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
 import { logAuditBusinessAction } from '../../services/audit-logs-service.js';
@@ -72,7 +73,54 @@ export const createProductCategory = async (req, res) => {
   }
 };
 
+export const deleteProductCategory = async (req, res) => {
+  const { categoryId } = req.params;
+  const businessId = req.body?.businessId ?? req.query?.businessId;
+
+  const cid = Number(categoryId);
+  const bid = Number(businessId);
+
+  if (!Number.isFinite(cid) || cid <= 0) {
+    return res.status(400).json({ message: 'Invalid categoryId parameter' });
+  }
+  if (!Number.isFinite(bid) || bid <= 0) {
+    return res.status(400).json({ message: 'Invalid or missing businessId' });
+  }
+
+  try {
+    const affected = await removeProductCategory({ categoryId: cid, businessId: bid });
+    if (affected === 0) {
+      return res.status(404).json({ message: 'Category not found for this business' });
+    }
+
+    try {
+      const userId = req.user?.user_id || null;
+      if (userId) {
+        await logBusinessAction({
+          business_id: bid,
+          user_id: userId,
+          module_id: MODULES.INVENTORY,
+          action_id: ACTIONS.DELETE,
+          table_name: 'product_category_table',
+          record_id: cid,
+          old_data: null,
+          new_data: { deleted: true },
+          req,
+        });
+      }
+    } catch (e) {
+      console.warn('Business log (DELETE product category) failed:', e?.message);
+    }
+
+    return res.status(200).json({ message: 'Product category deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting product category:', error);
+    return res.status(500).json({ message: 'Error deleting product category', error: error.message });
+  }
+};
+
 export default {
   getProductCategories,
   createProductCategory,
+  deleteProductCategory,
 };

@@ -2,7 +2,7 @@ import express from "express";
 import {
   getBusinessCategories,
   registerBusiness,
-  getUserBusiness, getBusinessAccessCode
+  getUserBusiness, getBusinessAccessCode,getAllBusinessescontroller,deleteBusinessController
 } from "../../controllers/business/business-controller.js";
 import { authenticateToken } from "../../middlewares/auth-middleware.js";
 import multer from 'multer';
@@ -22,6 +22,8 @@ router.get("/categories", getBusinessCategories);
 // Must be logged in
 router.post("/registerbusiness", authenticateToken, registerBusiness);
 router.get("/mybusinesses", authenticateToken, getUserBusiness);
+router.get("/businesses", authenticateToken, getAllBusinessescontroller);
+router.delete("/deletebusiness/:businessId", authenticateToken, deleteBusinessController);
 
 // Business settings (uses local storage for logo uploads)
 const uploadLocal = multer({ storage: localStorage });
