@@ -97,7 +97,7 @@ export default function BusinessPositionManagement() {
                 positions.map((pos) => (
                   <tr key={pos.business_pos_id} className="hover:bg-blue-400 transition-colors">
                     <td className="border px-4 py-2">{pos.business_pos_id}</td>
-                    <td className="border px-4 py-2">{pos.role_name}</td>
+                    <td className="border px-4 py-2">{pos.position_name}</td>
                     <td className="border px-4 py-2">
                       <button
                         onClick={() => handleEditClick(pos)}

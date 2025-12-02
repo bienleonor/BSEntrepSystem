@@ -106,11 +106,11 @@ export async function createPosition(req, res) {
       return res.status(403).json({ error: 'Only superadmin can create positions' })
     }
 
-    const { role_name } = req.body
-    if (!role_name) return res.status(400).json({ error: 'role_name is required' })
+    const { position_name } = req.body
+    if (!position_name) return res.status(400).json({ error: 'position_name is required' })
 
-    const positionId = await insertPosition(role_name)
-    res.status(201).json({ business_pos_id: positionId, role_name })
+    const positionId = await insertPosition(position_name)
+    res.status(201).json({ business_pos_id: positionId, position_name })
   } catch (e) {
     if (e.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Position with this name already exists' })
@@ -131,14 +131,14 @@ export async function editPosition(req, res) {
     }
 
     const { id } = req.params
-    const { role_name } = req.body
-    if (!role_name) return res.status(400).json({ error: 'role_name is required' })
+    const { position_name } = req.body
+    if (!position_name) return res.status(400).json({ error: 'position_name is required' })
 
-    const affected = await updatePosition(id, role_name)
+    const affected = await updatePosition(id, position_name)
     if (affected === 0) {
       return res.status(404).json({ error: 'Position not found' })
     }
-    res.json({ success: true, business_pos_id: Number(id), role_name })
+    res.json({ success: true, business_pos_id: Number(id), position_name })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }

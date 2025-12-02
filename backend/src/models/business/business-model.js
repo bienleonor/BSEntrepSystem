@@ -4,7 +4,7 @@ import pool from '../../config/pool.js'
 export const findBusinessByUserId = async (user_id) => {
   const [rows] = await pool.execute(
     `SELECT b.business_id, b.business_name, b.business_cat_id,
-            bu.bus_pos_id, bp.role_name AS position_name,
+            bu.bus_pos_id, bp.position_name,
             bu.date_joined
      FROM business_table b
      INNER JOIN business_user_position_table bu

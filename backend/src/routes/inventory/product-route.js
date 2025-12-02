@@ -28,37 +28,37 @@ const uploadCloud = multer({ storage: cloudinaryStorage });
 // PROTECTED ROUTES (Require auth + business access + permission)
 // ============================================
 
-// Create product - requires "products:create" permission
+// Create product - requires "product:create" permission
 router.post('/products', 
   authenticateToken, 
   requireBusinessAccess, 
-  requirePermission('products:create'),
+  requirePermission('product:create'),
   uploadLocal.single('picture'), 
   createProduct
 );
 
-// Update product - requires "products:update" permission
+// Update product - requires "product:update" permission
 router.put('/products/:productId', 
   authenticateToken, 
   requireBusinessAccess, 
-  requirePermission('products:update'),
+  requirePermission('product:update'),
   uploadLocal.single('picture'), 
   modifyProduct
 );
 
-// Delete product - requires "products:delete" permission
+// Delete product - requires "product:delete" permission
 router.delete('/products/:productId', 
   authenticateToken, 
   requireBusinessAccess, 
-  requirePermission('products:delete'),
+  requirePermission('product:delete'),
   removeProduct
 );
 
-// Toggle product status - requires "products:update" permission
+// Toggle product status - requires "product:update" permission
 router.patch('/products/:productId/status', 
   authenticateToken, 
   requireBusinessAccess, 
-  requirePermission('products:update'),
+  requirePermission('product:update'),
   toggleProductStatus
 );
 
@@ -68,40 +68,40 @@ router.patch('/products/:productId/status',
 
 router.get('/products', 
   authenticateToken,
-  requirePermission('products:read'),
+  requirePermission('product:read'),
   fetchAllProducts
 );
 
 router.get('/products/:productId', 
   authenticateToken,
-  requirePermission('products:read'),
+  requirePermission('product:read'),
   fetchProductById
 );
 
 router.get('/products/active', 
   authenticateToken,
-  requirePermission('products:read'),
+  requirePermission('product:read'),
   fetchActiveProducts
 );
 
 router.get('/products/inventory-details', 
   authenticateToken,
   requireBusinessAccess,
-  requirePermission('products:read'),
+  requirePermission('product:read'),
   fetchProductWithInventoryDetails
 );
 
 router.get('/businesses/:businessId/products', 
   authenticateToken,
   requireBusinessAccess,
-  requirePermission('products:read'),
+  requirePermission('product:read'),
   fetchProductsByBusiness
 );
 
 router.get('/products/active/inventory-details/:businessId', 
   authenticateToken,
   requireBusinessAccess,
-  requirePermission('products:read'),
+  requirePermission('product:read'),
   fetchActiveProductWithInventoryDetailsByBusiness
 );
 

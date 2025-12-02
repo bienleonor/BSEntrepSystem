@@ -6,7 +6,7 @@ import pool from '../../config/pool.js'
  */
 export async function getAllPositions() {
   const [rows] = await pool.query(
-    'SELECT business_pos_id, role_name FROM business_position_table ORDER BY role_name'
+    'SELECT business_pos_id, position_name FROM business_position_table ORDER BY position_name'
   )
   return rows
 }
@@ -16,11 +16,11 @@ export async function getAllPositions() {
  */
 export async function getPositionsByBusiness(businessId) {
   const sql = `
-    SELECT DISTINCT bp.business_pos_id, bp.role_name
+    SELECT DISTINCT bp.business_pos_id, bp.position_name
     FROM business_position_table bp
     JOIN business_user_position_table bup ON bup.bus_pos_id = bp.business_pos_id
     WHERE bup.business_id = ?
-    ORDER BY bp.role_name
+    ORDER BY bp.position_name
   `
   const [rows] = await pool.query(sql, [businessId])
   return rows
@@ -32,11 +32,11 @@ export async function getPositionsByBusiness(businessId) {
 export async function getUserPositionsByBusiness(businessId) {
   const sql = `
     SELECT bup.bus_user_pos_id, bup.user_id, bup.business_id, bup.bus_pos_id,
-           bp.role_name, bup.date_joined, bup.updated_at
+           bp.position_name, bup.date_joined, bup.updated_at
     FROM business_user_position_table bup
     LEFT JOIN business_position_table bp ON bp.business_pos_id = bup.bus_pos_id
     WHERE bup.business_id = ?
-    ORDER BY bp.role_name
+    ORDER BY bp.position_name
   `
   const [rows] = await pool.query(sql, [businessId])
   return rows
@@ -45,10 +45,10 @@ export async function getUserPositionsByBusiness(businessId) {
 /**
  * Create a new position (role) in business_position_table
  */
-export async function insertPosition(roleName) {
+export async function insertPosition(positionName) {
   const [result] = await pool.query(
-    'INSERT INTO business_position_table (role_name) VALUES (?)',
-    [roleName]
+    'INSERT INTO business_position_table (position_name) VALUES (?)',
+    [positionName]
   )
   return result.insertId
 }
@@ -67,10 +67,10 @@ export async function deletePositionById(positionId) {
 /**
  * Update position name
  */
-export async function updatePosition(positionId, roleName) {
+export async function updatePosition(positionId, positionName) {
   const [result] = await pool.query(
-    'UPDATE business_position_table SET role_name = ? WHERE business_pos_id = ?',
-    [roleName, positionId]
+    'UPDATE business_position_table SET position_name = ? WHERE business_pos_id = ?',
+    [positionName, positionId]
   )
   return result.affectedRows
 }
@@ -158,7 +158,7 @@ export async function removeUserFromPosition(userId, businessId) {
  */
 export async function getUserPositionInBusiness(userId, businessId) {
   const sql = `
-    SELECT bup.bus_user_pos_id, bup.bus_pos_id, bp.role_name, bup.date_joined
+    SELECT bup.bus_user_pos_id, bup.bus_pos_id, bp.position_name, bup.date_joined
     FROM business_user_position_table bup
     LEFT JOIN business_position_table bp ON bp.business_pos_id = bup.bus_pos_id
     WHERE bup.user_id = ? AND bup.business_id = ?
@@ -172,7 +172,7 @@ export async function getUserPositionInBusiness(userId, businessId) {
  */
 export async function getPositionById(positionId) {
   const [[row]] = await pool.query(
-    'SELECT business_pos_id, role_name FROM business_position_table WHERE business_pos_id = ?',
+    'SELECT business_pos_id, position_name FROM business_position_table WHERE business_pos_id = ?',
     [positionId]
   )
   return row || null
