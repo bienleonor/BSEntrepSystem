@@ -6,8 +6,7 @@ import { authenticateToken } from '../../middlewares/auth-middleware.js';
 
 const router = express.Router();
 
-// Add combo items to a parent product
-router.post('/add', authenticateToken, addCombo);
+// Add combo items to a parent produc'/add', authenticateToken, addCombo);
 
 // Get all combo items for a parent product
 router.get('/:parentProductId', authenticateToken, getCombo);
