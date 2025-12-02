@@ -14,7 +14,9 @@ import {
   createPermission,
   deletePermission,
 } from '../controllers/rbac/permissions-controller.js'
-import { listAllFeatureActions } from '../repositories/permissionRepository.js'
+import { listFeatureActions, createFeatureAction, deleteFeatureAction } from '../controllers/rbac/feature-actions-controller.js'
+import { listFeatures } from '../controllers/rbac/feature-controller.js'
+import { listActions } from '../controllers/rbac/action-controller.js'
 
 const router = Router()
 
@@ -36,14 +38,11 @@ router.get('/roles/:id/permissions', listPermissionsForRole)
 router.post('/roles/:id/permissions', addPermissionToRole)
 router.delete('/roles/:id/permissions/:permissionId', removePermissionFromRole)
 
-// Feature actions (read-only)
-router.get('/features/actions', async (req, res) => {
-  try {
-    const rows = await listAllFeatureActions()
-    res.json(rows)
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
-})
+// Feature actions
+router.get('/features', listFeatures)
+router.get('/actions', listActions)
+router.get('/features/actions', listFeatureActions)
+router.post('/features/actions', createFeatureAction)
+router.delete('/features/actions/:id', deleteFeatureAction)
 
 export default router
