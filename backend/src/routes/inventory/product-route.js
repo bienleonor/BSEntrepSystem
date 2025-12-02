@@ -16,6 +16,7 @@ import {
 } from '../../controllers/inventory/product-controller.js';
 import { authenticateToken } from '../../middlewares/auth-middleware.js';
 import { requireBusinessAccess } from '../../middlewares/business-access.js';
+import { requirePermission } from '../../middlewares/permission-middleware.js';
 
 const router = express.Router();
 
@@ -23,29 +24,91 @@ const router = express.Router();
 const uploadLocal = multer({ storage: localStorage });
 const uploadCloud = multer({ storage: cloudinaryStorage });
 
-// Use one of these depending on your strategy:
-//router.post('/products', uploadCloud.single('picture'), createProduct);
-// OR
- router.post('/products', authenticateToken, requireBusinessAccess, uploadLocal.single('picture'), createProduct);
+// ============================================
+// PROTECTED ROUTES (Require auth + business access + permission)
+// ============================================
 
-// Product routes
-router.get('/products', fetchAllProducts);
-router.get('/products/:productId', fetchProductById);
+// Create product - requires "products:create" permission
+router.post('/products', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('products:create'),
+  uploadLocal.single('picture'), 
+  createProduct
+);
 
-// Use the same storage middleware you used for POST
-router.put('/products/:productId', authenticateToken, requireBusinessAccess, uploadLocal.single('picture'), modifyProduct);
+// Update product - requires "products:update" permission
+router.put('/products/:productId', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('products:update'),
+  uploadLocal.single('picture'), 
+  modifyProduct
+);
 
-// If you configured cloudinaryStorage and prefer it for updates:
-//router.put('/products/:productId', uploadCloud.single('picture'), modifyProduct);
+// Delete product - requires "products:delete" permission
+router.delete('/products/:productId', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('products:delete'),
+  removeProduct
+);
 
-router.delete('/products/:productId', authenticateToken, requireBusinessAccess, removeProduct);
+// Toggle product status - requires "products:update" permission
+router.patch('/products/:productId/status', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('products:update'),
+  toggleProductStatus
+);
+
+// ============================================
+// READ ROUTES (Require auth + business access + read permission)
+// ============================================
+
+router.get('/products', 
+  authenticateToken,
+  requirePermission('products:read'),
+  fetchAllProducts
+);
+
+router.get('/products/:productId', 
+  authenticateToken,
+  requirePermission('products:read'),
+  fetchProductById
+);
+
+router.get('/products/active', 
+  authenticateToken,
+  requirePermission('products:read'),
+  fetchActiveProducts
+);
+
+router.get('/products/inventory-details', 
+  authenticateToken,
+  requireBusinessAccess,
+  requirePermission('products:read'),
+  fetchProductWithInventoryDetails
+);
+
+router.get('/businesses/:businessId/products', 
+  authenticateToken,
+  requireBusinessAccess,
+  requirePermission('products:read'),
+  fetchProductsByBusiness
+);
+
+router.get('/products/active/inventory-details/:businessId', 
+  authenticateToken,
+  requireBusinessAccess,
+  requirePermission('products:read'),
+  fetchActiveProductWithInventoryDetailsByBusiness
+);
+
+// ============================================
+// PUBLIC ROUTES (No permission required)
+// ============================================
+
 router.get('/units', fetchUnits);
-router.patch('/products/:productId/status', authenticateToken, requireBusinessAccess, toggleProductStatus);
-router.get('/products/active', fetchActiveProducts);
-router.get('/products/inventory-details', fetchProductWithInventoryDetails);
-router.get('/businesses/:businessId/products', fetchProductsByBusiness);
-router.get('/products/active/inventory-details/:businessId', fetchActiveProductWithInventoryDetailsByBusiness);
-
-
 
 export default router;
