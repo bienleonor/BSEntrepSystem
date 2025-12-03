@@ -7,13 +7,113 @@ import {
   listAllFeatureActions,
 } from '../repositories/permissionRepository.js'
 
+// ============================================
+// PERMISSION CACHE (for scalability)
+// In production, replace with Redis for distributed caching
+// ============================================
+const permissionCache = new Map()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+function getCacheKey(userId, businessId) {
+  return `perms:${userId}:${businessId || 'system'}`
+}
+
+/**
+ * Get cached permissions or compute fresh
+ * This is the SCALABLE way to check permissions
+ */
+export async function getCachedPermissions({ systemRoleName, userId, businessId }) {
+  // Superadmin bypasses everything - no cache or DB needed
+  if ((systemRoleName || '').toLowerCase() === 'superadmin') {
+    return { permissions: ['*'], isSuperAdmin: true }
+  }
+
+  const cacheKey = getCacheKey(userId, businessId)
+  const cached = permissionCache.get(cacheKey)
+  
+  if (cached && Date.now() < cached.expiresAt) {
+    return { permissions: cached.permissions, isSuperAdmin: false, fromCache: true }
+  }
+
+  // Compute fresh permissions (includes overrides automatically)
+  const permissions = await getEffectivePermissions({ systemRoleName, userId, businessId })
+  
+  // Cache result
+  permissionCache.set(cacheKey, {
+    permissions,
+    expiresAt: Date.now() + CACHE_TTL
+  })
+
+  return { permissions, isSuperAdmin: false, fromCache: false }
+}
+
+/**
+ * Invalidate cache when permissions change
+ * Call this when:
+ * - User's position changes
+ * - Position permissions are updated  
+ * - Overrides are added/removed/reset
+ */
+export function invalidateUserPermissionCache(userId, businessId = null) {
+  if (businessId) {
+    permissionCache.delete(getCacheKey(userId, businessId))
+  } else {
+    // Invalidate all caches for this user
+    for (const key of permissionCache.keys()) {
+      if (key.startsWith(`perms:${userId}:`)) {
+        permissionCache.delete(key)
+      }
+    }
+  }
+}
+
+/**
+ * Invalidate cache for all users in a business
+ * Call when position preset permissions change
+ */
+export function invalidateBusinessPermissionCache(businessId) {
+  for (const key of permissionCache.keys()) {
+    if (key.endsWith(`:${businessId}`)) {
+      permissionCache.delete(key)
+    }
+  }
+}
+
+/**
+ * Clear entire permission cache
+ */
+export function clearPermissionCache() {
+  permissionCache.clear()
+}
+
+/**
+ * Get cache stats for monitoring
+ */
+export function getCacheStats() {
+  let validCount = 0
+  const now = Date.now()
+  for (const [, value] of permissionCache) {
+    if (now < value.expiresAt) validCount++
+  }
+  return {
+    totalEntries: permissionCache.size,
+    validEntries: validCount,
+    ttlMinutes: CACHE_TTL / 60000
+  }
+}
+
+// ============================================
+// PERMISSION CHECK FUNCTIONS
+// ============================================
+
 /**
  * Check if a user has a specific permission
  * @param {Object} params - { userId, systemRoleName, businessId, permissionKey }
  * @returns {Promise<boolean>}
  */
 export async function hasPermission({ userId, systemRoleName, businessId, permissionKey }) {
-  const permissions = await getEffectivePermissions({ systemRoleName, userId, businessId })
+  const { permissions, isSuperAdmin } = await getCachedPermissions({ systemRoleName, userId, businessId })
+  if (isSuperAdmin) return true
   return permissions.includes(permissionKey)
 }
 
@@ -231,9 +331,17 @@ export async function syncPositionPermissions(positionId, featureActionIds) {
 }
 
 export default {
+  // Cache functions (for scalability)
+  getCachedPermissions,
+  invalidateUserPermissionCache,
+  invalidateBusinessPermissionCache,
+  clearPermissionCache,
+  getCacheStats,
+  // Permission check functions
   hasPermission,
   hasAnyPermission,
   hasAllPermissions,
+  // Admin tooling
   getAllModules,
   getAllFeatures,
   getAllActions,

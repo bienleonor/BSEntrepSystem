@@ -5,17 +5,18 @@ export const findBusinessByUserId = async (user_id) => {
   const [rows] = await pool.execute(
     `SELECT b.business_id, b.business_name, b.business_cat_id,
             bu.bus_pos_id, bp.position_name,
-            bu.date_joined
+            bu.date_joined,
+            CASE WHEN b.owner_id = ? THEN 1 ELSE 0 END AS is_owner
      FROM business_table b
      INNER JOIN business_user_position_table bu
        ON b.business_id = bu.business_id
      LEFT JOIN business_position_table bp
        ON bp.business_pos_id = bu.bus_pos_id
      WHERE bu.user_id = ?`,
-    [user_id]
+    [user_id, user_id]
   );
 
-  return rows; // returns array of businesses with position info
+  return rows; // returns array of businesses with position info and is_owner flag
 };
 
 

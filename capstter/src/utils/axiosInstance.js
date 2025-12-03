@@ -26,11 +26,13 @@ axiosInstance.interceptors.request.use((config) => {
 });
 
 // Handle expired tokens - redirect to login
+// NOTE: Only 401 (Unauthorized) triggers logout
+// 403 (Forbidden) means RBAC permission denied - user stays logged in
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Token is invalid or expired
+    if (error.response?.status === 401) {
+      // Token is invalid or expired - logout and redirect
       console.log('Token expired or invalid, redirecting to login...');
       removeToken();
       localStorage.removeItem("user");
@@ -40,6 +42,13 @@ axiosInstance.interceptors.response.use(
       // Redirect to login page
       window.location.href = "/login";
     }
+    
+    // 403 = Permission denied (RBAC) - don't logout, just reject
+    // The calling component should handle displaying the error
+    if (error.response?.status === 403) {
+      console.warn('Permission denied:', error.response?.data?.error || 'Forbidden');
+    }
+    
     return Promise.reject(error);
   }
 );

@@ -24,6 +24,7 @@ import {
   getPositionsWithOverrideStatus,
   getAvailablePermissionsToAdd,
 } from '../../models/business/business-positions-model.js'
+import { invalidateBusinessPermissionCache, invalidateUserPermissionCache } from '../../services/permissionService.js'
 
 function getBusinessId(req) {
   return (
@@ -411,6 +412,10 @@ export async function addPermissionOverride(req, res) {
     }
     
     const result = await addOverride(businessId, positionId, feature_action_id, override_type)
+    
+    // Invalidate permission cache for all users in this business
+    invalidateBusinessPermissionCache(businessId)
+    
     res.status(201).json({ success: true, ...result })
   } catch (e) {
     if (e.code === 'ER_NO_REFERENCED_ROW_2') {
@@ -434,6 +439,10 @@ export async function removePermissionOverride(req, res) {
   try {
     const { positionId, featureActionId } = req.params
     const result = await removeOverride(businessId, positionId, featureActionId)
+    
+    // Invalidate permission cache for all users in this business
+    invalidateBusinessPermissionCache(businessId)
+    
     res.json({ success: true, ...result })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -454,6 +463,10 @@ export async function resetPositionOverrides(req, res) {
   try {
     const { positionId } = req.params
     const result = await resetOverrides(businessId, positionId)
+    
+    // Invalidate permission cache for all users in this business
+    invalidateBusinessPermissionCache(businessId)
+    
     res.json({ success: true, ...result })
   } catch (e) {
     res.status(500).json({ error: e.message })

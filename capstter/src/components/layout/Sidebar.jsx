@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book,BookOpenText,Notebook  } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const menuItems = [
+// Base menu items available to everyone
+const baseMenuItems = [
   // Sales Management
   { label: "Point of Sales", icon: <ShoppingCart  size={18} /> },
   { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
@@ -15,20 +16,61 @@ const menuItems = [
   { label: "Product List", icon: <PackageOpen  size={18} /> },
   { label: "Category", icon: <Book  size={18} /> },
   { label: "Multi Adjustment Stock", icon: <PackageOpen  size={18} /> },
-   { label: "Stock Adjustment Report", icon: <BookOpenText   size={18} /> },
+  { label: "Stock Adjustment Report", icon: <BookOpenText   size={18} /> },
+];
 
-  
-
-  // Employee Management
+// Owner/Admin only menu items
+const ownerOnlyMenuItems = [
   { label: "Employee Management", icon: <Users  size={18} /> },
   { label: "Business Position", icon: <UserRoundCog   size={18} /> },
   { label: "Business Logs", icon: <Notebook   size={18} /> },
   { label: "Business Setting", icon: <Settings   size={18} /> },
-  
 ];
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    // Check if user is owner of current business or superadmin
+    const checkOwnership = () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const businesses = JSON.parse(localStorage.getItem("businesses") || "[]");
+        const selectedBusinessId = localStorage.getItem("selectedBusinessId");
+
+        // Superadmin can see everything
+        const role = (user.role || user.system_role || "").toLowerCase();
+        if (role === "superadmin") {
+          setIsOwner(true);
+          return;
+        }
+
+        // Check if user is owner of the selected business
+        if (selectedBusinessId && businesses.length > 0) {
+          const currentBusiness = businesses.find(
+            (b) => String(b.business_id) === String(selectedBusinessId)
+          );
+          // is_owner comes from the backend query
+          setIsOwner(currentBusiness?.is_owner === 1 || currentBusiness?.is_owner === true);
+        }
+      } catch (e) {
+        console.error("Error checking ownership:", e);
+        setIsOwner(false);
+      }
+    };
+
+    checkOwnership();
+
+    // Re-check when business selection changes
+    window.addEventListener("storage", checkOwnership);
+    return () => window.removeEventListener("storage", checkOwnership);
+  }, []);
+
+  // Build menu items based on ownership
+  const menuItems = isOwner 
+    ? [...baseMenuItems, ...ownerOnlyMenuItems]
+    : baseMenuItems;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
