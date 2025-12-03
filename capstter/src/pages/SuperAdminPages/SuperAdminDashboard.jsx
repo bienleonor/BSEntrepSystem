@@ -17,7 +17,7 @@ const SuperAdminDashboard = () => {
       
         <UserManagementCard />
         {/* Placeholder future card slot hidden unless xl */}
-        <div className="hidden xl:block"><div className="h-full w-full rounded border border-slate-700/40 bg-slate-900/40 flex items-center justify-center text-xs text-slate-500">Add Card</div></div>
+       
       </div>
 
       {/* Main Metrics Section */}
