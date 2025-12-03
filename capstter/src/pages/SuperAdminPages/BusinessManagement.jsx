@@ -685,12 +685,16 @@ const BusinessManagement = () => {
                                         <select
                                           className="border px-1 py-0.5 text-xs rounded dark:bg-gray-800"
                                           value={editingPositionId ?? ''}
-                                          onChange={(ev) => setEditingPositionId(ev.target.value)}
+                                          onChange={(ev) => {
+                                            const val = ev.target.value;
+                                            const num = Number(val);
+                                            setEditingPositionId(Number.isNaN(num) ? val : num);
+                                          }}
                                           disabled={loadingPositions}
                                         >
                                           <option value="">Select</option>
                                           {positions.map(pos => (
-                                            <option key={pos.bus_pos_id || pos.position_id || pos.id} value={pos.bus_pos_id || pos.position_id || pos.id}>
+                                            <option key={pos.bus_pos_id || pos.business_pos_id || pos.position_id || pos.id} value={pos.bus_pos_id ?? pos.business_pos_id ?? pos.position_id ?? pos.id}>
                                               {pos.name || pos.position_name || pos.title}
                                             </option>
                                           ))}
@@ -705,7 +709,7 @@ const BusinessManagement = () => {
                                               await axiosInstance.post('/business/assign-position', {
                                                 user_id: e.user_id,
                                                 business_id: viewingBiz.id,
-                                                bus_pos_id: editingPositionId,
+                                                bus_pos_id: Number(editingPositionId),
                                               });
                                               // Refresh employees
                                               const res = await axiosInstance.get(`/business/employees/${viewingBiz.id}`);

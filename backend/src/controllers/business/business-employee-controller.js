@@ -65,12 +65,30 @@ export const assignPosition = async (req, res) => {
 			return res.status(400).json({ success: false, message: "user_id, business_id and bus_pos_id are required" });
 		}
 
+		// Ensure position id is a valid integer to avoid FK violations from bad input
+		const safeBusPosId = Number(bus_pos_id);
+		if (!Number.isInteger(safeBusPosId) || safeBusPosId <= 0) {
+			return res.status(400).json({ success: false, message: "bus_pos_id must be a valid existing position id" });
+		}
+
 		// Fetch old employee record (best effort)
 		let oldEmp = null;
 		try { const all = await getEmployeesByBusinessModel(business_id); oldEmp = all.find(e => String(e.user_id) === String(user_id)) || null; } catch {}
 
-		const result = await updateEmployeePositionModel(user_id, business_id, bus_pos_id);
-		res.status(200).json({ success: true, data: result, message: "Position updated" });
+		try {
+			const result = await updateEmployeePositionModel(user_id, business_id, safeBusPosId);
+			res.status(200).json({ success: true, data: result, message: "Position updated" });
+		} catch (dbErr) {
+			// Handle MySQL FK errors gracefully (ER_NO_REFERENCED_ROW_2 / 1452)
+			if (dbErr && (dbErr.code === 'ER_NO_REFERENCED_ROW_2' || dbErr.errno === 1452)) {
+				return res.status(400).json({
+					success: false,
+					message: "Invalid position: selected bus_pos_id does not exist",
+					details: { code: dbErr.code, errno: dbErr.errno }
+				});
+			}
+			throw dbErr;
+		}
 
 		try {
 			await logBusinessAction({
@@ -81,7 +99,7 @@ export const assignPosition = async (req, res) => {
 				table_name: 'business_employee_table',
 				record_id: Number(user_id),
 				old_data: oldEmp,
-				new_data: { user_id, bus_pos_id },
+				new_data: { user_id, bus_pos_id: safeBusPosId },
 				req,
 			});
 		} catch (e) { }
