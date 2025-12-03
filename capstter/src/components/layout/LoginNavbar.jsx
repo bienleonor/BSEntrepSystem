@@ -50,6 +50,9 @@ export default function LoginNavbar() {
                    bg-slate-800 text-white 
                    px-3 sm:px-6 py-2 sm:py-4 
                    border-b-2 border-b-bronze/50 shadow-2xl">
+                    <div>
+                        <h1 className="text-lg sm:text-2xl font-bold">DHO - Business Dashboard </h1>
+                    </div>
   <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center">
     {logoUrl ? (
       <img

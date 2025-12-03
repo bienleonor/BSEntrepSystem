@@ -59,7 +59,7 @@ export default function Sidebar() {
           <div className="flex items-center gap-2 mb-8">
             <Link to="/UserDashboard" className="flex items-center gap-2">
               <Home className="text-white" />
-              <span className="text-lg font-bold hidden sm:block">Dashboard</span>
+              <span className="text-lg font-bold hidden sm:block">DHO</span>
             </Link>
           </div>
         </div>
