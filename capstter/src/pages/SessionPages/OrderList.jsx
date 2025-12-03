@@ -260,7 +260,7 @@ export default function OrderList() {
                       View
                     </button>
                     <button
-                      className={`px-3 py-2.5 rounded-lg text-xs font-medium bg-indigo-500/80 backdrop-blur-sm text-white hover:bg-indigo-500 transition-colors ${
+                      className={`px-3 py-2.5 rounded-lg text-xs font-medium bg-indigo-500/20 backdrop-blur-sm text-indigo-200 hover:bg-indigo-500/30 transition-colors border border-indigo-400/20 ${
                         finishingId === order.id ? "opacity-60 cursor-wait" : ""
                       }`}
                       onClick={() => openPopup(order, "finish")}
@@ -269,7 +269,7 @@ export default function OrderList() {
                       Finish
                     </button>
                     <button
-                      className={`px-3 py-2.5 rounded-lg text-xs font-medium bg-rose-500/80 backdrop-blur-sm text-white hover:bg-rose-500 transition-colors ${
+                      className={`px-3 py-2.5 rounded-lg text-xs font-medium bg-rose-500/20 backdrop-blur-sm text-rose-200 hover:bg-rose-500/30 transition-colors border border-rose-400/20 ${
                         cancelingId === order.id ? "opacity-60 cursor-wait" : ""
                       }`}
                       onClick={async () => {
