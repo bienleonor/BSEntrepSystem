@@ -10,25 +10,10 @@ function CreateOrder() {
    
     <DashboardLayout>
      <div>
-      
       <OrderSection/>
-
-
      </div>
-
-
-
-
     </DashboardLayout>
-   
-      
-   
-   
-   
-   
-   
-   
-   
+
   )
 }
 
