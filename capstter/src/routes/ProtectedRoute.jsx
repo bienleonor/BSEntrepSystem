@@ -12,8 +12,9 @@ export default function ProtectedRoute({ element, allowedRoles = [] }) {
   if (allowedRoles.length > 0) {
     // AuthContext sets `user` to the decoded token payload; your token helpers
     // expose the role as `role` (see `utils/token.getRole`). Use `user.role`.
-    const role = user?.system_role
-    if (!role || !allowedRoles.includes(role)) {
+    const role = user?.system_role?.toLowerCase()
+    const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase())
+    if (!role || !normalizedAllowedRoles.includes(role)) {
       // Redirect unauthorized users to a safe page (adjust as needed)
       return <Navigate to="/unauthorized" replace />
     }

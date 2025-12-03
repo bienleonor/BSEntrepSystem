@@ -28,7 +28,7 @@ import BusinessManagement from '../pages/SuperAdminPages/BusinessManagement.jsx'
 
 export const userRoutes = [
   { path: '/UserDashboard', element: <UserDashboard /> },
-  { path: '/UserDetails', element: <UserDetails /> },
+  { path: '/userdetails', element: <UserDetails /> },
   { path: '/businessregistration', element: <BusinessRegistration /> },
   { path: '/chooserole', element: <ChooseRole />},
   { path: '/multiadjustmentstock', element: <MultiAdjustment /> },

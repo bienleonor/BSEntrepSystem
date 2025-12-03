@@ -51,7 +51,7 @@ export default function UserDetails() {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const res = await axiosInstance.get(`/user-details/${userId}`);
+        const res = await axiosInstance.get(`/users-details/${userId}`);
         if (res.data) {
           setFormData({
             first_name: res.data.first_name || "",
