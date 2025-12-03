@@ -34,9 +34,9 @@ export default function AdminOverviewSection() {
   const cards = [
     { title: 'Total Users', value: String(metrics.total_users ?? 0), icon: 'users', trend: '', color: 'blue' },
     { title: 'Active Sessions', value: String(metrics.active_sessions ?? 0), icon: 'activity', trend: '', color: 'green' },
-    { title: 'Pending Approvals', value: String(metrics.pending_approvals ?? 0), icon: 'check-circle', trend: '', color: 'amber' },
+   
     { title: 'Total Roles', value: String(metrics.total_roles ?? 0), icon: 'key', trend: '', color: 'red' },
-    { title: 'Storage Usage', value: metrics.storage_usage_gb != null ? `${metrics.storage_usage_gb} GB` : 'N/A', icon: 'database', trend: '', color: 'cyan' },
+  
   ];
 
   return (
