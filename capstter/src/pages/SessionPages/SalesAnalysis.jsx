@@ -535,7 +535,7 @@ function SalesAnalysis() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-white text-3xl font-extrabold mb-6">Sales Analysis</h1>
+      <h1 className="text-white text-3xl font-extrabold mb-6">Key Performance Indicators</h1>
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -566,7 +566,7 @@ function SalesAnalysis() {
             {/* Overview Tab */}
             {activeTab === 'overview' && kpiSummary && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Key Performance Indicators</h2>
+                <h2 className="text-white text-xl font-bold mb-4">Sales Overview</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <KPICard
                     title="Total Sales"
