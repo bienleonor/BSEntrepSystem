@@ -46,7 +46,7 @@ export function requirePermission(permissionKey) {
         return next()
       }
       
-      return res.status(403).json({ error: 'Forbidden: Missing permission ' + permissionKey })
+      return res.status(403).json({ error: 'Forbidden: Missing permission '})
     } catch (err) {
       console.error('requirePermission error:', err)
       return res.status(500).json({ error: 'Internal server error' })

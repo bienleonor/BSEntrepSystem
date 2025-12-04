@@ -1,11 +1,12 @@
 //BusinessRegistration.jsx
 import React, { useState, useEffect } from 'react';
-import loginImage from '../assets/landing.png';
-import { getToken } from '../utils/token';
+import loginImage from '../../assets/landing.png';
+import { getToken } from '../../utils/token';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../utils/axiosInstance';
+import axiosInstance from '../../utils/axiosInstance';
+import { ArrowLeft } from 'lucide-react';
 
 export default function BusinessRegistration() {
   const [businessName, setBusinessName] = useState('');
@@ -111,8 +112,24 @@ export default function BusinessRegistration() {
       navigate("/UserDashboard");
     } catch (err) {
       console.error("Registration failed:", err);
-      toast.error("❌ Failed to register business or generate access code.");
+      
+      // Handle specific error for duplicate section+group
+      if (err.response?.status === 409) {
+        const existingBiz = err.response.data.existing_business;
+        toast.error(
+          `❌ A business "${existingBiz?.business_name}" already exists for your section and group. Only one business is allowed per group.`,
+          { autoClose: 6000 }
+        );
+      } else if (err.response?.data?.error) {
+        toast.error(`❌ ${err.response.data.error}`);
+      } else {
+        toast.error("❌ Failed to register business or generate access code.");
+      }
     }
+  };
+
+  const handleGoBack = () => {
+    navigate(-1); // Go back to previous page
   };
 
   return (
@@ -122,8 +139,17 @@ export default function BusinessRegistration() {
         className="bg-cover bg-center h-screen w-full flex justify-center items-center px-6"
         style={{ backgroundImage: `url(${loginImage})` }}
       >
-        <div className="bg-bronze p-6 sm:p-8 rounded-2xl w-full max-w-md shadow-lg">
-          <h2 className="text-5xl font-bold mb-6 text-center text-white">
+        <div className="bg-bronze p-6 sm:p-8 rounded-2xl w-full max-w-md shadow-lg relative">
+          {/* Go Back Button */}
+          <button
+            onClick={handleGoBack}
+            className="absolute top-4 left-4 flex items-center gap-1 text-white hover:text-gray-200 transition"
+          >
+            <ArrowLeft size={20} />
+            <span className="text-sm">Back</span>
+          </button>
+
+          <h2 className="text-5xl font-bold mb-6 text-center text-white mt-6">
             Business Registration
           </h2>
           <form className="space-y-6" onSubmit={handleSubmit}>

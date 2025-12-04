@@ -6,6 +6,8 @@ export default function LoginNavbar() {
   const [user, setUser] = useState(null);
   const [settings, setSettings] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
+  const [businessName, setBusinessName] = useState(null);
+  const [userPosition, setUserPosition] = useState(null);
 
   useEffect(() => {
     const decoded = decodeToken();
@@ -16,11 +18,35 @@ export default function LoginNavbar() {
       });
     }
 
+    // Get business name from localStorage businesses array using selectedBusinessId
+    const selectedBusinessId = localStorage.getItem("selectedBusinessId");
+    const businesses = JSON.parse(localStorage.getItem("businesses") || "[]");
+    
+    if (selectedBusinessId && businesses.length > 0) {
+      const currentBusiness = businesses.find(
+        (b) => String(b.business_id) === String(selectedBusinessId)
+      );
+      if (currentBusiness) {
+        setBusinessName(currentBusiness.business_name);
+        // Set user position - could be 'Owner' or the position_name from business
+        if (currentBusiness.is_owner === 1 || currentBusiness.is_owner === true) {
+          setUserPosition("Owner");
+        } else if (currentBusiness.position_name) {
+          setUserPosition(currentBusiness.position_name);
+        }
+      }
+    }
+
     const fetchSettings = async () => {
       try {
         const res = await AxiosInstance.get("/business/settings");
         if (res.data.success) {
           setSettings(res.data.settings);
+          
+          // Use settings business_name as fallback if not already set from localStorage
+          if (res.data.settings?.business_name) {
+            setBusinessName(prev => prev || res.data.settings.business_name);
+          }
 
           if (res.data.settings?.business_id) {
             const logoRes = await AxiosInstance.get(
@@ -38,8 +64,12 @@ export default function LoginNavbar() {
 
     fetchSettings();
 
+    // Cleanup function for logo URL
     return () => {
-      if (logoUrl) URL.revokeObjectURL(logoUrl);
+      setLogoUrl(prevUrl => {
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        return null;
+      });
     };
   }, []);
 
@@ -68,14 +98,16 @@ export default function LoginNavbar() {
       <p className="font-bold text-xs sm:text-sm truncate">
         {user ? user.username : "Loading..."}
       </p>
-      {settings && (
+      {(settings || businessName) && (
         <>
           <p className="text-xs sm:text-sm truncate">
-            {settings.business_name}
+            {businessName || settings?.business_name || "No Business"}
           </p>
-          <p className="italic text-[10px] sm:text-xs text-gray-300 truncate">
-            {settings.name}
-          </p>
+          {userPosition && (
+            <p className="italic text-[10px] sm:text-xs text-gray-300 truncate">
+              {userPosition}
+            </p>
+          )}
         </>
       )}
     </div>

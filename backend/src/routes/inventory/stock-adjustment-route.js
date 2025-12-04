@@ -53,6 +53,7 @@ router.post("/production",
 router.get("/transactions", 
   authenticateToken, 
   requireBusinessAccess, 
+  requirePermission('stock_adjustment:read'),
   getInventoryTransactionsController
 );
 

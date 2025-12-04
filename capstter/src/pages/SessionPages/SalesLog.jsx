@@ -490,44 +490,63 @@ function SalesLog() {
       >
         {selectedReceipt && (
           <div className="space-y-4">
-            <div className="text-sm">
-              <p className="font-semibold">Receipt No: {selectedReceipt.name}</p>
-              <p className="text-gray-600">Employee: {selectedReceipt.username}</p>
-              <p className="text-gray-600">Date: {selectedReceipt.date} {selectedReceipt.time}</p>
-              <p className="text-gray-600">Status: {selectedReceipt.status}</p>
+            {/* Receipt Info Card */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 shadow-lg">
+              <p className="font-semibold text-white text-lg">{selectedReceipt.name}</p>
+              <div className="mt-2 space-y-1">
+                <p className="text-slate-300 text-sm flex justify-between">
+                  <span className="text-slate-400">Employee</span>
+                  <span>{selectedReceipt.username}</span>
+                </p>
+                <p className="text-slate-300 text-sm flex justify-between">
+                  <span className="text-slate-400">Date</span>
+                  <span>{selectedReceipt.date} {selectedReceipt.time}</span>
+                </p>
+                <p className="text-slate-300 text-sm flex justify-between">
+                  <span className="text-slate-400">Status</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    selectedReceipt.status === 'Complete' ? 'bg-emerald-500/20 text-emerald-400' :
+                    selectedReceipt.status === 'Canceled' ? 'bg-red-500/20 text-red-400' :
+                    'bg-yellow-500/20 text-yellow-400'
+                  }`}>{selectedReceipt.status}</span>
+                </p>
+              </div>
             </div>
 
-            <hr className="border-gray-400" />
-
-            {/* Items */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Items:</h3>
-              <div className="max-h-48 overflow-y-auto space-y-2">
+            {/* Items Card */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 shadow-lg">
+              <h3 className="font-semibold text-sm text-white mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Items
+              </h3>
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
                 {selectedReceipt.items && selectedReceipt.items.length > 0 ? (
                   selectedReceipt.items.map((item, idx) => (
-                    <div key={idx} className="text-sm text-gray-700 border-b pb-1">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{item.productName}</span>
-                        <span>x{item.quantity}</span>
+                    <div key={idx} className="bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 transition-all">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-white">{item.productName}</span>
+                        <span className="text-slate-300 bg-slate-700/50 px-2 py-0.5 rounded-full text-xs">x{item.quantity}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-600">
+                      <div className="flex justify-between text-xs text-slate-400 mt-1">
                         <span>₱{Number(item.price).toFixed(2)} each</span>
-                        <span>₱{(Number(item.price) * Number(item.quantity)).toFixed(2)}</span>
+                        <span className="text-slate-300">₱{(Number(item.price) * Number(item.quantity)).toFixed(2)}</span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">No items</p>
+                  <p className="text-sm text-slate-400 text-center py-4">No items</p>
                 )}
               </div>
             </div>
 
-            <hr className="border-gray-400" />
-
-            {/* Total */}
-            <div className="flex justify-between items-center font-bold text-lg">
-              <span>Total:</span>
-              <span className="text-green-600">₱{selectedReceipt.total}</span>
+            {/* Total Card */}
+            <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md rounded-xl p-4 border border-emerald-500/30 shadow-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-white font-medium">Total Amount</span>
+                <span className="text-2xl font-bold text-emerald-400">₱{selectedReceipt.total}</span>
+              </div>
             </div>
           </div>
         )}

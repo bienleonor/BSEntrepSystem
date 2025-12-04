@@ -32,6 +32,11 @@ function ProductList() {
 
   const navigate = useNavigate();
 
+  // Helper function to check if product is active (handles 1/0/"1"/"0"/true/false)
+  const isProductActive = (product) => {
+    return product.is_active === 1 || product.is_active === "1" || product.is_active === true;
+  };
+
   useEffect(() => {
     const businessId = localStorage.getItem("selectedBusinessId");
 
@@ -81,21 +86,24 @@ function ProductList() {
 
   // Toggle product active status
   const handleStatusToggle = async (product) => {
+    const currentlyActive = isProductActive(product);
+    const newStatus = !currentlyActive;
+    
     try {
       await axiosInstance.patch(`/inventory/products/${product.product_id}/status`, {
-        is_active: !product.is_active
+        is_active: newStatus
       });
 
-      // Update local state
+      // Update local state with consistent 1/0 values
       setProducts(prev =>
         prev.map(p =>
           p.product_id === product.product_id 
-            ? { ...p, is_active: !p.is_active } 
+            ? { ...p, is_active: newStatus ? 1 : 0 } 
             : p
         )
       );
 
-      toast.success("Status updated successfully.");
+      toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully.`);
     } catch (error) {
       console.error("Status update failed:", error);
       toast.error(error.response?.data?.message || "Failed to update status.");
@@ -338,13 +346,13 @@ function ProductList() {
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
             <p className="text-slate-400 text-xs uppercase tracking-wider">Active</p>
             <p className="text-2xl font-bold text-emerald-400 mt-1">
-              {products.filter(p => p.is_active).length}
+              {products.filter(p => isProductActive(p)).length}
             </p>
           </div>
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
             <p className="text-slate-400 text-xs uppercase tracking-wider">Inactive</p>
             <p className="text-2xl font-bold text-slate-400 mt-1">
-              {products.filter(p => !p.is_active).length}
+              {products.filter(p => !isProductActive(p)).length}
             </p>
           </div>
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
@@ -375,9 +383,9 @@ function ProductList() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
                   {/* Status Badge */}
-                  <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full ${product.is_active ? 'bg-emerald-500/20' : 'bg-slate-500/30'}`}>
-                    <span className={`text-xs font-medium ${product.is_active ? 'text-emerald-400' : 'text-slate-400'}`}>
-                      {product.is_active ? 'Active' : 'Inactive'}
+                  <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full ${isProductActive(product) ? 'bg-emerald-500/20' : 'bg-slate-500/30'}`}>
+                    <span className={`text-xs font-medium ${isProductActive(product) ? 'text-emerald-400' : 'text-slate-400'}`}>
+                      {isProductActive(product) ? 'Active' : 'Inactive'}
                     </span>
                   </div>
                   {/* Type Badge */}
@@ -406,9 +414,9 @@ function ProductList() {
                   <div className="flex gap-2 pt-3 border-t border-slate-700/50">
                     <button
                       onClick={() => handleStatusToggle(product)}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${product.is_active ? 'bg-slate-600/50 hover:bg-slate-600 text-slate-300' : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400'}`}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${isProductActive(product) ? 'bg-slate-600/50 hover:bg-slate-600 text-slate-300' : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400'}`}
                     >
-                      {product.is_active ? 'Deactivate' : 'Activate'}
+                      {isProductActive(product) ? 'Deactivate' : 'Activate'}
                     </button>
                     <button
                       onClick={() => handleEditOpen(product)}
@@ -498,9 +506,9 @@ function ProductList() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() => handleStatusToggle(product)}
-                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${product.is_active ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-slate-500/20 text-slate-400 hover:bg-slate-500/30'}`}
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${isProductActive(product) ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-slate-500/20 text-slate-400 hover:bg-slate-500/30'}`}
                         >
-                          {product.is_active ? 'Active' : 'Inactive'}
+                          {isProductActive(product) ? 'Active' : 'Inactive'}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-slate-400 text-sm">

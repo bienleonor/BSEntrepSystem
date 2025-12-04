@@ -151,7 +151,7 @@ const ProductListComponent = () => {
             </svg>
           </div>
           <h3 className="text-base font-medium text-slate-200 mb-1">No products found</h3>
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-400 text-md">
             {searchTerm ? "Try a different search term" : "Add products to see them here"}
           </p>
         </div>
@@ -179,7 +179,7 @@ const ProductListComponent = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
                     {/* Stock Status Badge */}
                     <div className={`absolute top-3 right-3 ${status.bg} backdrop-blur-sm px-2.5 py-1 rounded-full`}>
-                      <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+                      <span className={`text-md font-medium ${status.color}`}>{status.label}</span>
                     </div>
                     {/* Price Badge */}
                     <div className="absolute bottom-3 right-3 bg-slate-900/70 backdrop-blur-sm px-3 py-1 rounded-full">

@@ -1,7 +1,8 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId,Getallbusinesses,deleteBusinessById } from "../../models/business/business-model.js"
 import { generateToken } from "../../utils/generate-token.js";
 import { addEmployeeModel } from "../../models/business/business-employee-model.js";
-import { findAccessCodeByBusiness } from "../../models/access-codes-model.js";
+import { findAccessCodeByBusiness, findExistingBusinessByUserGroup } from "../../models/access-codes-model.js";
+import { fetchUserDetailsById } from "../../models/user-details-model.js";
 import { MODULES, ACTIONS } from "../../constants/modules-actions.js";
 import { logAuditBusinessAction } from "../../services/audit-logs-service.js";
 
@@ -14,6 +15,32 @@ export const registerBusiness = async (req, res) => {
 
     if (!business_name || !business_cat_id || !owner_id) {
       return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    // Get user details to check section and group
+    const userDetails = await fetchUserDetailsById(owner_id);
+    
+    if (!userDetails || !userDetails.section_id || !userDetails.group_id) {
+      return res.status(400).json({ 
+        error: "Please complete your profile with section and group information before registering a business." 
+      });
+    }
+
+    // Check if a business already exists with the same section and group combination
+    const existingBusiness = await findExistingBusinessByUserGroup(
+      userDetails.section_id, 
+      userDetails.group_id
+    );
+
+    if (existingBusiness) {
+      return res.status(409).json({ 
+        error: `A business already exists for your section and group: "${existingBusiness.business_name}". Only one business is allowed per section-group combination.`,
+        existing_business: {
+          business_id: existingBusiness.business_id,
+          business_name: existingBusiness.business_name,
+          access_code: existingBusiness.code
+        }
+      });
     }
 
     // Register business
