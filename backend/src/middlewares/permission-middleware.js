@@ -1,4 +1,22 @@
 import { getCachedPermissions } from '../services/permissionService.js'
+import pool from '../config/pool.js'
+
+/**
+ * Check if user is the owner of a business
+ */
+async function isBusinessOwner(userId, businessId) {
+  if (!userId || !businessId) return false
+  try {
+    const [rows] = await pool.execute(
+      'SELECT 1 FROM business_table WHERE business_id = ? AND owner_id = ?',
+      [businessId, userId]
+    )
+    return rows.length > 0
+  } catch (e) {
+    console.error('isBusinessOwner check failed:', e)
+    return false
+  }
+}
 
 /**
  * RBAC Middleware - requirePermission
@@ -7,8 +25,9 @@ import { getCachedPermissions } from '../services/permissionService.js'
  * 
  * HOW IT WORKS:
  * 1. Superadmin bypasses all checks (no DB query)
- * 2. Gets cached permissions (system role + business position + overrides)
- * 3. Checks if permissionKey exists in user's permissions
+ * 2. Business owners bypass checks for their own business
+ * 3. Gets cached permissions (system role + business position + overrides)
+ * 4. Checks if permissionKey exists in user's permissions
  * 
  * OVERRIDE FLOW (handled in permissionRepository):
  * - User's position has preset permissions from business_permission_table
@@ -35,10 +54,16 @@ export function requirePermission(permissionKey) {
         || req.body?.business_id 
         || null
       
+      // BYPASS for business owner - they have full access to their own business
+      const userId = req.user.user_id || req.user.userId || req.user.id
+      if (businessId && await isBusinessOwner(userId, businessId)) {
+        return next()
+      }
+      
       // Get cached permissions (includes overrides automatically)
       const { permissions, isSuperAdmin } = await getCachedPermissions({
         systemRoleName: req.user.system_role,
-        userId: req.user.user_id || req.user.id,
+        userId: userId,
         businessId
       })
 
