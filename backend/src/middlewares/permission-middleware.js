@@ -90,3 +90,27 @@ export function requireSystemRole(...allowedRoles) {
     return res.status(403).json({ error: 'Forbidden: Requires role ' + allowedRoles.join(' or ') })
   }
 }
+
+/**
+ * Allow users to access their own resource OR require superadmin for others
+ * Use for routes where users need to access their own data (e.g., for business creation/self-promotion)
+ */
+export function allowSelfOrSuperadmin(req, res, next) {
+  const userRole = (req.user?.system_role || '').toLowerCase()
+  const userId = req.user?.user_id || req.user?.userId || req.user?.id
+  const requestedId = req.params.id
+  
+  // Allow if superadmin
+  if (userRole === 'superadmin') {
+    return next()
+  }
+  
+  // Allow if accessing their own resource
+  if (userId && requestedId && String(userId) === String(requestedId)) {
+    return next()
+  }
+  
+  return res.status(403).json({ 
+    error: 'Forbidden: Can only access your own details or requires superadmin role' 
+  })
+}

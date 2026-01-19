@@ -94,7 +94,7 @@ export default function BusinessRegistration() {
 
       toast.success(`🔑 Access code generated: ${accessCodeRes.data.code}`);
 
-            try {
+        try {
         await axiosInstance.post("/auth/upgrade-role", {
           user_id: userId,
           role: "SuperUser"
