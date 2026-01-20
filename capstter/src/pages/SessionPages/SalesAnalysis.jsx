@@ -28,6 +28,7 @@ ChartJS.register(
   Legend
 );
 
+import { getBusinessId } from '../../utils/token';
 // Tab configurations
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '📊' },
@@ -140,7 +141,18 @@ function SalesAnalysis() {
     return dateRange;
   }, [timePeriod, dateRange, getDateRangeFromPeriod]);
 
-  const businessId = localStorage.getItem('selectedBusinessId') || '';
+  // Use getBusinessId helper to safely get businessId (like inventory-controller expects)
+  const businessId = getBusinessId();
+
+  // Prevent API calls if businessId is missing or invalid
+  useEffect(() => {
+    if (!businessId) {
+      setError('No business selected. Please select a business to view sales analysis.');
+      setLoading(false);
+      return;
+    }
+    // ...existing code for fetching data
+  }, [businessId, activeTab, effectiveDateRange.start, effectiveDateRange.end, groupBy, productLimit, ingredientLimit]);
 
   // Fetch data based on active tab
   useEffect(() => {
@@ -1276,17 +1288,19 @@ function SalesAnalysis() {
                     onClick={async () => {
                       try {
                         setLoading(true);
-                        const businessId = localStorage.getItem('business_id');
-                        
+                        const businessId = getBusinessId();
+                        if (!businessId) {
+                          alert('No business selected. Please select a business to generate a forecast.');
+                          setLoading(false);
+                          return;
+                        }
                         // Fetch real revenue forecast from backend
                         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/revenue/${businessId}?days=30&steps=7`);
-                        
                         if (!response.ok) {
                           const error = await response.json();
                           alert(error.message || 'Failed to generate forecast');
                           return;
                         }
-                        
                         const result = await response.json();
                         setRevenueForecastData(result);
                       } catch (err) {
