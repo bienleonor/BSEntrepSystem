@@ -84,8 +84,9 @@ function SalesAnalysis() {
   const { forecastRevenue, forecastCategoryDemand, forecastIngredientUsage, checkReorderAlert } = useForecast();
   const [revenueForecastData, setRevenueForecastData] = useState(null);
   const [ingredientForecasts, setIngredientForecasts] = useState([]);
-  const [categoryForecastData, setCategoryForecastData] = useState([]);
+  const [categoryForecastData, setCategoryForecastData] = useState(null);
   const [microserviceReorderAlerts, setMicroserviceReorderAlerts] = useState([]);
+  const [selectedCategoryForForecast, setSelectedCategoryForForecast] = useState('');
 
   // Helper to format duration in seconds to readable format
   const formatDuration = (seconds) => {
@@ -237,6 +238,12 @@ function SalesAnalysis() {
             break;
           }
           case 'forecast': {
+            // Load categories if not already loaded
+            if (!salesByCategory || salesByCategory.length === 0) {
+              const catData = await AnalysisApi.getSalesByCategory(businessId);
+              setSalesByCategory(catData);
+            }
+            
             const [forecast, demand, stockout, alerts] = await Promise.all([
               AnalysisApi.getSalesForecast(businessId),
               AnalysisApi.getCategoryDemandForecast(businessId),
@@ -1299,7 +1306,7 @@ function SalesAnalysis() {
                     onClick={async () => {
                       try {
                         setLoading(true);
-                        const businessId = localStorage.getItem('business_id');
+                        const businessId = localStorage.getItem('selectedBusinessId');
                         
                         // Fetch reorder alerts from backend
                         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/reorder-alerts/${businessId}?leadTime=3&safetyStock=20`);
@@ -1324,7 +1331,93 @@ function SalesAnalysis() {
                   >
                     🔔 Check Reorder Alerts
                   </button>
+                  
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={selectedCategoryForForecast}
+                      onChange={(e) => setSelectedCategoryForForecast(e.target.value)}
+                      className="bg-gray-700 text-white px-3 py-3 rounded-lg border border-gray-600 flex-1"
+                    >
+                      <option value="">Select a category...</option>
+                      {salesByCategory?.map((cat) => (
+                        <option key={cat.category_id} value={cat.category_id}>
+                          {cat.category_name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={async () => {
+                        if (!selectedCategoryForForecast) {
+                          alert('Please select a category first');
+                          return;
+                        }
+                        try {
+                          setLoading(true);
+                          const businessId = localStorage.getItem('selectedBusinessId');
+                          
+                          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/category/${businessId}/${selectedCategoryForForecast}?days=30&steps=14`);
+                          
+                          if (!response.ok) {
+                            const error = await response.json();
+                            alert(error.message || 'Failed to forecast category demand');
+                            return;
+                          }
+                          
+                          const result = await response.json();
+                          setCategoryForecastData(result);
+                        } catch (err) {
+                          console.error('Category forecast error:', err);
+                          alert('Failed to forecast category demand: ' + err.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading || !selectedCategoryForForecast}
+                      className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg font-medium transition whitespace-nowrap"
+                    >
+                      📈 Forecast Category
+                    </button>
+                  </div>
                 </div>
+
+                {/* Category Demand Forecast Results */}
+                {categoryForecastData && (
+                  <div className="mb-6">
+                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                      📈 Category Demand Forecast (Next 14 Days)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <KPICard
+                        title="Total Forecasted Demand"
+                        value={categoryForecastData.total_forecasted_demand?.toFixed(0) ?? 'N/A'}
+                        subtitle="Next 14 days"
+                        color="orange"
+                      />
+                      <KPICard
+                        title="Average Daily Demand"
+                        value={(categoryForecastData.total_forecasted_demand / 14)?.toFixed(1) ?? 'N/A'}
+                        subtitle="Predicted average"
+                        color="yellow"
+                      />
+                      <KPICard
+                        title="Trend"
+                        value={categoryForecastData.trend_analysis?.trend ?? 'N/A'}
+                        subtitle={`${categoryForecastData.trend_analysis?.percentage_change > 0 ? '+' : ''}${categoryForecastData.trend_analysis?.percentage_change?.toFixed(1) ?? 'N/A'}%`}
+                        color={categoryForecastData.trend_analysis?.trend === 'growing' ? 'green' : 'red'}
+                      />
+                    </div>
+                    {categoryForecastData.forecast && categoryForecastData.forecast.length > 0 && (
+                      <DataTable
+                        data={categoryForecastData.forecast}
+                        columns={[
+                          { key: 'date', label: 'Date' },
+                          { key: 'value', label: 'Forecasted Demand', format: v => Number(v).toFixed(1) },
+                        ]}
+                        maxHeight="300px"
+                      />
+                    )}
+                  </div>
+                )}
 
                 {/* Revenue Forecast Results */}
                 {revenueForecastData && (
@@ -1404,48 +1497,11 @@ function SalesAnalysis() {
                   </div>
                 )}
 
-                {/* Category Demand Forecasts */}
-                {categoryForecastData.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                      📦 Category Demand Forecasts
-                    </h3>
-                    {categoryForecastData.map((forecast, idx) => (
-                      <div key={idx} className="mb-4 bg-slate-700/50 rounded-lg p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                          <div>
-                            <div className="text-gray-400 text-sm">Category</div>
-                            <div className="text-white font-bold">{forecast.category_id ?? 'N/A'}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400 text-sm">Total Forecasted Demand</div>
-                            <div className="text-white font-bold">{forecast.total_forecasted_demand?.toFixed(2) ?? 'N/A'}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400 text-sm">Trend</div>
-                            <div className={`font-bold ${forecast.trend_analysis?.trend === 'growing' ? 'text-green-400' : 'text-red-400'}`}>
-                              {forecast.trend_analysis?.trend === 'growing' ? '📈' : '📉'} {forecast.trend_analysis?.trend ?? 'N/A'} ({forecast.trend_analysis?.percentage_change?.toFixed(2) ?? 'N/A'}%)
-                            </div>
-                          </div>
-                        </div>
-                        <DataTable
-                          data={forecast.forecast}
-                          columns={[
-                            { key: 'date', label: 'Date' },
-                            { key: 'value', label: 'Forecasted Demand', format: v => Number(v).toFixed(2) },
-                          ]}
-                          maxHeight="200px"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* Microservice Reorder Alerts */}
                 {microserviceReorderAlerts.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                      🔔 AI Reorder Alerts
+                      🔔 AI Reorder Alerts ({microserviceReorderAlerts.length} products)
                     </h3>
                     {microserviceReorderAlerts.map((alert, idx) => (
                       <div 
@@ -1454,6 +1510,7 @@ function SalesAnalysis() {
                           alert.alert_status === 'CRITICAL' ? 'bg-red-900/30 border-red-700/50' :
                           alert.alert_status === 'WARNING' ? 'bg-yellow-900/30 border-yellow-700/50' :
                           alert.alert_status === 'ATTENTION' ? 'bg-blue-900/30 border-blue-700/50' :
+                          alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? 'bg-gray-900/30 border-gray-700/50' :
                           'bg-green-900/30 border-green-700/50'
                         }`}
                       >
@@ -1463,14 +1520,20 @@ function SalesAnalysis() {
                               alert.alert_status === 'CRITICAL' ? 'text-red-400' :
                               alert.alert_status === 'WARNING' ? 'text-yellow-400' :
                               alert.alert_status === 'ATTENTION' ? 'text-blue-400' :
+                              alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? 'text-gray-400' :
                               'text-green-400'
                             }`}>
-                              {alert.alert_status} - {alert.ingredient_id}
+                              {alert.alert_status} - {alert.product_name || alert.ingredient_id}
                             </div>
+                            {alert.message && (
+                              <div className="text-gray-400 text-sm mb-2 italic">
+                                {alert.message}
+                              </div>
+                            )}
                             <div className="text-gray-300 text-sm space-y-1">
                               <div>Current Stock: {alert.current_stock ?? 'N/A'}</div>
-                              <div>Reorder Point: {alert.reorder_point ?? 'N/A'}</div>
-                              <div>Projected Stock (in {alert.lead_time_days ?? 0} days): {alert.projected_stock?.toFixed(2) ?? 'N/A'}</div>
+                              {alert.reorder_point && <div>Reorder Point: {alert.reorder_point?.toFixed(0) ?? 'N/A'}</div>}
+                              {alert.projected_stock && <div>Projected Stock (in {alert.lead_time_days ?? 0} days): {alert.projected_stock?.toFixed(2) ?? 'N/A'}</div>}
                             </div>
                           </div>
                           <div className="text-right">
@@ -1482,6 +1545,8 @@ function SalesAnalysis() {
                                   ⚠️ Reorder in {alert.days_until_reorder ?? 'N/A'} days
                                 </div>
                               </>
+                            ) : alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? (
+                              <div className="text-gray-400 font-medium">ℹ️ Cannot Predict</div>
                             ) : (
                               <div className="text-green-400 font-medium">✅ Stock Sufficient</div>
                             )}

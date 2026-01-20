@@ -148,19 +148,39 @@ router.get('/reorder-alerts/:businessId', async (req, res) => {
     const leadTimeDays = parseInt(req.query.leadTime) || 3;
     const safetyStock = parseInt(req.query.safetyStock) || 20;
     
+    console.log(`Fetching reorder alerts for business ${businessId}`);
+    
     // Fetch inventory data with usage rates
     const inventoryItems = await forecastDataModel.getInventoryForReorderAlerts(businessId);
+    
+    console.log(`Found ${inventoryItems.length} inventory items`);
+    
+    if (inventoryItems.length === 0) {
+      return res.json([]);
+    }
     
     // Call forecast microservice for each item
     const alerts = await Promise.all(
       inventoryItems.slice(0, 10).map(async (item) => {
         try {
+          console.log(`Processing product ${item.product_id}: ${item.product_name}`);
+          
           // Get usage history for better prediction
           const usageHistory = await forecastDataModel.getProductUsageHistory(businessId, item.product_id, 20);
           
+          console.log(`Product ${item.product_id} has ${usageHistory.length} days of history`);
+          
           if (usageHistory.length < 5) {
-            // Not enough data, skip
-            return null;
+            console.log(`Skipping ${item.product_name} - insufficient history`);
+            // Return a simple alert without forecast
+            return {
+              ingredient_id: item.product_id,
+              product_name: item.product_name,
+              current_stock: parseFloat(item.current_stock),
+              alert_status: 'INSUFFICIENT_DATA',
+              should_reorder: false,
+              message: 'Not enough sales history for prediction'
+            };
           }
           
           const reorderPoint = item.avg_daily_usage * (leadTimeDays + 2);
@@ -169,7 +189,7 @@ router.get('/reorder-alerts/:businessId', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              ingredient_id: item.product_id,
+              ingredient_id: item.product_id.toString(),
               current_stock: parseFloat(item.current_stock),
               usage_history: usageHistory,
               reorder_point: reorderPoint,
@@ -179,21 +199,42 @@ router.get('/reorder-alerts/:businessId', async (req, res) => {
             signal: AbortSignal.timeout(10000)
           });
           
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Forecast service error for ${item.product_name}:`, errorText);
+            return {
+              ingredient_id: item.product_id,
+              product_name: item.product_name,
+              current_stock: parseFloat(item.current_stock),
+              alert_status: 'ERROR',
+              should_reorder: false,
+              message: 'Forecast service error'
+            };
+          }
+          
           const alert = await response.json();
+          console.log(`Alert generated for ${item.product_name}:`, alert.alert_status);
+          
           return {
             ...alert,
             product_name: item.product_name
           };
         } catch (err) {
           console.error(`Alert error for product ${item.product_id}:`, err.message);
-          return null;
+          return {
+            ingredient_id: item.product_id,
+            product_name: item.product_name,
+            current_stock: parseFloat(item.current_stock),
+            alert_status: 'ERROR',
+            should_reorder: false,
+            message: err.message
+          };
         }
       })
     );
     
-    // Filter out nulls and return
-    const validAlerts = alerts.filter(a => a !== null);
-    res.json(validAlerts);
+    console.log(`Returning ${alerts.length} alerts`);
+    res.json(alerts);
   } catch (error) {
     console.error('Reorder alerts error:', error.message);
     res.status(500).json({
