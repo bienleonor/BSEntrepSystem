@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { createUser, findUserByUsername } from '../models/user-models.js';
 import { generateToken } from '../utils/generate-token.js';
 import { findRoleById, findRoleByUserId, assignRoleToUser, findRoleByName } from '../models/sys-role-model.js';
+import { getEffectivePermissions } from '../repositories/permissionRepository.js';
 import { findBusinessByUserId } from '../models/business/business-model.js';
 import { fetchUserDetailsById } from "../models/user-details-model.js";
 
@@ -38,6 +39,21 @@ export const login = async (req, res) => {
       system_role: systemRole
     });
 
+    // Determine selected business context for permissions (if any)
+    const selectedBusinessId = req.headers['x-business-id'] || null;
+
+    // Compute effective permissions (system ∪ business)
+    let permissions = [];
+    try {
+      permissions = await getEffectivePermissions({
+        systemRoleName: systemRole,
+        userId: user.user_id,
+        businessId: selectedBusinessId
+      });
+    } catch (permErr) {
+      console.warn('Permission computation failed:', permErr?.message || permErr);
+    }
+
     res.json({
       token,
       user: {
@@ -46,7 +62,8 @@ export const login = async (req, res) => {
         system_role: systemRole,
         user_details_completed
       },
-      businesses
+      businesses,
+      permissions
     });
 
   } catch (err) {

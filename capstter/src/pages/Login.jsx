@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { useAuth } from "../hooks/UseAuth";
 import axiosInstance from "../utils/axiosInstance";
+import roleConfig, { defaultRoleTargets } from "../config/roleConfig";
 
 
 const Login = () => {
@@ -32,9 +33,11 @@ const Login = () => {
       // 2️⃣ Save token & set auth context
       login(data.token);
 
-      // 3️⃣ Save user info locally
-      const user = data.user;
+      // 3️⃣ Save user info locally and normalize role property
+      const user = data.user || {};
       const businesses = data.businesses || [];
+      // normalize server user payload so it always has `role`
+      user.role = user.role || user.system_role || null;
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("businesses", JSON.stringify(businesses));
       localStorage.removeItem("selectedBusinessId");
@@ -46,30 +49,20 @@ const Login = () => {
         return navigate("/userdetails");
       }
 
-      // SuperAdmin / Admin flows
-      if (user.system_role === "superadmin" || user.system_role === "admin") {
-        if (businesses.length === 0) return navigate("/businessregistration");
+      // Dynamic role-driven navigation using roleConfig
+      const role = user.role || 'unknown'
+      const targets = roleConfig[role] || defaultRoleTargets
 
-        if (businesses.length === 1) {
-          localStorage.setItem("selectedBusinessId", businesses[0].business_id);
-          return navigate("/UserDashboard");
-        }
-
-        return navigate("/busmanage");
+      if (businesses.length === 0) {
+        return navigate(targets.noBusiness)
       }
 
-      if (user.system_role === "user" || user.system_role === "superuser") {
-        if (businesses.length === 0) return navigate("/accesscode");
-
-        if (businesses.length === 1) {
-          localStorage.setItem("selectedBusinessId", businesses[0].business_id);
-          return navigate("/UserDashboard");
-        }
-
-        return navigate("/busmanage");
+      if (businesses.length === 1) {
+        localStorage.setItem("selectedBusinessId", businesses[0].business_id);
+        return navigate(targets.oneBusiness)
       }
 
-      toast.error("Unknown system role");
+      return navigate(targets.multiBusiness)
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.error || "Network error");

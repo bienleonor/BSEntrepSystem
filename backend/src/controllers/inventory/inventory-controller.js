@@ -1,8 +1,12 @@
 import { 
   addStockIn, 
   applyMultiInventoryChange,
-  processProduction  // ✅ Add this import
+  processProduction, 
 } from "../../services/inventory-services.js";
+import { logBusinessAction } from '../../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
+
+import { getAllInventoryTransactions } from "../../models/inventory/inventory-model.js";
 
 // Stock-in controller (Add Stocks)
 
@@ -33,6 +37,20 @@ export const stockInController = async (req, res) => {
       message: "Stock added successfully",
       data: result
     });
+
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.CREATE,
+        table_name: 'inventory_table',
+        record_id: Number(result?.transactionId ?? 0),
+        old_data: null,
+        new_data: { items_count: items.length, type: 'stock_in', stockin_id: Number(result?.stockinId ?? 0), transaction_id: Number(result?.transactionId ?? 0) },
+        req,
+      });
+    } catch (e) {}
 
   } catch (err) {
     console.error("❌ Stock-in error:", err);
@@ -91,6 +109,20 @@ export const stockOutController = async (req, res) => {
       data: result
     });
 
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'inventory_table',
+        record_id: Number((result && result[0] && result[0].transactionId) ? result[0].transactionId : 0),
+        old_data: null,
+        new_data: { items_count: items.length, type: 'stock_out', reason, transaction_ids: (result || []).map(r => r.transactionId).filter(Boolean) },
+        req,
+      });
+    } catch (e) {}
+
   } catch (err) {
     console.error("❌ Stock-out error:", err);
     res.status(500).json({ 
@@ -136,6 +168,20 @@ export const correctionController = async (req, res) => {
       data: result
     });
 
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'inventory_table',
+        record_id: Number((result && result[0] && result[0].transactionId) ? result[0].transactionId : 0),
+        old_data: null,
+        new_data: { items_count: items.length, type: 'correction', transaction_ids: (result || []).map(r => r.transactionId).filter(Boolean) },
+        req,
+      });
+    } catch (e) {}
+
   } catch (err) {
     console.error("❌ Correction error:", err);
     res.status(500).json({ 
@@ -175,11 +221,47 @@ export const productionController = async (req, res) => {
       data: result
     });
 
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.INVENTORY,
+        action_id: ACTIONS.CREATE,
+        table_name: 'inventory_table',
+        record_id: Number((result && result[0] && result[0].transactionId) ? result[0].transactionId : 0),
+        old_data: null,
+        new_data: { items_count: items.length, type: 'production', transaction_ids: (result || []).map(r => r.transactionId).filter(Boolean) },
+        req,
+      });
+    } catch (e) {}
+
   } catch (err) {
     console.error("❌ Production error:", err);
     res.status(500).json({ 
       success: false,
       error: err.message || "Internal server error" 
+    });
+  }
+};
+
+export const getInventoryTransactionsController = async (req, res) => {
+  console.log("📥 Get Inventory Transactions Headers:", req.headers);
+  console.log("👤 User:", req.user) ;
+  try {
+    const businessId = req.businessId;
+    if (!businessId) {
+      return res.status(400).json({ success: false, error: "Missing businessId" });
+    }
+    const transactions = await getAllInventoryTransactions(businessId);
+    res.status(200).json({
+      success: true,
+      data: transactions
+    });
+  } catch (err) {
+    console.error("❌ Get Inventory Transactions error:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message || "Internal server error"
     });
   }
 };

@@ -1,4 +1,5 @@
 import pool from '../../config/pool.js';
+import { recordTransactionWithDetails } from './inventory-model.js';
 
 /**
  * Create a stock-in record
@@ -52,51 +53,58 @@ export const validateSimpleProducts = async (items) => {
  * @param {Number} stockinId
  * @param {Array} items - [{ productId, quantity, unit_price }]
  */
-export const insertStockInItems = async (stockinId, items) => {
-  const connection = await pool.getConnection();
-  
-  try {
-    await connection.beginTransaction();
+export const insertStockInItems = async (stockinId, items, { businessId = null, userId = null } = {}) => {
+  // Instead of inserting into deprecated stockin_item_table, record an inventory transaction with details
+  // Build details for inventory_transaction_details
+  const details = [];
 
-    for (const item of items) {
-      const { productId, quantity, unit_price } = item;
+  // Validate simple products and build details
+  for (const item of items) {
+    const { productId, quantity, unit_price } = item;
 
-      // ✅ Validate product type
-      const [productRows] = await connection.execute(
-        `SELECT product_id, name, product_type FROM product_table WHERE product_id = ?`,
-        [productId]
-      );
+    // Read product and its current inventory unit (unit_id moved to inventory_table)
+    const [productRows] = await pool.execute(
+      `SELECT p.product_id, p.name, p.product_type, i.unit_id
+       FROM product_table p
+       LEFT JOIN inventory_table i ON p.product_id = i.product_id
+       WHERE p.product_id = ?`,
+      [productId]
+    );
 
-      if (productRows.length === 0) {
-        throw new Error(`Product ${productId} not found`);
-      }
-
-      const product = productRows[0];
-      
-      if (product.product_type !== 'simple') {
-        throw new Error(
-          `Cannot stock-in ${product.product_type} product "${product.name}". ` +
-          `Only simple products allowed in stock-in.`
-        );
-      }
-
-      // ✅ Calculate total_price for each item
-      const total_price = Number(quantity) * Number(unit_price);
-
-      await connection.execute(
-        `INSERT INTO stockin_item_table (stockin_id, product_id, quantity, unit_price, total_price)
-         VALUES (?, ?, ?, ?, ?)`,
-        [stockinId, productId, quantity, unit_price, total_price]
-      );
+    if (productRows.length === 0) {
+      throw new Error(`Product ${productId} not found`);
     }
 
-    await connection.commit();
-  } catch (err) {
-    await connection.rollback();
-    throw err;
-  } finally {
-    connection.release();
+    const product = productRows[0];
+    if (product.product_type !== 'simple') {
+      throw new Error(`Cannot stock-in ${product.product_type} product "${product.name}". Only simple products allowed in stock-in.`);
+    }
+
+    const qtyChange = Number(quantity);
+    const unitId = product.unit_id ?? null;
+    const unitCost = Number(unit_price) || 0;
+    const totalCost = unitCost * Math.abs(qtyChange);
+
+    details.push({ productId, qtyChange, unitId, unitCost, totalCost });
+
+    // If a unit price is provided, record it into product_cost_table
+    if (!Number.isNaN(unitCost) && unitCost > 0) {
+      await pool.execute(
+        `INSERT INTO product_cost_table (product_id, cost, valid_from) VALUES (?, ?, NOW())`,
+        [productId, unitCost]
+      );
+    }
   }
+
+  // Create inventory transaction with reference to the stockin header
+  const { transactionId } = await recordTransactionWithDetails({
+    businessId,
+    userId,
+    transactionType: 'purchase',
+    reference: `stockin:${stockinId}`,
+    details,
+  });
+  return { transactionId };
 };
 
 /**
@@ -104,36 +112,60 @@ export const insertStockInItems = async (stockinId, items) => {
  * @param {Number} stockinId
  * @param {Array} items - [{ productId, quantity, unit_price }]
  */
-export const insertStockInItemsUnsafe = async (stockinId, items) => {
-  const connection = await pool.getConnection();
-  
-  try {
-    await connection.beginTransaction();
+export const insertStockInItemsUnsafe = async (stockinId, items, { businessId = null, userId = null } = {}) => {
+  // Unsafe insert: directly create inventory transaction details without product-type validation
+  const details = [];
+  // For each item, fetch product/inventory info and only accept client unit_multiplier when product is a pack
+  for (const item of items) {
+    const qtyChange = Number(item.quantity);
+    const unitCost = Number(item.unit_price) || 0;
 
-    for (const item of items) {
-      const { productId, quantity, unit_price } = item;
-      const total_price = Number(quantity) * Number(unit_price);
+    // fetch product + inventory row to determine pack status
+    const [prodRows] = await pool.execute(
+      `SELECT p.product_id, p.product_type, i.unit_multiplier FROM product_table p LEFT JOIN inventory_table i ON p.product_id = i.product_id WHERE p.product_id = ?`,
+      [item.productId]
+    );
 
-      await connection.execute(
-        `INSERT INTO stockin_item_table (stockin_id, product_id, quantity, unit_price, total_price)
-         VALUES (?, ?, ?, ?, ?)`,
-        [stockinId, productId, quantity, unit_price, total_price]
+    if (prodRows.length === 0) throw new Error(`Product ${item.productId} not found`);
+
+    const prod = prodRows[0];
+    const invUnitMultiplier = Number(prod.unit_multiplier ?? 1);
+    const isPack = (invUnitMultiplier > 1) || (String(prod.product_type || '').toLowerCase() === 'pack');
+
+    const providedMultiplier = Number(item.unit_multiplier ?? 1);
+    const unitMultiplier = isPack ? providedMultiplier : 1;
+
+    details.push({
+      productId: item.productId,
+      qtyChange,
+      // Prefer provided unit_id, otherwise we'll let recordTransactionWithDetails resolve from inventory/product
+      unitId: item.unit_id ?? null,
+      unitMultiplier,
+      unitCost,
+      totalCost: unitCost * Math.abs(qtyChange),
+    });
+
+    // Record unit price into product_cost_table when provided
+    if (!Number.isNaN(unitCost) && unitCost > 0) {
+      await pool.execute(
+        `INSERT INTO product_cost_table (product_id, cost, valid_from) VALUES (?, ?, NOW())`,
+        [item.productId, unitCost]
       );
     }
-
-    await connection.commit();
-  } catch (err) {
-    await connection.rollback();
-    throw err;
-  } finally {
-    connection.release();
   }
+
+  await recordTransactionWithDetails({
+    businessId,
+    userId,
+    transactionType: 'purchase',
+    reference: `stockin:${stockinId}`,
+    details,
+  });
 };
 
-/**
- * Get all stock-in records for a business
- * @param {Number} businessId
- */
+
+//  Get all stock-in records for a business
+
 export const getStockInsByBusiness = async (businessId) => {
   const [rows] = await pool.execute(
     `SELECT 
@@ -180,20 +212,23 @@ export const getStockInDetails = async (stockinId) => {
 
   // Get stock-in items with product types
   const [items] = await pool.execute(
-    `SELECT 
-       sii.stockin_item_id,
-       sii.product_id,
-       sii.quantity,
-       sii.unit_price,
-       sii.total_price,
+     `SELECT 
+       d.detail_id,
+       d.product_id,
+       d.qty_change AS quantity,
+       d.unit_multiplier,
+       d.total_quantity,
+       d.unit_cost AS unit_price,
+       d.total_cost AS total_price,
        p.name AS product_name,
        p.product_type,
        u.name AS unit_name
-     FROM stockin_item_table sii
-     LEFT JOIN product_table p ON sii.product_id = p.product_id
-     LEFT JOIN unit_table u ON p.unit_id = u.unit_id
-     WHERE sii.stockin_id = ?`,
-    [stockinId]
+     FROM inventory_transaction_details d
+     JOIN inventory_transactions t ON d.invent_transact_id = t.transaction_id AND t.reference = ?
+     LEFT JOIN product_table p ON d.product_id = p.product_id
+     LEFT JOIN unit_table u ON d.unit_id = u.unit_id
+     WHERE t.reference = ?`,
+    [ `stockin:${stockinId}`, `stockin:${stockinId}` ]
   );
 
   return {
@@ -212,13 +247,24 @@ export const deleteStockIn = async (stockinId) => {
   try {
     await connection.beginTransaction();
 
-    // Delete items first
+    // Delete inventory transaction details and header associated with this stockin via reference
+    const reference = `stockin:${stockinId}`;
+
+    // Delete detail rows
     await connection.execute(
-      `DELETE FROM stockin_item_table WHERE stockin_id = ?`,
-      [stockinId]
+      `DELETE d FROM inventory_transaction_details d
+       JOIN inventory_transactions t ON d.invent_transact_id = t.transaction_id
+       WHERE t.reference = ?`,
+      [reference]
     );
 
-    // Delete header
+    // Delete transaction headers
+    await connection.execute(
+      `DELETE FROM inventory_transactions WHERE reference = ?`,
+      [reference]
+    );
+
+    // Delete stockin header
     const [result] = await connection.execute(
       `DELETE FROM stockin_table WHERE stockin_id = ?`,
       [stockinId]

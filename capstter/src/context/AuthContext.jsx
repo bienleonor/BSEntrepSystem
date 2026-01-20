@@ -21,7 +21,12 @@ export const AuthProvider = ({ children }) => {
       removeToken();
       setUser(null);
     } else {
-      setUser(decoded); // contains user_id, role, name, etc
+      // Normalize role field: some tokens include `role`, others `system_role`.
+      const normalized = { ...decoded }
+      if (!normalized.role && normalized.system_role) {
+        normalized.role = normalized.system_role
+      }
+      setUser(normalized); // now always use `user.role` in app
     }
 
     setLoading(false);

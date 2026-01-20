@@ -1,17 +1,38 @@
 // routes/recipeRoutes.js
 import express from 'express';
-// Corrected controller file name to match actual `recipe-controller.js`
 import { addOrUpdateRecipe, getRecipe } from '../../controllers/inventory/recipe-controller.js';
 import { authenticateToken } from '../../middlewares/auth-middleware.js';
+import { requireBusinessAccess } from '../../middlewares/business-access.js';
+import { requirePermission } from '../../middlewares/permission-middleware.js';
 
 const router = express.Router();
 
-// Add or update recipe ingredients
-router.post('/', authenticateToken, addOrUpdateRecipe);
+// ============================================
+// RECIPE ROUTES (Requires recipe permission)
+// ============================================
 
-// Get recipe ingredients for a product (singular path)
-router.get('/:productId', authenticateToken, getRecipe);
-// Added plural alias to match frontend call `/inventory/recipes/:productId`
-router.get('/recipes/:productId', authenticateToken, getRecipe);
+// Add or update recipe ingredients - requires recipe:create
+router.post('/', 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('recipe:create'), 
+  addOrUpdateRecipe
+);
+
+// Get recipe ingredients - requires recipe:read
+router.get('/:productId', 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('recipe:read'), 
+  getRecipe
+);
+
+// Alias for frontend compatibility
+router.get('/recipes/:productId', 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('recipe:read'), 
+  getRecipe
+);
 
 export default router;

@@ -6,6 +6,8 @@ import { getIngredientsByProduct } from "../models/inventory/recipe-model.js";
 import { getComboByParent } from "../models/inventory/combo-model.js";
 import { createStockIn, validateSimpleProducts, insertStockInItems } from "../models/inventory/stockin-model.js";
 import { convertAmount } from "../services/unit-service.js"; // ✅ ADD THIS
+import { recordTransactionWithDetails } from "../models/inventory/inventory-model.js";
+import pool from "../config/pool.js";
 
 /**
  * Stock-in (purchase)
@@ -24,20 +26,10 @@ export async function addStockIn({ businessId, userId, items }) {
   }
 
   const stockinId = await createStockIn({ businessId, userId, totalAmount });
-  await insertStockInItems(stockinId, items);
+  // insertStockInItems will record an inventory transaction header + details and update inventory_table
+  const { transactionId } = await insertStockInItems(stockinId, items, { businessId, userId });
 
-  for (const item of items) {
-    await recordInventoryTransactionAndUpdateInventory({
-      productId: item.productId,
-      change_qty: item.quantity,
-      reason: "purchase",
-      businessId,
-      userId,
-      reference: `stockin:${stockinId}`,
-    });
-  }
-
-  return { stockinId, totalAmount };
+  return { stockinId, transactionId, totalAmount };
 }
 
 /**
@@ -62,6 +54,7 @@ export async function applyMultiInventoryChange({ items, reason, businessId, use
     });
 
     results.push(res);
+
   }
 
   return results;
@@ -90,9 +83,12 @@ export async function processProduction({ items, businessId, userId }) {
       throw new Error(`Cannot produce simple product: ${product.name}`);
     }
 
-    // ===========================
-    // 1️⃣ PROCESS RECIPE PRODUCTS
-    // ===========================
+    // Build a single transaction (header + details) for this production item
+    const details = [];
+    // Track total batch cost derived from ingredients/components
+    let totalBatchCost = 0;
+
+    // 1️⃣ PROCESS RECIPE PRODUCTS (consume ingredients)
     if (product.product_type === "recipe") {
       const ingredients = await getIngredientsByProduct(productId);
 
@@ -102,9 +98,8 @@ export async function processProduction({ items, businessId, userId }) {
           throw new Error(`Ingredient product ${ing.ingredient_product_id} not found`);
         }
 
-        const rawUsage = ing.consumption_amount * quantity;
+        const rawUsage = (ing.consumption_amount) * quantity;
 
-        // Fallback: if recipe unit missing, use inventory unit
         const fromUnitId = ing.ingredient_unit_id || ingredientProduct.unit_id;
         const toUnitId = ingredientProduct.unit_id;
 
@@ -121,27 +116,34 @@ export async function processProduction({ items, businessId, userId }) {
           }
         }
 
-        await recordInventoryTransactionAndUpdateInventory({
+        // Fetch latest unit cost of ingredient (fallback to product.price or 0)
+        const [costRowsIng] = await pool.execute(
+          `SELECT cost FROM product_cost_table WHERE product_id = ? ORDER BY valid_from DESC LIMIT 1`,
+          [ing.ingredient_product_id]
+        );
+        const ingredientUnitCost = Number(costRowsIng[0]?.cost ?? ingredientProduct.price ?? 0);
+        const ingredientTotalCost = ingredientUnitCost * Math.abs(convertedUsage);
+
+        totalBatchCost += ingredientTotalCost;
+
+        details.push({
           productId: ing.ingredient_product_id,
-          change_qty: -Math.abs(convertedUsage),
-          reason: "production",
-          reference: `production:${productId}`,
-          businessId,
-          userId,
+          qtyChange: -Math.abs(convertedUsage),
+          unitId: toUnitId,
+          unitCost: ingredientUnitCost,
+          totalCost: ingredientTotalCost,
         });
       }
     }
 
-    // ==============================
-    // 2️⃣ PROCESS COMPOSITE PRODUCTS
-    // ==============================
+    // 2️⃣ PROCESS COMPOSITE PRODUCTS (consume components)
     if (product.product_type === "composite") {
       const combos = await getComboByParent(productId);
 
       for (const combo of combos) {
-        const childProduct = await getProductById(combo.child_product_id);
+        const childProduct = await getProductById(combo.component_product_id);
         if (!childProduct) {
-          throw new Error(`Component product ${combo.child_product_id} not found`);
+          throw new Error(`Component product ${combo.component_product_id} not found`);
         }
 
         const rawUsage = combo.quantity * quantity;
@@ -162,30 +164,64 @@ export async function processProduction({ items, businessId, userId }) {
           }
         }
 
-        await recordInventoryTransactionAndUpdateInventory({
-          productId: combo.child_product_id,
-          change_qty: -Math.abs(convertedUsage),
-          reason: "production",
-          reference: `production:${productId}`,
-          businessId,
-          userId,
+        const [costRowsComp] = await pool.execute(
+          `SELECT cost FROM product_cost_table WHERE product_id = ? ORDER BY valid_from DESC LIMIT 1`,
+          [combo.component_product_id]
+        );
+        const componentUnitCost = Number(costRowsComp[0]?.cost ?? childProduct.price ?? 0);
+        const componentTotalCost = componentUnitCost * Math.abs(convertedUsage);
+
+        totalBatchCost += componentTotalCost;
+
+        details.push({
+          productId: combo.component_product_id,
+          qtyChange: -Math.abs(convertedUsage),
+          unitId: toUnitId,
+          unitCost: componentUnitCost,
+          totalCost: componentTotalCost,
         });
       }
     }
 
-    // =============================
-    // 3️⃣ ADD FINISHED PRODUCT STOCK
-    // =============================
-    await recordInventoryTransactionAndUpdateInventory({
+    // 3️⃣ ADD FINISHED PRODUCT STOCK (produce finished goods)
+    const finishedUnitId = product.unit_id;
+    // Compute unit cost for finished product from totalBatchCost
+    const finishedUnitCost = quantity > 0 ? (totalBatchCost / Number(quantity)) : 0;
+    const finishedTotalCost = finishedUnitCost * Number(quantity);
+
+    details.push({
       productId,
-      change_qty: quantity,
-      reason: "production",
-      reference: `production:${productId}`,
-      businessId,
-      userId,
+      qtyChange: Number(quantity),
+      unitId: finishedUnitId,
+      unitCost: finishedUnitCost,
+      totalCost: finishedTotalCost,
+      unitMultiplier: product.unit_multiplier ?? 1,
     });
 
-    results.push({ productId, productName: product.name, quantityProduced: quantity });
+    // Record one transaction header + many details atomically
+    const { transactionId } = await recordTransactionWithDetails({
+      businessId,
+      userId,
+      transactionType: 'production',
+      reference: `production:${productId}`,
+      details,
+    });
+
+    // Insert a production_table row for auditing/history
+    await pool.execute(
+      `INSERT INTO production_table (product_id, quantity_produced, user_id, created_at) VALUES (?, ?, ?, NOW())`,
+      [productId, quantity, userId]
+    );
+
+    // Record the derived finished product unit cost into product_cost_table
+    if (finishedUnitCost > 0) {
+      await pool.execute(
+        `INSERT INTO product_cost_table (product_id, cost, valid_from) VALUES (?, ?, NOW())`,
+        [productId, finishedUnitCost]
+      );
+    }
+
+    results.push({ transactionId, productId, productName: product.name, quantityProduced: quantity });
   }
 
   return results;

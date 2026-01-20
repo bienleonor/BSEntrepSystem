@@ -1,9 +1,9 @@
 // src/pages/SuperAdminDashboard.jsx
 import SuperAdminLayout from "../../components/layout/SuperAdminLayout";
-import SystemHealthCard from "../../components/dashboard/superadmin/SystemHealthCard";
+
 import UserManagementCard from "../../components/dashboard/superadmin/UserManagementCard";
 import AdminOverviewSection from "../../components/dashboard/superadmin/AdminOverviewSection"; 
-import SecurityAuditLog from "../../components/dashboard/superadmin/SecurityAuditLog"; // New component for admin focus
+
 
 const SuperAdminDashboard = () => {
   return (
@@ -14,17 +14,16 @@ const SuperAdminDashboard = () => {
       </div>
       {/* Top row: System Status and Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <SystemHealthCard />
+      
         <UserManagementCard />
         {/* Placeholder future card slot hidden unless xl */}
-        <div className="hidden xl:block"><div className="h-full w-full rounded border border-slate-700/40 bg-slate-900/40 flex items-center justify-center text-xs text-slate-500">Add Card</div></div>
+       
       </div>
 
       {/* Main Metrics Section */}
       <AdminOverviewSection />
 
-      {/* Audit Log/Security Section */}
-      <SecurityAuditLog />
+
     </SuperAdminLayout>
   );
 };

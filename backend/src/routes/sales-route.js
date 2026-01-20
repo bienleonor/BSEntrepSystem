@@ -7,36 +7,82 @@ import {
   getOrderByIdController,
   getAllOrdersByBusinessController,
   cancelSaleController,
-  finishOrderController,GetFinishOrderByBusiness,
+  finishOrderController,
+  GetFinishOrderByBusiness,
 } from '../controllers/sales-controller.js';
 import { authenticateToken } from '../middlewares/auth-middleware.js';
-import { requireBusinessAccess } from '../middlewares/business-access.js'; // ✅ Import the real middleware
+import { requireBusinessAccess } from '../middlewares/business-access.js';
+import { requirePermission } from '../middlewares/permission-middleware.js';
 
 const router = Router();
 
-// ❌ REMOVE THIS - you already have a better one in business-access.js
-// const requireBusinessAccess = (req, res, next) => {
-//   const businessId = req.headers['x-business-id'];
-//
-//   if (!businessId) {
-//     return res.status(403).json({ message: 'Forbidden: No business selected' });
-//   }
-//
-//   req.businessId = businessId; // attach to request for controllers
-//   next();
-// };
+// ============================================
+// SALES READ ROUTES (Requires sales:read)
+// ============================================
+router.get('/total_amount', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('sales:read'), 
+  GetAllTotalSales
+);
 
-// Routes
-router.get('/total_amount', authenticateToken, requireBusinessAccess, GetAllTotalSales);
-router.post('/create', authenticateToken, requireBusinessAccess, makesale);
-router.get('/orders', authenticateToken, requireBusinessAccess, getAllOrdersController);
-router.get('/orders/:orderId', authenticateToken, requireBusinessAccess, getOrderByIdController);
-router.get('/saleslog',authenticateToken,requireBusinessAccess,GetFinishOrderByBusiness);
+router.get('/saleslog', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('sales:read'), 
+  GetFinishOrderByBusiness
+);
 
+// ============================================
+// ORDER ROUTES (Requires order:* permissions)
+// ============================================
+router.get('/orders', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('order:read'), 
+  getAllOrdersController
+);
 
-// If businesses/:businessId still needed:
-router.get('/businesses/:businessId/orders', authenticateToken, requireBusinessAccess, getAllOrdersByBusinessController);
-router.delete('/businesses/:businessId/orders/:purchaseId', authenticateToken, requireBusinessAccess, cancelSaleController);
-router.post('/businesses/:businessId/orders/:purchaseId/finish', authenticateToken, requireBusinessAccess, finishOrderController);
+router.get('/orders/:orderId', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('order:read'), 
+  getOrderByIdController
+);
+
+router.get('/businesses/:businessId/orders', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('order:read'), 
+  getAllOrdersByBusinessController
+);
+
+// ============================================
+// SALES CREATE ROUTES (Requires sales:create)
+// ============================================
+router.post('/create', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('sales:create'), 
+  makesale
+);
+
+// Finish order uses order:update
+router.post('/businesses/:businessId/orders/:purchaseId/finish', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('order:update'), 
+  finishOrderController
+);
+
+// ============================================
+// ORDER CANCEL ROUTES (Requires order:cancel)
+// ============================================
+router.delete('/businesses/:businessId/orders/:purchaseId', 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('order:cancel'), 
+  cancelSaleController
+);
 
 export default router;

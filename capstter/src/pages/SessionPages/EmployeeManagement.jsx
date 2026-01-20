@@ -27,7 +27,11 @@ export default function EmployeeManagement() {
       const res = await axiosInstance.get('/business/position');
       if (res?.data?.success || Array.isArray(res?.data)) {
         const data = res.data.data || res.data;
-        setPositions(data || []);
+        // Filter out "Owner" position - employees shouldn't be assigned as owners
+        const filteredPositions = (data || []).filter(
+          (pos) => pos.position_name?.toLowerCase() !== 'owner' && pos.business_pos_id !== 1
+        );
+        setPositions(filteredPositions);
       }
     } catch (err) {
       console.error('Error fetching positions', err);
@@ -141,17 +145,20 @@ export default function EmployeeManagement() {
                         >
                           <option value="">-- No position --</option>
                           {positions.map((pos) => (
-                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.role_name}</option>
+                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.position_name}</option>
                           ))}
                         </select>
                       ) : (
-                        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">{emp.role_name || '--no position--'}</span>
+                        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">{emp.position_name || '--no position--'}</span>
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                  {editingUserId === emp.user_id ? (
+                  {/* Hide action buttons for Owner position */}
+                  {(emp.position_name?.toLowerCase() === 'owner' || emp.bus_pos_id === 1) ? (
+                    <span className="text-xs text-gray-500 italic">Owner cannot be modified</span>
+                  ) : editingUserId === emp.user_id ? (
                     <>
                       <button onClick={() => handleSavePosition(emp.user_id)} className="w-full sm:w-auto bg-green-600 text-white px-3 py-2 rounded text-sm">SAVE</button>
                       <button onClick={handleCancelEdit} className="w-full sm:w-auto bg-gray-500 text-white px-3 py-2 rounded text-sm">CANCEL</button>
@@ -167,7 +174,6 @@ export default function EmployeeManagement() {
                       >
                         REMOVE
                       </button>
-                     
                     </>
                   )}
                 </div>
@@ -214,15 +220,18 @@ export default function EmployeeManagement() {
                         >
                           <option value="">-- No position --</option>
                           {positions.map((pos) => (
-                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.role_name}</option>
+                            <option key={pos.business_pos_id} value={pos.business_pos_id}>{pos.position_name}</option>
                           ))}
                         </select>
                       ) : (
-                        emp.role_name || '--no position--'
+                        emp.position_name || '--no position--'
                       )}
                     </td>
                     <td className="border px-4 py-2 space-x-3">
-                      {editingUserId === emp.user_id ? (
+                      {/* Hide action buttons for Owner position */}
+                      {(emp.position_name?.toLowerCase() === 'owner' || emp.bus_pos_id === 1) ? (
+                        <span className="text-gray-500 italic text-sm">Owner cannot be modified</span>
+                      ) : editingUserId === emp.user_id ? (
                         <>
                           <button onClick={() => handleSavePosition(emp.user_id)} className="text-green-600 font-medium hover:underline">SAVE</button>
                           <button onClick={handleCancelEdit} className="text-gray-600 font-medium hover:underline">CANCEL</button>
@@ -238,7 +247,6 @@ export default function EmployeeManagement() {
                           >
                             REMOVE
                           </button>
-                          
                         </>
                       )}
                     </td>

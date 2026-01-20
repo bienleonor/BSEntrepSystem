@@ -17,15 +17,17 @@ export default function InventoryCard({ item, onAddToCart }) {
       </div>
       <div className="text-center mb-2">
         <strong className="block text-lg sm:text-xl md:text-2xl">{item.name}</strong>
-        <div className="text-xs sm:text-sm text-gray-700">Stock: {item.quantity}</div>
+        <div className="text-xs sm:text-sm text-gray-700">
+          Stock: {item.quantity ?? Math.floor((item.total_quantity ?? 0) / (item.unit_multiplier ?? 1))} {item.unit_multiplier ? 'packs' : ''} ({item.total_quantity ?? 0} units)
+        </div>
       </div>
       <div className="text-lg sm:text-xl font-semibold mb-3">₱{Number(item.price).toFixed(2)}</div>
       <button
   className="w-full sm:w-auto px-4 py-2 bg-slate-700 text-white rounded-xl hover:bg-blue-800 hover:font-bold transition-all duration-150 disabled:opacity-50"
   onClick={() => onAddToCart(item, 1)}
-  disabled={item.quantity <= 0}
+  disabled={(item.total_quantity ?? 0) <= 0}
 >
-  {item.quantity > 0 ? "Add to Cart" : "Out of Stock"}
+  {(item.total_quantity ?? 0) > 0 ? "Add to Cart" : "Out of Stock"}
 </button>
 
     </div>

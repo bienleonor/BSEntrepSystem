@@ -8,29 +8,63 @@ import {
   lookupUserByUsername,
   searchUsers,
 } from '../controllers/user-controllers.js';
-
-
+import { authenticateToken } from '../middlewares/auth-middleware.js';
+import { requireSystemRole } from '../middlewares/permission-middleware.js';
 
 const router = Router();
 
-// Get all users
-router.get('/', getUsers);
+// ============================================
+// USER MANAGEMENT ROUTES (Requires superadmin role)
+// These are system-level user operations, not business employees
+// ============================================
 
-// Lookup by username (placed before :id to avoid route conflict)
-router.get('/search', searchUsers); // partial search first
-router.get('/lookup', lookupUserByUsername); // exact lookup
+// Get all users - superadmin only
+router.get('/', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  getUsers
+);
 
-// Get a single user by ID
-router.get('/:id', getUserById);
+// Search users - superadmin only
+router.get('/search', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  searchUsers
+);
 
-// Create a new user (registration)
-router.post('/', addUser);
+// Lookup by username - superadmin only
+router.get('/lookup', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  lookupUserByUsername
+);
 
-// Update a user
-router.put('/:id', editUser);
+// Get a single user by ID - superadmin only
+router.get('/:id', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  getUserById
+);
 
-// Delete a user
-router.delete('/:id', removeUser);
+// Create a new user (admin registration) - superadmin only
+router.post('/', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  addUser
+);
 
+// Update a user - superadmin only
+router.put('/:id', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  editUser
+);
+
+// Delete a user - superadmin only
+router.delete('/:id', 
+  authenticateToken, 
+  requireSystemRole('superadmin'), 
+  removeUser
+);
 
 export default router;

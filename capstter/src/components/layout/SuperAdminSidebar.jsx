@@ -1,91 +1,21 @@
-{/*import { Home, FilePlus, ClipboardList, BarChart2, List, Package } from "lucide-react";
-import { Link } from "react-router-dom";
-import { LogOut } from "lucide-react";
-
-const menuItems = [
-  { label: "Create Order", icon: <FilePlus size={18} /> },
-  { label: "Item Registration", icon: <ClipboardList size={18} /> },
-  { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
-  { label: "Sales Log", icon: <List size={18} /> },
-  { label: "Inventory", icon: <Package size={18} /> },
-  { label: "ProductList", icon: <Package size={18} /> },
-];
-
-export default function Sidebar() {
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('selectedBusinessId');
-    localStorage.removeItem('role');
-    window.location.href = '/login'; // Redirect to login page
-  };
-  return (
-    <aside className="w-60 bg-slate-900 text-white flex flex-col justify-between min-h-screen p-4">
-      <div>
-        <div className="flex items-center gap-2 mb-8">
-          <Link to="/UserDashboard">
-            <Home className="text-white" />
-            <span className="text-lg font-bold">Dashboard</span>
-          </Link>
-        </div>
-        <nav className="flex flex-col gap-3">
-          {menuItems.map((item) => (
-
-            <Link to={`/${item.label.replace(/\s+/g, '').toLowerCase()}`}>
-            <button 
-              key={item.label}
-              className="flex items-center gap-3 px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition"
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-            </Link>
-
-            
-          ))}
-        </nav>
-      </div>
-      <div>
-        <div className="flex gap-2 justify-center mb-4">
-          <div className="w-4 h-4 rounded-full bg-yellow-400"></div>
-          <div className="w-4 h-4 rounded-full bg-yellow-400"></div>
-          <div className="w-4 h-4 rounded-full bg-yellow-400"></div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition justify-center"
-        >
-          <LogOut size={18} />
-          <span>Logout</span>
-        </button>
-      </div>
-    </aside>
-  );
-}
-*/}
 
 import { useState } from "react";
 import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const BASE_PREFIX = "/superadmin";
+
 const menuItems = [
   // Sales Management
-  { label: "Point of Sales", icon: <ShoppingCart  size={18} /> },
-  { label: "Sales Analysis", icon: <BarChart2 size={18} /> },
-  { label: "Sales Log", icon: <List size={18} /> },
-  { label: "Order List", icon: <NotebookText   size={18} /> },
+
   
   // Inventory Management
-  { label: "Product Registration", icon: <ClipboardList size={18} /> },
-  { label: "Inventory", icon: <Package size={18} /> },
-  { label: "Product List", icon: <PackageOpen  size={18} /> },
-  { label: "Category", icon: <Book  size={18} /> },
-  { label: "Multi Adjustment Stock", icon: <PackageOpen  size={18} /> },
-  
 
-  // Employee Management
-  { label: "Employee Management", icon: <Users  size={18} /> },
-  { label: "Business Position", icon: <UserRoundCog   size={18} /> },
-  { label: "Business Setting", icon: <Settings   size={18} /> },
+  { label: "Audit Logs", icon: <NotebookText size={18} />, path: `${BASE_PREFIX}/auditlogs` },
+   { label: "RBAC Management", icon: <NotebookText size={18} />, path: `${BASE_PREFIX}/rbac` },
+  { label: "Business Management", icon: <Book size={18} />, path: `${BASE_PREFIX}/businessmanagement` },
+
+
 ];
 
 export default function Sidebar() {
@@ -118,7 +48,7 @@ export default function Sidebar() {
         {/* TOP (not scrollable) */}
         <div className="p-4">
           <div className="flex items-center gap-2 mb-8">
-            <Link to="/UserDashboard" className="flex items-center gap-2">
+            <Link to="/superadmin/dashboard" className="flex items-center gap-2">
               <Home className="text-white" />
               <span className="text-lg font-bold hidden sm:block">Dashboard</span>
             </Link>
@@ -129,7 +59,10 @@ export default function Sidebar() {
         <div className="flex-1 overflow-y-auto px-4">
           <nav className="flex flex-col gap-2">
             {menuItems.map((item) => (
-              <Link key={item.label} to={`/${item.label.replace(/\s+/g, "").toLowerCase()}`}>
+              <Link
+                key={item.label}
+                to={item.path ?? `${BASE_PREFIX}/${item.label.replace(/\s+/g, "").toLowerCase()}`}
+              >
                 <button className="flex items-center gap-3 px-3 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition w-full">
                   {item.icon}
                   <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
@@ -142,13 +75,7 @@ export default function Sidebar() {
 
           {/* Buttons included in scroll */}
           <div className="mt-6">
-            <Link to="/busmanage">
-              <button className="flex items-center gap-2 w-full px-3 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition justify-center mb-2">
-                <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
-                  Manage other business
-                </span>
-              </button>
-            </Link>
+            
 
             <button
               onClick={handleLogout}

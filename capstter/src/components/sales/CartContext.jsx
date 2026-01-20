@@ -9,7 +9,9 @@ function reducer(state, action) {
     case "ADD_TO_CART": {
       const { product, qty } = action.payload;
       const currentQty = state[product.product_id]?.quantity || 0;
-      const nextQty = Math.min(product.quantity, currentQty + qty);
+      // Use total_quantity as the available stock
+      const available = Number(product.total_quantity ?? product.quantity ?? 0);
+      const nextQty = Math.min(available, currentQty + qty);
       return {
         ...state,
         [product.product_id]: {

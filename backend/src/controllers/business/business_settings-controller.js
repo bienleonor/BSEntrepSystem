@@ -1,12 +1,26 @@
 import { updateBusinessInfo, upsertBusinessSetting, getBusinessSettings,getBusinessLogo } from '../../models/business/business-settings_model.js';
+import { logBusinessAction } from '../../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
 import { findBusinessByUserId } from '../../models/business/business-model.js';
 import fs from 'fs';
 import path from 'path';
 
 export const getSettings = async (req, res) => {
   try {
-    const businessId = req.headers['x-business-id'] || req.query.businessId || req.body.businessId;
-    if (!businessId) return res.status(400).json({ error: 'Missing business id' });
+    const businessId =
+      req.headers['x-business-id'] ||
+      req.params?.businessId ||
+      req.query?.businessId ||
+      req.body?.businessId;
+
+    if (!businessId) {
+      // Superadmin may visit pages without a selected business; return an empty payload instead of error
+      const role = (req.user?.system_role || '').toLowerCase();
+      if (role === 'superadmin') {
+        return res.json({ success: true, settings: null, note: 'No business selected' });
+      }
+      return res.status(400).json({ error: 'Missing business id' });
+    }
 
     const settings = await getBusinessSettings(businessId);
     res.json({ success: true, settings });
@@ -18,24 +32,30 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
   try {
-    const businessId = req.headers['x-business-id'] || req.body.businessId;
+    const businessId = req.headers['x-business-id'] || req.params?.businessId || req.body?.businessId;
     if (!businessId) return res.status(400).json({ error: 'Missing business id' });
 
     const { businessName, businessType } = req.body;
+    const userRole = (req.user?.system_role || '').toLowerCase();
 
-    // Optional: verify user owns the business
-    try {
-      const owned = await findBusinessByUserId(req.user.user_id);
-      const owns = owned.some(b => String(b.business_id) === String(businessId));
-      if (!owns) {
-        // Not owner: allow update? For now require ownership
+    // Superadmin can update any business; others must own it
+    if (userRole !== 'superadmin') {
+      try {
+        const owned = await findBusinessByUserId(req.user.user_id);
+        const owns = owned.some(b => String(b.business_id) === String(businessId));
+        if (!owns) {
+          return res.status(403).json({ error: 'Not authorized to update this business' });
+        }
+      } catch (err) {
+        console.error('ownership check failed', err);
         return res.status(403).json({ error: 'Not authorized to update this business' });
       }
-    } catch (err) {
-      console.error('ownership check failed', err);
     }
 
     // Update business name/category
+    let oldBusiness = null;
+    try { oldBusiness = await getBusinessSettings(businessId); } catch {}
+
     if (businessName || businessType) {
       await updateBusinessInfo(businessId, businessName || null, businessType || null);
     }
@@ -55,13 +75,28 @@ export const updateSettings = async (req, res) => {
     }
     
     // Upsert business setting (logo blob) only if a new logo was uploaded
-      if (logoBlob !== null) {
+    if (logoBlob !== null) {
       await upsertBusinessSetting(businessId, logoBlob);
     }
 
 
     const settings = await getBusinessSettings(businessId);
     res.json({ success: true, message: 'Settings updated', settings });
+
+    // Log update action
+    try {
+      await logBusinessAction({
+        business_id: Number(businessId),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.BUSINESS_MANAGEMENT,
+        action_id: ACTIONS.UPDATE,
+        table_name: 'business_table',
+        record_id: Number(businessId),
+        old_data: oldBusiness,
+        new_data: settings,
+        req,
+      });
+    } catch (e) { console.warn('logBusinessAction (updateSettings) failed', e.message); }
   } catch (err) {
     console.error('updateSettings error', err);
     res.status(500).json({ success: false, message: 'Server error' });

@@ -7,7 +7,7 @@ export const getEmployeesByBusinessModel = async (business_id) => {
 			`SELECT bup.user_id, bup.business_id, bup.bus_pos_id,
 							u.username,
 							ud.first_name, ud.last_name, ud.contact_no,
-							bp.role_name
+							bp.position_name
 			 FROM business_user_position_table bup
 			 LEFT JOIN user_table u ON bup.user_id = u.user_id
 			 LEFT JOIN user_details_table ud ON u.user_id = ud.user_id

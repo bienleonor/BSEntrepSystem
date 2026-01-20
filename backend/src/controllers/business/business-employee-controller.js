@@ -4,6 +4,9 @@ import {
 	updateEmployeePositionModel,
 	removeEmployeeModel,
 } from "../../models/business/business-employee-model.js";
+import { logBusinessAction } from '../../services/business-logs-service.js';
+import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
+import { invalidateUserPermissionCache } from '../../services/permissionService.js'
 
 // Get employees for a business
 export const getEmployeesByBusiness = async (req, res) => {
@@ -33,6 +36,21 @@ export const addEmployee = async (req, res) => {
 
 		const added = await addEmployeeModel(user_id, business_id, bus_pos_id);
 		res.status(201).json({ success: true, data: added, message: "Employee added to business" });
+
+		// Log employee add
+		try {
+			await logBusinessAction({
+				business_id: Number(business_id),
+				user_id: req.user?.user_id ?? null,
+				module_id: MODULES.BUSINESS_MANAGEMENT,
+				action_id: ACTIONS.CREATE,
+				table_name: 'business_employee_table',
+				record_id: Number(added?.bus_emp_id || 0),
+				old_data: null,
+				new_data: added,
+				req,
+			});
+		} catch (e) { /* silent */ }
 	} catch (error) {
 		console.error("Error adding employee:", error);
 		res.status(500).json({ success: false, message: "Server error while adding employee" });
@@ -48,8 +66,48 @@ export const assignPosition = async (req, res) => {
 			return res.status(400).json({ success: false, message: "user_id, business_id and bus_pos_id are required" });
 		}
 
-		const result = await updateEmployeePositionModel(user_id, business_id, bus_pos_id);
-		res.status(200).json({ success: true, data: result, message: "Position updated" });
+		// Ensure position id is a valid integer to avoid FK violations from bad input
+		const safeBusPosId = Number(bus_pos_id);
+		if (!Number.isInteger(safeBusPosId) || safeBusPosId <= 0) {
+			return res.status(400).json({ success: false, message: "bus_pos_id must be a valid existing position id" });
+		}
+
+		// Fetch old employee record (best effort)
+		let oldEmp = null;
+		try { const all = await getEmployeesByBusinessModel(business_id); oldEmp = all.find(e => String(e.user_id) === String(user_id)) || null; } catch {}
+
+		try {
+			const result = await updateEmployeePositionModel(user_id, business_id, safeBusPosId);
+			res.status(200).json({ success: true, data: result, message: "Position updated" });
+				// Invalidate permission cache for that user in this business
+				try {
+					invalidateUserPermissionCache(user_id, business_id)
+				} catch (e) { /* silent */ }
+		} catch (dbErr) {
+			// Handle MySQL FK errors gracefully (ER_NO_REFERENCED_ROW_2 / 1452)
+			if (dbErr && (dbErr.code === 'ER_NO_REFERENCED_ROW_2' || dbErr.errno === 1452)) {
+				return res.status(400).json({
+					success: false,
+					message: "Invalid position: selected bus_pos_id does not exist",
+					details: { code: dbErr.code, errno: dbErr.errno }
+				});
+			}
+			throw dbErr;
+		}
+
+		try {
+			await logBusinessAction({
+				business_id: Number(business_id),
+				user_id: req.user?.user_id ?? null,
+				module_id: MODULES.BUSINESS_MANAGEMENT,
+				action_id: ACTIONS.UPDATE,
+				table_name: 'business_employee_table',
+				record_id: Number(user_id),
+				old_data: oldEmp,
+				new_data: { user_id, bus_pos_id: safeBusPosId },
+				req,
+			});
+		} catch (e) { }
 	} catch (error) {
 		console.error("Error updating position:", error);
 		res.status(500).json({ success: false, message: "Server error while updating position" });
@@ -70,8 +128,26 @@ export const removeEmployee = async (req, res) => {
 			return res.status(400).json({ success: false, message: "You cannot remove yourself from the business." });
 		}
 
+		// old record snapshot
+		let oldEmp = null;
+		try { const all = await getEmployeesByBusinessModel(business_id); oldEmp = all.find(e => String(e.user_id) === String(user_id)) || null; } catch {}
+
 		const result = await removeEmployeeModel(user_id, business_id);
 		res.status(200).json({ success: true, data: result, message: "Employee removed" });
+
+		try {
+			await logBusinessAction({
+				business_id: Number(business_id),
+				user_id: req.user?.user_id ?? null,
+				module_id: MODULES.BUSINESS_MANAGEMENT,
+				action_id: ACTIONS.DELETE,
+				table_name: 'business_employee_table',
+				record_id: Number(user_id),
+				old_data: oldEmp,
+				new_data: null,
+				req,
+			});
+		} catch (e) {}
 	} catch (error) {
 		console.error("Error removing employee:", error);
 		res.status(500).json({ success: false, message: "Server error while removing employee" });

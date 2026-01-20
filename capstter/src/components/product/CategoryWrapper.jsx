@@ -1,5 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../utils/axiosInstance.js';
+import { deleteProductCategory as deleteCategoryApi } from '../../services/inventoryApi.js';
+
+// Allowed characters for category name / description: letters, numbers, space, hyphen, underscore, period
+const TEXT_REGEX = /^[A-Za-z0-9\s\-_.]+$/;
+const sanitize = (val) => val.replace(/[^A-Za-z0-9\s\-_.]/g, '');
 
 // CategoryWrapper lists product categories for a business and allows creating new ones.
 // It attempts to derive businessId from (in order): props, route params, auth context, localStorage.
@@ -17,6 +22,8 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
   const [description, setDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   const fetchCategories = useCallback(async () => {
     if (!businessId) return;
@@ -42,14 +49,28 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
       setCreateError('Business ID unavailable');
       return;
     }
-    if (!name.trim()) {
-      setCreateError('Name is required');
+    // Sanitize on submit only
+    const sanitizedName = sanitize(name.trim());
+    if (!sanitizedName) {
+      setCreateError('Name is required after removing invalid characters');
+      return;
+    }
+    if (!TEXT_REGEX.test(sanitizedName)) {
+      setCreateError('Invalid characters in name. Use letters, numbers, spaces, - _ .');
+      return;
+    }
+
+    // Description optional; sanitize but allow empty
+    const sanitizedDescriptionRaw = description.trim();
+    const sanitizedDescription = sanitize(sanitizedDescriptionRaw);
+    if (sanitizedDescriptionRaw && !TEXT_REGEX.test(sanitizedDescription)) {
+      setCreateError('Description has invalid characters. Use letters, numbers, spaces, - _ .');
       return;
     }
     setCreating(true);
     setCreateError(null);
     try {
-      const payload = { name: name.trim(), description: description.trim(), businessId };
+      const payload = { name: sanitizedName, description: sanitizedDescription, businessId };
       // Correct endpoint under /api/inventory
       const res = await axiosInstance.post(`/inventory/product-categories`, payload);
       // Optimistically add new category shell (backend returns insertId)
@@ -72,6 +93,25 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
   };
 
   const handleRefresh = () => setRefreshIndex((i) => i + 1);
+
+  const handleDelete = async (id) => {
+    if (!businessId) {
+      setDeleteError('Business ID unavailable');
+      return;
+    }
+    const ok = window.confirm('Delete this category? This action cannot be undone.');
+    if (!ok) return;
+    setDeleteError(null);
+    setDeletingId(id);
+    try {
+      await deleteCategoryApi(id, Number(businessId));
+      setCategories((prev) => prev.filter((c) => c.category_id !== id));
+    } catch (err) {
+      setDeleteError(err?.message || 'Failed to delete category');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Simple client-side search
   const [search, setSearch] = useState('');
@@ -179,9 +219,9 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
             <span className="hidden text-sm text-gray-600 md:block">{countLabel}</span>
           </div>
 
-          {error && (
+          {(error || deleteError) && (
             <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
+              {error || deleteError}
             </div>
           )}
 
@@ -192,19 +232,20 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
                   <th className="px-4 py-2 font-medium">ID</th>
                   <th className="px-4 py-2 font-medium">Name</th>
                   <th className="px-4 py-2 font-medium">Description</th>
+                  <th className="px-4 py-2 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && filtered.length === 0 && (
                   <>
                     <tr className="border-t border-gray-100">
-                      <td colSpan={3} className="px-4 py-6">
+                      <td colSpan={4} className="px-4 py-6">
                         <div className="h-4 w-1/4 animate-pulse rounded bg-slate-200" />
                         <div className="mt-2 h-3 w-3/5 animate-pulse rounded bg-slate-200" />
                       </td>
                     </tr>
                     <tr className="border-t border-gray-100">
-                      <td colSpan={3} className="px-4 py-6">
+                      <td colSpan={4} className="px-4 py-6">
                         <div className="h-4 w-1/4 animate-pulse rounded bg-slate-200" />
                         <div className="mt-2 h-3 w-3/5 animate-pulse rounded bg-slate-200" />
                       </td>
@@ -214,7 +255,7 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
 
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-sm">
+                    <td colSpan={4} className="px-4 py-8 text-center text-sm">
                       <div className="mx-auto max-w-md">
                         <p className="text-gray-600">No categories found.</p>
                         <p className="mt-1 text-gray-500">
@@ -236,6 +277,20 @@ const CategoryWrapper = ({ businessId: propBusinessId }) => {
                     <td className="px-4 py-2 text-gray-700">{c.category_id}</td>
                     <td className="px-4 py-2 text-gray-900">{c.name}</td>
                     <td className="px-4 py-2 text-slate-700">{c.description || '—'}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleDelete(c.category_id)}
+                          disabled={loading || deletingId === c.category_id}
+                          className={`rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 ${
+                            loading || deletingId === c.category_id ? 'cursor-not-allowed opacity-60' : ''
+                          }`}
+                          aria-label={`Delete category ${c.name}`}
+                        >
+                          {deletingId === c.category_id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

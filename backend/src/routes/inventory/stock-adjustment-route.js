@@ -4,21 +4,57 @@ import {
   stockOutController,
   correctionController,
   productionController,
+  getInventoryTransactionsController,
 } from "../../controllers/inventory/inventory-controller.js";
 import { authenticateToken } from "../../middlewares/auth-middleware.js";
+import { requireBusinessAccess } from "../../middlewares/business-access.js";
+import { requirePermission } from "../../middlewares/permission-middleware.js";
 
 const router = express.Router();
 
-// Add stock (purchase)
-router.post("/stockin", authenticateToken, stockInController);
+// ============================================
+// INVENTORY ADJUSTMENT ROUTES (Requires inventory permission)
+// ============================================
 
-// Stock-out: spoilage/waste
-router.post("/stockout", authenticateToken, stockOutController);
+// Stock-in (purchase) - requires stockin:create
+router.post("/stockin", 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('stockin:create'), 
+  stockInController
+);
 
-// Manual correction
-router.post("/correction", authenticateToken, correctionController);
+// Stock-out (spoilage/waste) - requires stock_adjustment:create
+router.post("/stockout", 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('stock_adjustment:create'), 
+  stockOutController
+);
 
-// Production
-router.post("/production", authenticateToken, productionController);
+// Manual correction - requires stock_adjustment:update
+router.post("/correction", 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('stock_adjustment:update'), 
+  correctionController
+);
+
+// Production - requires production:create
+router.post("/production", 
+  authenticateToken, 
+  requireBusinessAccess,
+  requirePermission('production:create'), 
+  productionController
+);
+
+// Get inventory transactions - accessible to all authenticated business members
+// Everyone can view stock adjustment logs/reports as read-only
+router.get("/transactions", 
+  authenticateToken, 
+  requireBusinessAccess, 
+  requirePermission('stock_adjustment:read'),
+  getInventoryTransactionsController
+);
 
 export default router;

@@ -4,6 +4,8 @@ import {
 } from "../models/access-codes-model.js";
 import { buildAccessCode } from "../services/access-codes-service.js";
 import pool from "../config/pool.js";
+import { logBusinessAction } from "../services/business-logs-service.js";
+import { MODULES, ACTIONS } from "../constants/modules-actions.js";
 
 export const generateAccessCode = async (req, res) => {
   console.log("Incoming generateAccessCode:", req.body);
@@ -53,11 +55,28 @@ export const generateAccessCode = async (req, res) => {
 
     console.log("Inserted Access Code ID:", insertId);
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       code: finalCode,
       access_id: insertId
     });
+
+    // Log creation of access code (after responding for minimal latency)
+    try {
+      await logBusinessAction({
+        business_id: Number(business_id),
+        user_id: req.user?.user_id ?? null,
+        module_id: MODULES.SYSTEM,
+        action_id: ACTIONS.CREATE,
+        table_name: 'access_codes_table',
+        record_id: Number(insertId),
+        old_data: null,
+        new_data: { code: finalCode, year_created: new Date().getFullYear(), year: yearName, section: sectionName, group: groupName },
+        req,
+      });
+    } catch (e) {
+      console.warn('logBusinessAction (generateAccessCode) failed', e.message);
+    }
 
   } catch (err) {
     console.error("❌ Error in generateAccessCode:", err);
@@ -81,13 +100,44 @@ export const enterAccessCode = async (req, res) => {
 
     const business_id = codeData.business_id;
 
-    await addEmployeeToBusiness(user_id, business_id);
+    const employeeLinkId = await addEmployeeToBusiness(user_id, business_id);
 
-    return res.json({
+    res.json({
       success: true,
       message: "User added as employee!",
-      business_id
+      business_id,
+      employee_link_id: employeeLinkId
     });
+
+    // Log usage of access code and employee addition
+    try {
+      // Access code read/use
+      await logBusinessAction({
+        business_id: Number(business_id),
+        user_id: req.user?.user_id ?? user_id ?? null,
+        module_id: MODULES.SYSTEM,
+        action_id: ACTIONS.READ,
+        table_name: 'access_codes_table',
+        record_id: Number(codeData.access_codes_id || 0),
+        old_data: null,
+        new_data: { code },
+        req,
+      });
+      // Employee link creation
+      await logBusinessAction({
+        business_id: Number(business_id),
+        user_id: req.user?.user_id ?? user_id ?? null,
+        module_id: MODULES.BUSINESS_MANAGEMENT,
+        action_id: ACTIONS.CREATE,
+        table_name: 'business_user_position_table',
+        record_id: Number(employeeLinkId),
+        old_data: null,
+        new_data: { user_id, business_id },
+        req,
+      });
+    } catch (e) {
+      console.warn('logBusinessAction (enterAccessCode) failed', e.message);
+    }
 
   } catch (err) {
     console.error("❌ enterAccessCode error:", err);

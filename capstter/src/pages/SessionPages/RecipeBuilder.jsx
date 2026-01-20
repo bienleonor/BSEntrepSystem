@@ -36,7 +36,7 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
   }, []);
 
   const addIngredientRow = () => {
-    const newIng = { product_id: "", qty: "", unit_id: null };
+    const newIng = { product_id: "", qty: "", ingredient_unit_id: null };
     setIngredients([...ingredients, newIng]);
     onRecipeChange([...ingredients, newIng]);
   };
@@ -49,7 +49,9 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
 
   const updateIngredient = (index, field, value) => {
     const updated = [...ingredients];
-    updated[index][field] = value ?? null; // always default null
+    // allow callers to use 'unit_id' but store as 'ingredient_unit_id'
+    const key = field === 'unit_id' ? 'ingredient_unit_id' : field;
+    updated[index][key] = value ?? null; // always default null
     setIngredients(updated);
     onRecipeChange(updated);
   };
@@ -61,7 +63,7 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
     const normalized = initialRecipe.map((ing) => ({
       product_id: String(ing.ingredient_product_id ?? ing.product_id ?? ""),
       qty: String(ing.consumption_amount ?? ing.qty ?? ""),
-      unit_id: ing.unit_id ?? null,
+      ingredient_unit_id: ing.ingredient_unit_id ?? ing.unit_id ?? null,
     }));
     // Shallow equality check to avoid unnecessary state updates
     const same =
@@ -105,18 +107,19 @@ export default function RecipeBuilder({ productType, onRecipeChange, initialReci
             </select>
 
             {/* Quantity input */}
-            <input
-              type="number"
-              min="1"
-              value={ing.qty}
-              onChange={(e) => updateIngredient(index, "qty", e.target.value)}
-              placeholder="Qty"
-              className="col-span-3 p-2 border rounded"
-            />
+              <input
+                type="number"
+                min="0"                     // allow zero if needed
+                step="0.01"                 // allow decimals, e.g., 0.25, 1.5
+                value={ing.qty}
+                onChange={(e) => updateIngredient(index, "qty", parseFloat(e.target.value))}
+                placeholder="Qty"
+                className="col-span-3 p-2 border rounded"
+              />
 
             {/* Unit select */}
             <select
-              value={ing.unit_id ?? ""}
+              value={ing.ingredient_unit_id ?? ""}
               onChange={(e) => updateIngredient(index, "unit_id", e.target.value || null)}
               className="col-span-3 p-2 rounded border"
             >

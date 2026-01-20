@@ -16,9 +16,11 @@ export const createSale = async (saleData) => {
     await conn.beginTransaction();   
     
     // Step 1: Insert into purchases_table
+    // If stat_id = 1 (completed), set finished_at to NOW() for duration tracking
+    const isCompleted = (saleData.stat_id || 2) === 1;
     const [purchaseResult] = await conn.execute(
-      `INSERT INTO purchases_table (user_id, total_amount, purchase_date) 
-      VALUES (?, ?, NOW())`,
+      `INSERT INTO purchases_table (user_id, total_amount, purchase_date, finished_at) 
+      VALUES (?, ?, NOW(), ${isCompleted ? 'NOW()' : 'NULL'})`,
       [user_id, total_amount]
     );
     const purchaseId = purchaseResult.insertId;
@@ -85,7 +87,7 @@ export const createSale = async (saleData) => {
       );
 
       const [res] = await conn.execute(
-        `UPDATE inventory_table SET quantity = quantity - ? WHERE product_id = ?`,
+        `UPDATE inventory_table SET total_quantity = total_quantity - ? WHERE product_id = ?`,
         [qty, productId]
       );
       if (res.affectedRows === 0) {
@@ -285,7 +287,7 @@ export const cancelSale = async (purchaseId) => {
 
       const [res] = await conn.execute(
         `UPDATE inventory_table 
-         SET quantity = quantity + ? 
+         SET total_quantity = total_quantity + ? 
          WHERE product_id = ?`,
         [qty, item.product_id]
       );
@@ -348,10 +350,10 @@ export const finishOrder = async (purchaseId) => {
     if (status === 1) throw new Error(`Purchase ${pid} is already finished`);
     if (status === 3) throw new Error(`Purchase ${pid} was cancelled`);
 
-    // Mark purchase as finished
+    // Mark purchase as finished and set finished_at timestamp
     await conn.execute(
       `UPDATE purchases_table 
-       SET status_id = 1, purchase_date = NOW()
+       SET status_id = 1, finished_at = NOW()
        WHERE purchase_id = ?`,
       [pid]
     );

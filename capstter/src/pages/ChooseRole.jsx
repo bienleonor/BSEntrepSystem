@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/UseAuth";
+import landing from "../assets/landing.png";
 
 export default function ChooseRole() {
   const navigate = useNavigate();
@@ -14,7 +15,10 @@ export default function ChooseRole() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 px-6">
+    <div
+      className="bg-cover bg-center h-screen w-full flex justify-center items-center px-6"
+      style={{ backgroundImage: `url(${landing})` }}
+    >
       <div className="bg-white shadow-xl p-10 rounded-xl max-w-md w-full">
         <h1 className="text-2xl font-bold mb-6 text-center">Choose your role</h1>
 

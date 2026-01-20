@@ -17,6 +17,8 @@ export default function MultiAdjustment() {
   const [products, setProducts] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  // For correction mode: allow user to choose add or subtract
+  const [correctionMode, setCorrectionMode] = useState('subtract'); // 'add' | 'subtract'
   
   const getUserIdFromToken = () => {
     const token = localStorage.getItem("token");
@@ -48,9 +50,23 @@ export default function MultiAdjustment() {
       return [];
     }
     try {
-      const res = await axiosInstance.get(`/inventory/products/active/inventory-details/${biz}`);
-      setProducts(res.data);
-      return res.data;
+      const res = await axiosInstance.get(`/inventory/businesses/${biz}/products`);
+      const all = Array.isArray(res.data) ? res.data : [];
+      // Filter by adjustment type
+      const filtered = all.filter(p => {
+        const t = String(type);
+        const pt = String(p.product_type || '').toLowerCase();
+        if (t === 'add') {
+          return pt === 'simple';
+        }
+        if (t === 'production') {
+          return pt === 'recipe' || pt === 'composite';
+        }
+        // For spoilage/waste/correction, allow all types by default
+        return true;
+      });
+      setProducts(filtered);
+      return filtered;
     } catch (e) {
       toast.error("Failed to load products.");
       return [];
@@ -67,8 +83,10 @@ export default function MultiAdjustment() {
           name: data[0].name,
           quantityAvailable: data[0].quantity || 0,
           quantity: "",
-          unit_price: type === 'add' ? 0 : undefined,
+          unit_price: type === 'add' ? (Number(data[0].unit_cost) || 0) : undefined,
         }]);
+      } else {
+        setItems([]);
       }
     })();
   }, [type]);
@@ -82,6 +100,9 @@ export default function MultiAdjustment() {
       if (sel) {
         newItems[index].name = sel.name;
         newItems[index].quantityAvailable = sel.quantity || 0;
+        if (type === 'add') {
+          newItems[index].unit_price = Number(sel.unit_cost) || 0;
+        }
         // Do not auto-map unit_price from product price; keep user input
       }
     }
@@ -97,7 +118,7 @@ export default function MultiAdjustment() {
       name: first.name,
       quantityAvailable: first.quantity || 0,
       quantity: "",
-      unit_price: type === 'add' ? 0 : undefined,
+      unit_price: type === 'add' ? (Number(first.unit_cost) || 0) : undefined,
     }]);
   };
 
@@ -113,8 +134,9 @@ export default function MultiAdjustment() {
     const userId = getUserIdFromToken();
     if (!userId) return toast.error("Missing user info");
 
-    // Determine sign: correction should MINUS the stock
-    const isStockOut = type === 'spoilage' || type === 'waste' || type === 'correction';
+    // Determine sign: correction can be add or subtract; others fixed
+    const isStockOut = type === 'spoilage' || type === 'waste' || (type === 'correction' && correctionMode === 'subtract');
+    const isCorrectionAdd = type === 'correction' && correctionMode === 'add';
 
     const payload = {
       businessId,
@@ -123,12 +145,14 @@ export default function MultiAdjustment() {
         if (!i.quantity || Number(i.quantity) <= 0)
           throw new Error(`Quantity for ${i.name} must be greater than 0`);
 
-        return {
+        const payloadItem = {
           productId: Number(i.productId),
           // Send negative quantity for stock-out/correction to reduce stock
           quantity: isStockOut ? -Math.abs(Number(i.quantity)) : Math.abs(Number(i.quantity)),
           ...(type === 'add' ? { unit_price: Number(i.unit_price) || 0 } : {})
         };
+        // For correction-add, quantity should be positive (already handled by isStockOut calc)
+        return payloadItem;
       })
     };
 
@@ -149,98 +173,266 @@ export default function MultiAdjustment() {
       toast.success(`${modeLabel} successful`);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || "Action failed.");
+      const apiError = err.response?.data?.error || err.message || "Action failed.";
+      // Special-case insufficient stock errors
+      if (apiError.includes('INSUFFICIENT_STOCK')) {
+        const details = err.response?.data?.details;
+        const msg = details?.productId
+          ? `Insufficient stock for product ${details.productId}. Available: ${details.available}, requested change: ${details.requestedChange}.`
+          : 'Insufficient stock to complete the operation.';
+        toast.warn(msg);
+      } else {
+        toast.error(apiError);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleTypeChange = (e) => setType(e.target.value);
+  const getTypeIcon = (t) => {
+    switch (t) {
+      case 'add': return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      );
+      case 'spoilage': return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      );
+      case 'waste': return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+        </svg>
+      );
+      case 'correction': return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      );
+      case 'production': return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+      );
+      default: return null;
+    }
+  };
+
+  const getTypeColor = (t) => {
+    switch (t) {
+      case 'add': return 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30';
+      case 'spoilage': return 'text-rose-400 bg-rose-500/20 border-rose-500/30';
+      case 'waste': return 'text-amber-400 bg-amber-500/20 border-amber-500/30';
+      case 'correction': return 'text-indigo-400 bg-indigo-500/20 border-indigo-500/30';
+      case 'production': return 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30';
+      default: return 'text-slate-400 bg-slate-500/20 border-slate-500/30';
+    }
+  };
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto mt-10 bg-slate-300 shadow-lg rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">{modeLabel}</h2>
-
-        {/* Type Switcher */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Adjustment Type</label>
-          <select value={type} onChange={handleTypeChange} className="w-full p-2 rounded-lg">
-            {adjustmentTypes.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white/90 tracking-tight">
+            Stock Adjustment
+          </h1>
+          <p className="mt-2 text-white/60 text-sm sm:text-base">
+            Manage your inventory with various adjustment types
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {items.map((item, idx) => (
-            <div key={idx} className="border p-3 rounded-lg space-y-3">
-              <div>
-                <label className="block text-sm mb-1">Product</label>
-                <select
-                  value={item.productId}
-                  onChange={e => handleItemChange(idx, 'productId', e.target.value)}
-                  required
-                  className="w-full p-2 rounded-lg"
+        {/* Main Card */}
+        <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
+          {/* Type Selector Header */}
+          <div className="p-4 border-b border-slate-700/50">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              Adjustment Type
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {adjustmentTypes.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setType(t.value)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
+                    type === t.value 
+                      ? getTypeColor(t.value)
+                      : 'text-slate-400 bg-slate-700/30 border-slate-600/30 hover:bg-slate-700/50'
+                  }`}
                 >
-                  {products.map(p => (
-                    <option key={p.product_id} value={p.product_id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
+                  {getTypeIcon(t.value)}
+                  <span className="text-xs font-medium">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm">Current Quantity</label>
-                <input disabled value={item.quantityAvailable} className="w-full p-2 rounded-lg bg-gray-100" />
-              </div>
-
-              <div>
-                <label className="block text-sm">Quantity</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={e => handleItemChange(idx, 'quantity', e.target.value)}
-                  required
-                  className="w-full p-2 rounded-lg"
-                />
-              </div>
-
-              {type === 'add' && (
-                <div>
-                  <label className="block text-sm">Unit Price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={item.unit_price}
-                    onChange={e => handleItemChange(idx, 'unit_price', e.target.value)}
-                    required
-                    className="w-full p-2 rounded-lg"
-                  />
-                </div>
-              )}
-
-              {items.length > 1 && (
+          {/* Correction Mode Toggle */}
+          {type === 'correction' && (
+            <div className="px-4 py-3 bg-slate-700/30 border-b border-slate-700/50">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Correction Mode
+              </label>
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => removeItem(idx)}
-                  className="text-red-600 hover:underline text-sm"
+                  onClick={() => setCorrectionMode('add')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                    correctionMode === 'add'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-slate-600/30 text-slate-400 border border-slate-600/30 hover:bg-slate-600/50'
+                  }`}
                 >
-                  Remove Item
+                  + Add to Stock
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setCorrectionMode('subtract')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                    correctionMode === 'subtract'
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      : 'bg-slate-600/30 text-slate-400 border border-slate-600/30 hover:bg-slate-600/50'
+                  }`}
+                >
+                  − Subtract from Stock
+                </button>
+              </div>
             </div>
-          ))}
+          )}
 
-          <button type="button" onClick={addItem} className="w-full bg-gray-500 text-white p-2 rounded-lg">
-            + Add Another Product
-          </button>
-          <button type="submit" className="w-full bg-blue-600 p-2 text-white rounded-lg">
-            {loading ? 'Processing...' : 'Confirm'}
-          </button>
-        </form>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            {/* Items List */}
+            {items.map((item, idx) => (
+              <div 
+                key={idx} 
+                className="bg-slate-700/40 backdrop-blur-sm rounded-xl border border-slate-600/40 p-4 space-y-4"
+              >
+                {/* Item Header */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Item #{idx + 1}
+                  </span>
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 transition-all"
+                      title="Remove Item"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
 
-        <ToastContainer />
+                {/* Product Select */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Product</label>
+                  <select
+                    value={item.productId}
+                    onChange={e => handleItemChange(idx, 'productId', e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-600 bg-slate-700/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                  >
+                    {products.map(p => (
+                      <option key={p.product_id} value={p.product_id} className="bg-slate-700">
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Current Quantity & Input Quantity Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Current Stock</label>
+                    <div className="px-4 py-2.5 rounded-lg bg-slate-600/50 border border-slate-600 text-slate-300 font-medium">
+                      {item.quantityAvailable}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                      {type === 'add' ? 'Add Quantity' : type === 'production' ? 'Produce Quantity' : 'Adjust Quantity'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.quantity}
+                      onChange={e => handleItemChange(idx, 'quantity', parseFloat(e.target.value))}
+                      required
+                      placeholder="0"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-600 bg-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Unit Price (only for add) */}
+                {type === 'add' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Unit Price (₱)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.unit_price}
+                      onChange={e => handleItemChange(idx, 'unit_price', e.target.value)}
+                      required
+                      placeholder="0.00"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-600 bg-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Add Item Button */}
+            <button
+              type="button"
+              onClick={addItem}
+              className="w-full py-3 rounded-xl border-2 border-dashed border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300 hover:bg-slate-700/30 transition-all flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Another Product
+            </button>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || items.length === 0}
+              className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                loading || items.length === 0
+                  ? 'bg-slate-600/50 text-slate-500 cursor-not-allowed'
+                  : `${getTypeColor(type)} hover:opacity-90`
+              }`}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {getTypeIcon(type)}
+                  Confirm {modeLabel}
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <ToastContainer 
+          position="bottom-right"
+          theme="dark"
+          toastClassName="bg-slate-800 text-white"
+        />
       </div>
     </DashboardLayout>
   );
