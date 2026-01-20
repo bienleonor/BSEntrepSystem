@@ -209,31 +209,31 @@ const AuditLogs = () => {
   return (
     <SuperAdminLayout>
       <div className="p-4 sm:p-6">
-        <h1 className="text-3xl sm:text-6xl font-bold mb-4 text-white">Audit Logs</h1>
+        <h1 className="text-3xl sm:text-6xl font-bold mb-4 text-gray-900">Audit Logs</h1>
 
         <div className="mb-4 flex flex-col sm:flex-row gap-4">
           <div className="flex flex-col w-full sm:w-auto">
-            <label className="text-white mb-1">Search:</label>
+            <label className="text-gray-700 mb-1">Search:</label>
             <input
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); resetToFirst(); }}
               placeholder="Search logs (user, module, table, id)"
-              className="px-3 py-2 rounded-md w-full sm:w-72"
+              className="px-3 py-2 rounded-md w-full sm:w-72 border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex flex-col w-full sm:w-auto">
-            <label className="text-white mb-1 ">Sort by:</label>
+            <label className="text-gray-700 mb-1 ">Sort by:</label>
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value); resetToFirst(); }}
-              className="px-3 py-2 rounded-md w-full sm:w-60 dark:bg-gray-800"
+              className="px-3 py-2 rounded-md w-full sm:w-60 bg-white border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col w-full sm:w-auto">
-            <label className="text-white mb-1">Export Date:</label>
+            <label className="text-gray-700 mb-1">Export Date:</label>
             <div className="flex items-center gap-2 ">
               <input
                 type="date"
@@ -241,32 +241,32 @@ const AuditLogs = () => {
                 onChange={(e) => setExportDate(e.target.value)}
                 min={minDate}
                 max={maxDate}
-                className={`px-3 py-2  rounded-md w-full sm:w-60 ${exportDate && !hasDataForDate(exportDate) ? 'border border-red-500' : ''}`}
+                className={`px-3 py-2 rounded-md w-full sm:w-60 border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${exportDate && !hasDataForDate(exportDate) ? 'border-red-500' : ''}`}
               />
               <button
                 onClick={exportCSVByDate}
                 disabled={!exportDate || !hasDataForDate(exportDate)}
-                className={`px-3 py-2 rounded-md text-sm ${!exportDate || !hasDataForDate(exportDate) ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}
+                className={`px-3 py-2 rounded-md text-sm ${!exportDate || !hasDataForDate(exportDate) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-amber-600 text-white hover:bg-amber-700'}`}
               >Export CSV</button>
             </div>
             
           </div>
         </div>
 
-        {loading && <p className="text-sm text-white">Loading logs…</p>}
-        {error && <p className="text-red-500">{error}</p>}
+        {loading && <p className="text-sm text-gray-600">Loading logs…</p>}
+        {error && <p className="text-red-600">{error}</p>}
 
         {!loading && !error && totalItems === 0 && (
-          <div className="text-sm text-white">No logs found.</div>
+          <div className="text-sm text-gray-600">No logs found.</div>
         )}
 
         {!loading && !error && totalItems > 0 && (
           <>
             {/* Desktop table */}
-            <div className="hidden sm:block dark:bg-gray-800 rounded-lg shadow-md overflow-x-auto ">
-              <table className="min-w-full table-auto text-sm ">
-                <thead className="bg-bronze-100">
-                  <tr className="text-left text-sm text-white">
+            <div className="hidden sm:block bg-white rounded-lg shadow-md overflow-x-auto border border-gray-200">
+              <table className="min-w-full table-auto text-sm">
+                <thead className="bg-gray-50">
+                  <tr className="text-left text-sm text-gray-700">
                     <th className="px-4 py-2">Log ID</th>
                     <th className="px-4 py-2">Business ID</th>
                     <th className="px-4 py-2">User</th>
@@ -281,7 +281,7 @@ const AuditLogs = () => {
                 </thead>
                 <tbody>
                   {pageSlice.map(log => (
-                    <tr key={log.log_id} className="border-t text-sm dark:bg-gray-800 text-white-700 hover:bg-gray-700">
+                    <tr key={log.log_id} className="border-t border-gray-200 text-sm bg-white text-gray-900 hover:bg-gray-50">
                       <td className="px-4 py-2">{log.log_id}</td>
                       <td className="px-4 py-2">{log.business_id || '-'}</td>
                       <td className="px-4 py-2">{log.username || '-'}</td>
@@ -327,7 +327,7 @@ const AuditLogs = () => {
 
             {/* Pagination (bottom) */}
             <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-200">
+              <div className="text-sm text-gray-600">
                 Showing <span className="font-semibold">{totalItems === 0 ? 0 : (page - 1) * pageSize + 1}</span>
                 -<span className="font-semibold">{Math.min(page * pageSize, totalItems)}</span> of <span className="font-semibold">{totalItems}</span>
               </div>
@@ -335,30 +335,30 @@ const AuditLogs = () => {
                 <button
                   onClick={() => setPage(1)}
                   disabled={page === 1}
-                  className={`px-3 py-2 rounded-md text-sm ${page === 1 ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}
+                  className={`px-3 py-2 rounded-md text-sm ${page === 1 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >First</button>
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className={`px-3 py-2 rounded-md text-sm ${page === 1 ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}
+                  className={`px-3 py-2 rounded-md text-sm ${page === 1 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >Prev</button>
-                <div className="px-3 py-2 rounded-md bg-slate-800 text-white text-sm text-center">
+                <div className="px-3 py-2 rounded-md bg-gray-100 text-gray-900 text-sm text-center border border-gray-300">
                   Page {page} of {totalPages}
                 </div>
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className={`px-3 py-2 rounded-md text-sm ${page === totalPages ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}
+                  className={`px-3 py-2 rounded-md text-sm ${page === totalPages ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >Next</button>
                 <button
                   onClick={() => setPage(totalPages)}
                   disabled={page === totalPages}
-                  className={`px-3 py-2 rounded-md text-sm ${page === totalPages ? 'bg-gray-400 text-gray-200' : 'bg-bronze text-white hover:bg-bronze-600'}`}
+                  className={`px-3 py-2 rounded-md text-sm ${page === totalPages ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >Last</button>
                 <select
                   value={pageSize}
                   onChange={(e) => { setPageSize(Number(e.target.value)); resetToFirst(); }}
-                  className="px-2 py-2 rounded-md bg-slate-700 text-white text-sm w-full sm:w-auto"
+                  className="px-2 py-2 rounded-md bg-white border border-gray-300 text-gray-900 text-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value={5}>5 / page</option>
                   <option value={10}>10 / page</option>

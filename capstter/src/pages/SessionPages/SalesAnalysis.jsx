@@ -294,11 +294,11 @@ function SalesAnalysis() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top', labels: { color: '#9ca3af', usePointStyle: true, padding: 15 } },
+      legend: { position: 'top', labels: { color: '#6b7280', usePointStyle: true, padding: 15 } },
     },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
-      y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+      x: { grid: { color: 'rgba(0,0,0,0.1)' }, ticks: { color: '#6b7280' } },
+      y: { grid: { color: 'rgba(0,0,0,0.1)' }, ticks: { color: '#6b7280' } },
     },
   };
 
@@ -398,23 +398,23 @@ function SalesAnalysis() {
   // KPI Card Component with proper Tailwind color mapping
   const KPICard = ({ title, value, subtitle, color = 'blue', icon }) => {
     const colorClasses = {
-      blue: 'from-blue-900/50 border-blue-700/30 text-blue-400',
-      green: 'from-green-900/50 border-green-700/30 text-green-400',
-      red: 'from-red-900/50 border-red-700/30 text-red-400',
-      orange: 'from-orange-900/50 border-orange-700/30 text-orange-400',
-      purple: 'from-purple-900/50 border-purple-700/30 text-purple-400',
-      yellow: 'from-yellow-900/50 border-yellow-700/30 text-yellow-400',
+      blue: 'from-blue-100 border-blue-300 text-blue-600',
+      green: 'from-green-100 border-green-300 text-green-600',
+      red: 'from-red-100 border-red-300 text-red-600',
+      orange: 'from-orange-100 border-orange-300 text-orange-600',
+      purple: 'from-purple-100 border-purple-300 text-purple-600',
+      yellow: 'from-yellow-100 border-yellow-300 text-yellow-600',
     };
     const classes = colorClasses[color] || colorClasses.blue;
     const [bgClass, borderClass, textClass] = classes.split(' ');
     
     return (
-      <div className={`bg-gradient-to-br ${bgClass} to-slate-800 rounded-xl p-5 shadow-lg border ${borderClass}`}>
+      <div className={`bg-gradient-to-br ${bgClass} to-white rounded-xl p-5 shadow-lg border ${borderClass}`}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-gray-400 text-xs uppercase tracking-wide">{title}</div>
+            <div className="text-gray-600 text-xs uppercase tracking-wide">{title}</div>
             <div className={`${textClass} text-2xl font-bold mt-1`}>{value}</div>
-            {subtitle && <div className="text-gray-500 text-xs mt-1">{subtitle}</div>}
+            {subtitle && <div className="text-gray-700 text-xs mt-1">{subtitle}</div>}
           </div>
           {icon && <div className="text-3xl opacity-50">{icon}</div>}
         </div>
@@ -426,10 +426,10 @@ function SalesAnalysis() {
   const DataTable = ({ data, columns, maxHeight = '400px' }) => (
     <div className="mt-6 overflow-x-auto" style={{ maxHeight, overflowY: 'auto' }}>
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-slate-800">
-          <tr className="border-b border-slate-600">
+        <thead className="sticky top-0 bg-gray-100">
+          <tr className="border-b border-gray-300">
             {columns.map(col => (
-              <th key={col.key} className="text-left text-gray-400 font-medium py-3 px-4">
+              <th key={col.key} className="text-left text-gray-600 font-medium py-3 px-4">
                 {col.label}
               </th>
             ))}
@@ -438,9 +438,9 @@ function SalesAnalysis() {
         <tbody>
           {data && Array.isArray(data) && data.length > 0 ? (
             data.map((row, idx) => (
-              <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/50">
+              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
                 {columns.map(col => (
-                  <td key={col.key} className="py-3 px-4 text-white">
+                  <td key={col.key} className="py-3 px-4 text-black">
                     {col.format ? col.format(row[col.key], row) : row[col.key]}
                   </td>
                 ))}
@@ -448,7 +448,7 @@ function SalesAnalysis() {
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-4 px-4 text-gray-400 text-center">
+              <td colSpan={columns.length} className="py-4 px-4 text-gray-500 text-center">
                 No data available
               </td>
             </tr>
@@ -463,11 +463,11 @@ function SalesAnalysis() {
     <div className="flex flex-wrap gap-3 mb-4">
       {showTimePeriod && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Period:</label>
+          <label className="text-gray-600 text-sm">Period:</label>
           <select
             value={timePeriod}
             onChange={(e) => setTimePeriod(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value="today">Today</option>
             <option value="7days">Last 7 Days</option>
@@ -480,32 +480,32 @@ function SalesAnalysis() {
       {showDateFilter && timePeriod === 'custom' && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 text-sm">From:</label>
+            <label className="text-gray-600 text-sm">From:</label>
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+              className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 text-sm">To:</label>
+            <label className="text-gray-600 text-sm">To:</label>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+              className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
             />
           </div>
         </>
       )}
       {showGroupBy && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Group:</label>
+          <label className="text-gray-600 text-sm">Group:</label>
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value="day">Daily</option>
             <option value="week">Weekly</option>
@@ -515,11 +515,11 @@ function SalesAnalysis() {
       )}
       {showLimit && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Show:</label>
+          <label className="text-gray-600 text-sm">Show:</label>
           <select
             value={productLimit}
             onChange={(e) => setProductLimit(Number(e.target.value))}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value={5}>Top 5</option>
             <option value={10}>Top 10</option>
@@ -529,11 +529,11 @@ function SalesAnalysis() {
       )}
       {showIngredientLimit && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Show:</label>
+          <label className="text-gray-600 text-sm">Show:</label>
           <select
             value={ingredientLimit}
             onChange={(e) => setIngredientLimit(Number(e.target.value))}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value={5}>Top 5</option>
             <option value={10}>Top 10</option>
@@ -544,11 +544,11 @@ function SalesAnalysis() {
       )}
       {showSort && (
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-gray-400 text-sm">Sort:</label>
+          <label className="text-gray-600 text-sm">Sort:</label>
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value="desc">Highest First</option>
             <option value="asc">Lowest First</option>
@@ -562,7 +562,7 @@ function SalesAnalysis() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-red-400 text-xl">{error}</div>
+          <div className="text-red-600 text-xl">{error}</div>
         </div>
       </DashboardLayout>
     );
@@ -570,7 +570,7 @@ function SalesAnalysis() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-white text-3xl font-extrabold mb-6">Key Performance Indicators</h1>
+      <h1 className="text-black text-3xl font-extrabold mb-6">Key Performance Indicators</h1>
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -581,7 +581,7 @@ function SalesAnalysis() {
             className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:text-black'
             }`}
           >
             <span>{tab.icon}</span>
@@ -591,17 +591,17 @@ function SalesAnalysis() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 min-h-[500px]">
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-300 min-h-[500px]">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-white text-lg">Loading...</div>
+            <div className="text-black text-lg">Loading...</div>
           </div>
         ) : (
           <>
             {/* Overview Tab */}
             {activeTab === 'overview' && kpiSummary && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Sales Overview</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Sales Overview</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <KPICard
                     title="Total Sales"
@@ -632,15 +632,15 @@ function SalesAnalysis() {
 
                 {/* Peak Hour */}
                 {peakHour && (
-                  <div className="bg-gradient-to-r from-purple-900/30 to-slate-800 rounded-xl p-4 mb-6 border border-purple-700/30">
+                  <div className="bg-gradient-to-r from-purple-100 to-white rounded-xl p-4 mb-6 border border-purple-300">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">🕐</span>
                       <div>
-                        <div className="text-gray-400 text-sm">Peak Sales Hour</div>
-                        <div className="text-purple-400 text-xl font-bold">
+                        <div className="text-gray-600 text-sm">Peak Sales Hour</div>
+                        <div className="text-purple-600 text-xl font-bold">
                           {peakHour.hour}:00 - {peakHour.hour + 1}:00
                         </div>
-                        <div className="text-gray-500 text-xs">
+                        <div className="text-gray-700 text-xs">
                           {peakHour.transaction_count} transactions • ₱{Number(peakHour.total_revenue).toLocaleString()}
                         </div>
                       </div>
@@ -649,7 +649,7 @@ function SalesAnalysis() {
                 )}
 
                 {/* Hourly Distribution Chart */}
-                <h3 className="text-white text-lg font-bold mb-3">Hourly Sales Distribution</h3>
+                <h3 className="text-black text-lg font-bold mb-3">Hourly Sales Distribution</h3>
                 <div className="h-[250px]">
                   <Bar data={hourlyChartData} options={{ ...chartOptions, plugins: { legend: { display: false } } }} />
                 </div>
@@ -659,13 +659,13 @@ function SalesAnalysis() {
             {/* Time-based Sales Tab */}
             {activeTab === 'time' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Sales by Time Period</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Sales by Time Period</h2>
                 <FilterControls showTimePeriod showDateFilter showGroupBy showSort={false} />
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   {/* Sales Trend */}
                   <div>
-                    <h3 className="text-white text-lg font-bold mb-3">Sales Trend ({groupBy})</h3>
+                    <h3 className="text-black text-lg font-bold mb-3">Sales Trend ({groupBy})</h3>
                     <div className="h-[300px]">
                       <Line data={salesByDateChart} options={chartOptions} />
                     </div>
@@ -673,7 +673,7 @@ function SalesAnalysis() {
 
                   {/* Hourly */}
                   <div>
-                    <h3 className="text-white text-lg font-bold mb-3">Hourly Distribution</h3>
+                    <h3 className="text-black text-lg font-bold mb-3">Hourly Distribution</h3>
                     <div className="h-[300px]">
                       <Bar data={hourlyChartData} options={{ ...chartOptions, plugins: { legend: { display: false } } }} />
                     </div>
@@ -697,13 +697,13 @@ function SalesAnalysis() {
             {/* Products Tab */}
             {activeTab === 'products' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Product Performance</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Product Performance</h2>
                 <FilterControls showTimePeriod showDateFilter showLimit showSort />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   {/* Fastest Moving */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h3 className="text-green-400 text-lg font-bold mb-3 flex items-center gap-2">
+                  <div className="bg-gray-100 rounded-xl p-4">
+                    <h3 className="text-green-600 text-lg font-bold mb-3 flex items-center gap-2">
                       🚀 Fastest-Moving Products
                     </h3>
                     <div className="h-[250px]">
@@ -712,8 +712,8 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Slowest Moving */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h3 className="text-red-400 text-lg font-bold mb-3 flex items-center gap-2">
+                  <div className="bg-gray-100 rounded-xl p-4">
+                    <h3 className="text-red-600 text-lg font-bold mb-3 flex items-center gap-2">
                       🐢 Slowest-Moving Products
                     </h3>
                     <div className="h-[250px]">
@@ -723,7 +723,7 @@ function SalesAnalysis() {
                 </div>
 
                 {/* Full Product Table */}
-                <h3 className="text-white text-lg font-bold mb-3">All Products Sales</h3>
+                <h3 className="text-black text-lg font-bold mb-3">All Products Sales</h3>
                 {salesByProduct.length > 0 && (
                   <DataTable
                     data={sortData(salesByProduct, 'total_revenue')}
@@ -742,7 +742,7 @@ function SalesAnalysis() {
             {/* Categories Tab */}
             {activeTab === 'categories' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Sales by Category</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Sales by Category</h2>
                 <FilterControls showTimePeriod showDateFilter showSort />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -755,7 +755,7 @@ function SalesAnalysis() {
                           responsive: true,
                           maintainAspectRatio: false,
                           plugins: {
-                            legend: { position: 'right', labels: { color: '#9ca3af', padding: 15 } },
+                            legend: { position: 'right', labels: { color: '#6b7280', padding: 15 } },
                           },
                         }}
                       />
@@ -796,7 +796,7 @@ function SalesAnalysis() {
             {/* Ingredients Tab */}
             {activeTab === 'ingredients' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Ingredient Consumption</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Ingredient Consumption</h2>
                 <FilterControls showTimePeriod showDateFilter showIngredientLimit showSort />
 
                 {ingredientData.length > 0 ? (
@@ -831,12 +831,12 @@ function SalesAnalysis() {
             {/* Operations Tab */}
             {activeTab === 'operations' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Operations & Inventory Metrics</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Operations & Inventory Metrics</h2>
                 <FilterControls showTimePeriod showDateFilter showSort={false} />
 
                 {/* Transaction Duration KPIs */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     ⏱️ Checkout/Transaction Duration
                   </h3>
                   {transactionDuration && transactionDuration.total_transactions > 0 ? (
@@ -864,13 +864,13 @@ function SalesAnalysis() {
                       />
                     </div>
                   ) : (
-                    <div className="text-gray-400 bg-slate-700/50 rounded-lg p-4">No transaction duration data available. Duration is tracked when transactions have both start and finish timestamps.</div>
+                    <div className="text-gray-600 bg-gray-100 rounded-lg p-4">No transaction duration data available. Duration is tracked when transactions have both start and finish timestamps.</div>
                   )}
                 </div>
 
                 {/* Cancelled/Returned Transactions */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     ❌ Cancelled/Voided Transactions
                   </h3>
                   {cancelledTransactions ? (
@@ -898,13 +898,13 @@ function SalesAnalysis() {
                       />
                     </div>
                   ) : (
-                    <div className="text-gray-400 bg-slate-700/50 rounded-lg p-4">No transaction data available</div>
+                    <div className="text-gray-600 bg-gray-100 rounded-lg p-4">No transaction data available</div>
                   )}
                 </div>
 
                 {/* Inventory Turnover */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     🔄 Inventory Turnover
                   </h3>
                   {inventoryTurnover.length > 0 ? (

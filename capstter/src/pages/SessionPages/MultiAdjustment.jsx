@@ -222,12 +222,12 @@ export default function MultiAdjustment() {
 
   const getTypeColor = (t) => {
     switch (t) {
-      case 'add': return 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30';
-      case 'spoilage': return 'text-rose-400 bg-rose-500/20 border-rose-500/30';
-      case 'waste': return 'text-amber-400 bg-amber-500/20 border-amber-500/30';
-      case 'correction': return 'text-indigo-400 bg-indigo-500/20 border-indigo-500/30';
-      case 'production': return 'text-cyan-400 bg-cyan-500/20 border-cyan-500/30';
-      default: return 'text-slate-400 bg-slate-500/20 border-slate-500/30';
+      case 'add': return 'text-green-600 bg-green-100 border-green-200';
+      case 'spoilage': return 'text-red-600 bg-red-100 border-red-200';
+      case 'waste': return 'text-amber-600 bg-amber-100 border-amber-200';
+      case 'correction': return 'text-blue-600 bg-blue-100 border-blue-200';
+      case 'production': return 'text-cyan-600 bg-cyan-100 border-cyan-200';
+      default: return 'text-gray-600 bg-gray-100 border-gray-200';
     }
   };
 
@@ -236,19 +236,19 @@ export default function MultiAdjustment() {
       <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white/90 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
             Stock Adjustment
           </h1>
-          <p className="mt-2 text-white/60 text-sm sm:text-base">
+          <p className="mt-2 text-gray-600 text-sm sm:text-base">
             Manage your inventory with various adjustment types
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           {/* Type Selector Header */}
-          <div className="p-4 border-b border-slate-700/50">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          <div className="p-4 border-b border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
               Adjustment Type
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -260,7 +260,7 @@ export default function MultiAdjustment() {
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
                     type === t.value 
                       ? getTypeColor(t.value)
-                      : 'text-slate-400 bg-slate-700/30 border-slate-600/30 hover:bg-slate-700/50'
+                      : 'text-gray-600 bg-gray-100 border-gray-300 hover:bg-gray-200'
                   }`}
                 >
                   {getTypeIcon(t.value)}
@@ -272,8 +272,8 @@ export default function MultiAdjustment() {
 
           {/* Correction Mode Toggle */}
           {type === 'correction' && (
-            <div className="px-4 py-3 bg-slate-700/30 border-b border-slate-700/50">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
                 Correction Mode
               </label>
               <div className="flex gap-2">
@@ -282,8 +282,8 @@ export default function MultiAdjustment() {
                   onClick={() => setCorrectionMode('add')}
                   className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                     correctionMode === 'add'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-slate-600/30 text-slate-400 border border-slate-600/30 hover:bg-slate-600/50'
+                      ? 'bg-green-100 text-green-600 border border-green-200'
+                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
                   }`}
                 >
                   + Add to Stock
@@ -293,8 +293,8 @@ export default function MultiAdjustment() {
                   onClick={() => setCorrectionMode('subtract')}
                   className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                     correctionMode === 'subtract'
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                      : 'bg-slate-600/30 text-slate-400 border border-slate-600/30 hover:bg-slate-600/50'
+                      ? 'bg-red-100 text-red-600 border border-red-200'
+                      : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
                   }`}
                 >
                   − Subtract from Stock
@@ -309,18 +309,18 @@ export default function MultiAdjustment() {
             {items.map((item, idx) => (
               <div 
                 key={idx} 
-                className="bg-slate-700/40 backdrop-blur-sm rounded-xl border border-slate-600/40 p-4 space-y-4"
+                className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-4"
               >
                 {/* Item Header */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Item #{idx + 1}
                   </span>
                   {items.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeItem(idx)}
-                      className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 transition-all"
+                      className="p-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-all"
                       title="Remove Item"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,15 +332,15 @@ export default function MultiAdjustment() {
 
                 {/* Product Select */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Product</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Product</label>
                   <select
                     value={item.productId}
                     onChange={e => handleItemChange(idx, 'productId', e.target.value)}
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-slate-600 bg-slate-700/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     {products.map(p => (
-                      <option key={p.product_id} value={p.product_id} className="bg-slate-700">
+                      <option key={p.product_id} value={p.product_id} className="bg-white">
                         {p.name}
                       </option>
                     ))}
@@ -350,13 +350,13 @@ export default function MultiAdjustment() {
                 {/* Current Quantity & Input Quantity Row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Current Stock</label>
-                    <div className="px-4 py-2.5 rounded-lg bg-slate-600/50 border border-slate-600 text-slate-300 font-medium">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Stock</label>
+                    <div className="px-4 py-2.5 rounded-lg bg-gray-100 border border-gray-300 text-gray-700 font-medium">
                       {item.quantityAvailable}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       {type === 'add' ? 'Add Quantity' : type === 'production' ? 'Produce Quantity' : 'Adjust Quantity'}
                     </label>
                     <input
@@ -367,7 +367,7 @@ export default function MultiAdjustment() {
                       onChange={e => handleItemChange(idx, 'quantity', parseFloat(e.target.value))}
                       required
                       placeholder="0"
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-600 bg-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export default function MultiAdjustment() {
                 {/* Unit Price (only for add) */}
                 {type === 'add' && (
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Unit Price (₱)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Unit Price (₱)</label>
                     <input
                       type="number"
                       min="0"
@@ -384,7 +384,7 @@ export default function MultiAdjustment() {
                       onChange={e => handleItemChange(idx, 'unit_price', e.target.value)}
                       required
                       placeholder="0.00"
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-600 bg-slate-700/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 )}
@@ -395,7 +395,7 @@ export default function MultiAdjustment() {
             <button
               type="button"
               onClick={addItem}
-              className="w-full py-3 rounded-xl border-2 border-dashed border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300 hover:bg-slate-700/30 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -409,7 +409,7 @@ export default function MultiAdjustment() {
               disabled={loading || items.length === 0}
               className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                 loading || items.length === 0
-                  ? 'bg-slate-600/50 text-slate-500 cursor-not-allowed'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : `${getTypeColor(type)} hover:opacity-90`
               }`}
             >
@@ -430,8 +430,8 @@ export default function MultiAdjustment() {
 
         <ToastContainer 
           position="bottom-right"
-          theme="dark"
-          toastClassName="bg-slate-800 text-white"
+          theme="light"
+          toastClassName="bg-white text-gray-900 border border-gray-200"
         />
       </div>
     </DashboardLayout>

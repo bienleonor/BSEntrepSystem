@@ -70,14 +70,14 @@ const PaginationControls = ({ page, totalPages, setPage }) => {
       <button
         onClick={() => setPage(1)}
         disabled={page === 1}
-        className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+        className="px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         « First
       </button>
       <button
         onClick={() => setPage(Math.max(1, page - 1))}
         disabled={page === 1}
-        className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+        className="px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         ‹ Prev
       </button>
@@ -86,7 +86,7 @@ const PaginationControls = ({ page, totalPages, setPage }) => {
         <button
           key={p}
           onClick={() => setPage(p)}
-          className={`px-2 py-1 rounded text-sm ${p === page ? 'bg-gray-800 text-white' : 'border'}`}
+          className={`px-2 py-1 rounded text-sm ${p === page ? 'bg-blue-600 text-white border border-blue-600' : 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50'}`}
         >
           {p}
         </button>
@@ -95,14 +95,14 @@ const PaginationControls = ({ page, totalPages, setPage }) => {
       <button
         onClick={() => setPage(Math.min(totalPages, page + 1))}
         disabled={page === totalPages}
-        className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+        className="px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Next ›
       </button>
       <button
         onClick={() => setPage(totalPages)}
         disabled={page === totalPages}
-        className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+        className="px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Last »
       </button>
@@ -369,7 +369,7 @@ const BusinessManagement = () => {
     <SuperAdminLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h1 className="text-2xl font-bold">Manage Businesses</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Manage Businesses</h1>
 
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
             <div className="flex gap-2 flex-wrap">
@@ -380,11 +380,11 @@ const BusinessManagement = () => {
                   className={`px-3 py-2 rounded text-sm ${
                     filter === status
                       ? status === 'ACTIVE'
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-green-600 text-white'
                         : status === 'OFFLINE'
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-300 text-black'
-                      : 'bg-gray-100 text-gray-700'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
                   {status}
@@ -403,7 +403,7 @@ const BusinessManagement = () => {
             placeholder="Search businesses... (name, owner, code, status)"
             value={businessSearch}
             onChange={(e) => setBusinessSearch(e.target.value)}
-            className="w-full md:w-1/2 px-3 py-2 border rounded text-sm"
+            className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ const BusinessManagement = () => {
             <select
               value={bizPageSize}
               onChange={(e) => { setBizPageSize(Number(e.target.value)); setBizPage(1); }}
-              className="border rounded px-2 py-1 text-sm"
+              className="border border-gray-300 rounded px-2 py-1 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={5}>5</option>
               <option value={8}>8</option>
@@ -423,24 +423,24 @@ const BusinessManagement = () => {
 
         {/* Desktop table (md and up) */}
         <div className="hidden md:block">
-          <table className="w-full table-auto border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+          <table className="w-full table-auto border-collapse bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700 text-left">
-                <th className="p-3 text-sm">#</th>
-                <th className="p-3 text-sm">Business Name</th>
-                <th className="p-3 text-sm">Owner</th>
-                <th className="p-3 text-sm">Code</th>
-                <th className="p-3 text-sm">Status</th>
-                <th className="p-3 text-sm">Action</th>
+              <tr className="bg-gray-50 text-left border-b border-gray-200">
+                <th className="p-3 text-sm text-gray-700">#</th>
+                <th className="p-3 text-sm text-gray-700">Business Name</th>
+                <th className="p-3 text-sm text-gray-700">Owner</th>
+                <th className="p-3 text-sm text-gray-700">Code</th>
+                <th className="p-3 text-sm text-gray-700">Status</th>
+                <th className="p-3 text-sm text-gray-700">Action</th>
               </tr>
             </thead>
             <tbody>
               {paginatedBusinesses.map((biz, index) => (
-                <tr key={biz.id} className="border-t">
-                  <td className="p-3 text-sm">{(bizPage - 1) * bizPageSize + index + 1}</td>
-                  <td className="p-3 text-sm">{biz.name}</td>
-                  <td className="p-3 text-sm">{biz.owner}</td>
-                  <td className="p-3 text-sm">{biz.code}</td>
+                <tr key={biz.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="p-3 text-sm text-gray-900">{(bizPage - 1) * bizPageSize + index + 1}</td>
+                  <td className="p-3 text-sm text-gray-900">{biz.name}</td>
+                  <td className="p-3 text-sm text-gray-900">{biz.owner}</td>
+                  <td className="p-3 text-sm text-gray-900">{biz.code}</td>
                   <td className="p-3 text-sm">
                     <span className={`px-2 py-1 rounded text-xs font-semibold inline-block ${
                       biz.status === 'ACTIVE' ? 'bg-green-100 text-green-700 border border-green-300' :
@@ -531,7 +531,7 @@ const BusinessManagement = () => {
               <select
                 value={bizPageSize}
                 onChange={(e) => { setBizPageSize(Number(e.target.value)); setBizPage(1); }}
-                className="border rounded px-2 py-1 text-sm"
+                className="border border-gray-300 rounded px-2 py-1 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value={5}>5</option>
                 <option value={8}>8</option>
@@ -543,7 +543,7 @@ const BusinessManagement = () => {
               <button
                 onClick={() => setBizPage(Math.max(1, bizPage - 1))}
                 disabled={bizPage === 1}
-                className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+                className="px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
@@ -551,7 +551,7 @@ const BusinessManagement = () => {
               <button
                 onClick={() => setBizPage(Math.min(totalBizPages, bizPage + 1))}
                 disabled={bizPage === totalBizPages}
-                className="px-2 py-1 rounded border text-sm disabled:opacity-50"
+                className="px-2 py-1 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -621,7 +621,7 @@ const BusinessManagement = () => {
 
               {activeTab && (
                 <button
-                  className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
+                  className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 bg-white"
                   onClick={() => { setActiveTab(null); setEmployeesRequested(false); setProductsRequested(false); setEmployeeSearch(''); setProductSearch(''); setEmployeesPage(1); setProductsPage(1); }}
                 >Clear</button>
               )}
@@ -639,14 +639,14 @@ const BusinessManagement = () => {
                           value={employeeSearch}
                           onChange={(e) => setEmployeeSearch(e.target.value)}
                           placeholder="Search name or username..."
-                          className="border rounded px-2 py-1 text-sm w-56"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm w-56 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <div className="flex items-center gap-2">
                           <label className="text-sm text-gray-600">Per page:</label>
                           <select
                             value={employeesPageSize}
                             onChange={(e) => { setEmployeesPageSize(Number(e.target.value)); setEmployeesPage(1); }}
-                            className="border rounded px-2 py-1 text-sm"
+                            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value={4}>4</option>
                             <option value={6}>6</option>
@@ -675,15 +675,15 @@ const BusinessManagement = () => {
                             </thead>
                             <tbody>
                               {paginatedEmployees.map((e) => (
-                                <tr key={`${e.user_id}-${e.business_id}`} className="border-t ">
-                                  <td className="py-1 pr-2">{e.username || '—'}</td>
-                                  <td className="py-1 pr-2">{[e.first_name, e.last_name].filter(Boolean).join(' ') || '—'}</td>
-                                  <td className="py-1 pr-2">{e.contact_no || '—'}</td>
+                                <tr key={`${e.user_id}-${e.business_id}`} className="border-t border-gray-200 hover:bg-gray-50">
+                                  <td className="py-1 pr-2 text-gray-900">{e.username || '—'}</td>
+                                  <td className="py-1 pr-2 text-gray-900">{[e.first_name, e.last_name].filter(Boolean).join(' ') || '—'}</td>
+                                  <td className="py-1 pr-2 text-gray-900">{e.contact_no || '—'}</td>
                                   <td className="py-1 pr-2">
                                     {editingEmployeeId === e.user_id ? (
                                       <div className="flex items-center gap-1">
                                         <select
-                                          className="border px-1 py-0.5 text-xs rounded dark:bg-gray-800"
+                                          className="border border-gray-300 px-1 py-0.5 text-xs rounded bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                           value={editingPositionId ?? ''}
                                           onChange={(ev) => {
                                             const val = ev.target.value;
@@ -784,14 +784,14 @@ const BusinessManagement = () => {
                           value={productSearch}
                           onChange={(e) => setProductSearch(e.target.value)}
                           placeholder="Search product name..."
-                          className="border rounded px-2 py-1 text-sm w-56"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm w-56 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <div className="flex items-center gap-2 ">
                           <label className="text-sm text-gray-600">Per page:</label>
                           <select
                             value={productsPageSize}
                             onChange={(e) => { setProductsPageSize(Number(e.target.value)); setProductsPage(1); }}
-                            className="border rounded px-2 py-1 text-sm "
+                            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value={4}>4</option>
                             <option value={6}>6</option>
@@ -820,11 +820,11 @@ const BusinessManagement = () => {
                             </thead>
                             <tbody>
                               {paginatedProducts.map((p) => (
-                                <tr key={p.product_id} className="border-t">
-                                  <td className="py-1 pr-2">{p.name || '—'}</td>
-                                  <td className="py-1 pr-2">{p.category_name || '—'}</td>
-                                  <td className="py-1 pr-2">{typeof p.price === 'number' ? p.price.toFixed(2) : (p.price ?? '—')}</td>
-                                  <td className="py-1 pr-2">{p.quantity ?? '—'}</td>
+                                <tr key={p.product_id} className="border-t border-gray-200 hover:bg-gray-50">
+                                  <td className="py-1 pr-2 text-gray-900">{p.name || '—'}</td>
+                                  <td className="py-1 pr-2 text-gray-900">{p.category_name || '—'}</td>
+                                  <td className="py-1 pr-2 text-gray-900">{typeof p.price === 'number' ? p.price.toFixed(2) : (p.price ?? '—')}</td>
+                                  <td className="py-1 pr-2 text-gray-900">{p.quantity ?? '—'}</td>
                                   <td className="py-1 pr-2">
                                     <button
                                       className="bg-red-600 text-white px-2 py-0.5 rounded text-xs disabled:opacity-50"
@@ -872,10 +872,10 @@ const BusinessManagement = () => {
           >
             <form onSubmit={handleEditSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-white">Business Name</label>
+                <label className="block text-sm font-medium text-gray-700">Business Name</label>
                 <input
                   type="text"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={editBusinessName}
                   onChange={(e) => setEditBusinessName(e.target.value)}
                   required
@@ -883,9 +883,9 @@ const BusinessManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white">Business Type</label>
+                <label className="block text-sm font-medium text-gray-700">Business Type</label>
                 <select
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={editBusinessType}
                   onChange={(e) => setEditBusinessType(e.target.value)}
                   required
@@ -904,36 +904,36 @@ const BusinessManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white">Access Code</label>
+                <label className="block text-sm font-medium text-gray-700">Access Code</label>
                 <input
                   type="text"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-200 text-gray-800"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
                   value={editAccessCode}
                   readOnly
                 />
-                <p className="text-xs text-gray-300 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Share this code with employees to join the business.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Upload Logo</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Logo</label>
                 <div className="flex items-center gap-3">
                   <input type="file" accept="image/*" id="edit-logo-upload" className="hidden" onChange={(e) => setEditLogo(e.target.files?.[0] || null)} />
-                  <label htmlFor="edit-logo-upload" className="cursor-pointer bg-white px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-sm text-gray-900">
+                  <label htmlFor="edit-logo-upload" className="cursor-pointer bg-white px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-50 text-sm text-gray-900">
                     {editLogo ? 'Change Logo' : 'Upload Logo'}
                   </label>
-                  {editLogo && <span className="text-sm text-gray-300">{editLogo.name}</span>}
+                  {editLogo && <span className="text-sm text-gray-600">{editLogo.name}</span>}
                 </div>
                 {editLogoPreview && (
                   <div className="mt-3">
-                    <img src={editLogoPreview} alt="logo preview" className="h-16 w-16 object-contain rounded-md" />
+                    <img src={editLogoPreview} alt="logo preview" className="h-16 w-16 object-contain rounded-md border border-gray-200" />
                   </div>
                 )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={closeEditPopup} className="px-3 py-2 rounded border border-gray-400 text-sm text-white hover:bg-white/10">Cancel</button>
+                <button type="button" onClick={closeEditPopup} className="px-3 py-2 rounded border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
                 <button type="submit" disabled={editSaving} className={`px-3 py-2 rounded text-sm text-white ${editSaving ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
                   {editSaving ? 'Saving…' : 'Save'}
                 </button>

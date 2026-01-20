@@ -190,10 +190,10 @@ export default function BusinessPositionManagement() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-black">
               Business Positions
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-gray-600 text-sm mt-1">
               Manage position permissions and customize access for your business
             </p>
           </div>
@@ -210,11 +210,11 @@ export default function BusinessPositionManagement() {
 
         {/* Positions Grid */}
         {loading ? (
-          <div className="flex items-center justify-center h-48 text-white">Loading...</div>
+          <div className="flex items-center justify-center h-48 text-black">Loading...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {positions.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-slate-400">
+              <div className="col-span-full text-center py-12 text-gray-500">
                 No positions found.
               </div>
             ) : (
@@ -223,21 +223,21 @@ export default function BusinessPositionManagement() {
                 return (
                 <div 
                   key={pos.business_pos_id} 
-                  className="bg-slate-800/80 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50 hover:border-slate-600/50 transition-all"
+                  className="bg-white backdrop-blur-sm rounded-xl p-5 border border-gray-300 hover:border-gray-400 transition-all"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{pos.position_name}</h3>
-                      <p className="text-slate-400 text-sm">ID: {pos.business_pos_id}</p>
+                      <h3 className="text-lg font-semibold text-black">{pos.position_name}</h3>
+                      <p className="text-gray-600 text-sm">ID: {pos.business_pos_id}</p>
                     </div>
                     <div className="flex gap-2">
                       {isOwner && (
-                        <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-600 text-xs rounded-full">
                           Protected
                         </span>
                       )}
                       {pos.isCustomized && (
-                        <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-600 text-xs rounded-full">
                           Customized
                         </span>
                       )}
@@ -247,12 +247,12 @@ export default function BusinessPositionManagement() {
                   {pos.override_count > 0 && (
                     <div className="flex gap-2 mb-3 text-xs">
                       {pos.add_count > 0 && (
-                        <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">
+                        <span className="px-2 py-1 bg-green-100 text-green-600 rounded">
                           +{pos.add_count} added
                         </span>
                       )}
                       {pos.remove_count > 0 && (
-                        <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded">
+                        <span className="px-2 py-1 bg-red-100 text-red-600 rounded">
                           -{pos.remove_count} removed
                         </span>
                       )}
@@ -260,7 +260,7 @@ export default function BusinessPositionManagement() {
                   )}
                   
                   {isOwner ? (
-                    <div className="w-full mt-2 px-4 py-2 bg-slate-700/50 text-slate-500 rounded-lg text-center text-sm">
+                    <div className="w-full mt-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-center text-sm">
                       <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
@@ -269,7 +269,7 @@ export default function BusinessPositionManagement() {
                   ) : (
                     <button
                       onClick={() => handleEditClick(pos)}
-                      className="w-full mt-2 px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-lg transition flex items-center justify-center gap-2"
+                      className="w-full mt-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition flex items-center justify-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -294,13 +294,13 @@ export default function BusinessPositionManagement() {
         {selectedPosition && (
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-slate-600 pb-2">
+            <div className="flex gap-2 border-b border-gray-300 pb-2">
               <button
                 onClick={() => setActiveTab('current')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                   activeTab === 'current' 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 Current Permissions
@@ -309,8 +309,8 @@ export default function BusinessPositionManagement() {
                 onClick={() => setActiveTab('add')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                   activeTab === 'add' 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 Add Permission
@@ -321,7 +321,7 @@ export default function BusinessPositionManagement() {
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                     activeTab === 'removed' 
                       ? 'bg-red-600 text-white' 
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
                   Removed ({effectivePermissions.overrides.removed.length})
@@ -330,7 +330,7 @@ export default function BusinessPositionManagement() {
             </div>
 
             {permissionsLoading ? (
-              <div className="flex items-center justify-center h-32 text-slate-400">
+              <div className="flex items-center justify-center h-32 text-gray-500">
                 Loading permissions...
               </div>
             ) : (
@@ -339,13 +339,13 @@ export default function BusinessPositionManagement() {
                 {activeTab === 'current' && (
                   <div className="space-y-3">
                     {effectivePermissions?.isCustomized && (
-                      <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                        <span className="text-amber-400 text-sm">
+                      <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <span className="text-yellow-700 text-sm">
                           This position has custom overrides
                         </span>
                         <button
                           onClick={handleResetToDefault}
-                          className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition"
+                          className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition"
                         >
                           Reset to Default
                         </button>
@@ -355,25 +355,25 @@ export default function BusinessPositionManagement() {
                     <div className="max-h-[400px] overflow-y-auto space-y-3 pr-1">
                       {effectivePermissions?.permissions?.length > 0 ? (
                         Object.entries(groupPermissionsByFeature(effectivePermissions.permissions)).map(([feature, perms]) => (
-                          <div key={feature} className="bg-slate-700/50 rounded-lg p-3">
-                            <h4 className="text-white font-medium mb-2 capitalize">{feature.replace(/_/g, ' ')}</h4>
+                          <div key={feature} className="bg-gray-100 rounded-lg p-3">
+                            <h4 className="text-black font-medium mb-2 capitalize">{feature.replace(/_/g, ' ')}</h4>
                             <div className="flex flex-wrap gap-2">
                               {perms.map((perm) => (
                                 <div 
                                   key={perm.feature_action_id}
                                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${
                                     perm.isAdded 
-                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                      : 'bg-slate-600/50 text-slate-300'
+                                      ? 'bg-green-100 text-green-600 border border-green-200' 
+                                      : 'bg-gray-200 text-gray-700'
                                   }`}
                                 >
                                   <span className="capitalize">{perm.action_name}</span>
                                   {perm.isAdded && (
-                                    <span className="text-xs text-emerald-500">(added)</span>
+                                    <span className="text-xs text-green-600">(added)</span>
                                   )}
                                   <button
                                     onClick={() => handleRemovePermission(perm.feature_action_id, perm.isPreset)}
-                                    className="ml-1 text-red-400 hover:text-red-300"
+                                    className="ml-1 text-red-600 hover:text-red-700"
                                     title="Remove permission"
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,7 +386,7 @@ export default function BusinessPositionManagement() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-slate-400">
+                        <div className="text-center py-8 text-gray-500">
                           No permissions assigned to this position.
                         </div>
                       )}
@@ -397,20 +397,20 @@ export default function BusinessPositionManagement() {
                 {/* Add Permission Tab */}
                 {activeTab === 'add' && (
                   <div className="space-y-3">
-                    <p className="text-slate-400 text-sm">
+                    <p className="text-gray-600 text-sm">
                       Select permissions to add to this position (these will override the default)
                     </p>
                     <div className="max-h-[400px] overflow-y-auto space-y-3 pr-1">
                       {availablePermissions.length > 0 ? (
                         Object.entries(groupPermissionsByFeature(availablePermissions)).map(([feature, perms]) => (
-                          <div key={feature} className="bg-slate-700/50 rounded-lg p-3">
-                            <h4 className="text-white font-medium mb-2 capitalize">{feature.replace(/_/g, ' ')}</h4>
+                          <div key={feature} className="bg-gray-100 rounded-lg p-3">
+                            <h4 className="text-black font-medium mb-2 capitalize">{feature.replace(/_/g, ' ')}</h4>
                             <div className="flex flex-wrap gap-2">
                               {perms.map((perm) => (
                                 <button
                                   key={perm.feature_action_id}
                                   onClick={() => handleAddPermission(perm.feature_action_id)}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-600/50 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 rounded-lg text-sm transition border border-transparent hover:border-emerald-500/30"
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 hover:bg-green-100 text-gray-700 hover:text-green-600 rounded-lg text-sm transition border border-transparent hover:border-green-200"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -422,7 +422,7 @@ export default function BusinessPositionManagement() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-slate-400">
+                        <div className="text-center py-8 text-gray-500">
                           All available permissions are already assigned.
                         </div>
                       )}
@@ -433,7 +433,7 @@ export default function BusinessPositionManagement() {
                 {/* Removed Permissions Tab */}
                 {activeTab === 'removed' && (
                   <div className="space-y-3">
-                    <p className="text-slate-400 text-sm">
+                    <p className="text-gray-600 text-sm">
                       These preset permissions have been removed via override. Click to restore.
                     </p>
                     <div className="max-h-[400px] overflow-y-auto space-y-2 pr-1">
@@ -442,14 +442,14 @@ export default function BusinessPositionManagement() {
                         .map((perm) => (
                           <div 
                             key={perm.feature_action_id}
-                            className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-lg p-3"
+                            className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-3"
                           >
-                            <span className="text-red-400">
+                            <span className="text-red-700">
                               {perm.feature_name}:{perm.action_name}
                             </span>
                             <button
                               onClick={() => handleRestorePermission(perm.feature_action_id)}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition"
+                              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition"
                             >
                               Restore
                             </button>
@@ -463,10 +463,10 @@ export default function BusinessPositionManagement() {
             )}
 
             {/* Close button */}
-            <div className="flex justify-end pt-3 border-t border-slate-600">
+            <div className="flex justify-end pt-3 border-t border-gray-300">
               <button
                 onClick={handleCloseEditPopup}
-                className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
               >
                 Close
               </button>
@@ -483,12 +483,12 @@ export default function BusinessPositionManagement() {
       >
         <form className="space-y-4" onSubmit={handleAddSubmit}>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Position Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Position Name</label>
             <input
               type="text"
               value={newRoleName}
               onChange={(e) => setNewRoleName(e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., Cashier, Manager, etc."
               required
             />
@@ -498,7 +498,7 @@ export default function BusinessPositionManagement() {
             <button
               type="button"
               onClick={handleCloseAddPopup}
-              className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition"
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
             >
               Cancel
             </button>
