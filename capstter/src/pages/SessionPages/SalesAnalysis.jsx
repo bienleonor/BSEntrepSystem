@@ -14,6 +14,7 @@ import {
   Legend
 } from 'chart.js';
 import * as AnalysisApi from '../../services/analysisApi';
+import useForecast from '../../hooks/useForecast';
 
 ChartJS.register(
   CategoryScale,
@@ -27,6 +28,7 @@ ChartJS.register(
   Legend
 );
 
+import { getBusinessId } from '../../utils/token';
 // Tab configurations
 const TABS = [
   { id: 'overview', label: 'Overview', icon: '📊' },
@@ -78,6 +80,14 @@ function SalesAnalysis() {
   const [categoryDemand, setCategoryDemand] = useState([]);
   const [stockoutPrediction, setStockoutPrediction] = useState([]);
   const [reorderAlerts, setReorderAlerts] = useState([]);
+  
+  // Forecast microservice hook
+  const { forecastRevenue, forecastCategoryDemand, forecastIngredientUsage, checkReorderAlert } = useForecast();
+  const [revenueForecastData, setRevenueForecastData] = useState(null);
+  const [ingredientForecasts, setIngredientForecasts] = useState([]);
+  const [categoryForecastData, setCategoryForecastData] = useState(null);
+  const [microserviceReorderAlerts, setMicroserviceReorderAlerts] = useState([]);
+  const [selectedCategoryForForecast, setSelectedCategoryForForecast] = useState('');
 
   // Helper to format duration in seconds to readable format
   const formatDuration = (seconds) => {
@@ -131,7 +141,18 @@ function SalesAnalysis() {
     return dateRange;
   }, [timePeriod, dateRange, getDateRangeFromPeriod]);
 
-  const businessId = localStorage.getItem('selectedBusinessId') || '';
+  // Use getBusinessId helper to safely get businessId (like inventory-controller expects)
+  const businessId = getBusinessId();
+
+  // Prevent API calls if businessId is missing or invalid
+  useEffect(() => {
+    if (!businessId) {
+      setError('No business selected. Please select a business to view sales analysis.');
+      setLoading(false);
+      return;
+    }
+    // ...existing code for fetching data
+  }, [businessId, activeTab, effectiveDateRange.start, effectiveDateRange.end, groupBy, productLimit, ingredientLimit]);
 
   // Fetch data based on active tab
   useEffect(() => {
@@ -229,6 +250,12 @@ function SalesAnalysis() {
             break;
           }
           case 'forecast': {
+            // Load categories if not already loaded
+            if (!salesByCategory || salesByCategory.length === 0) {
+              const catData = await AnalysisApi.getSalesByCategory(businessId);
+              setSalesByCategory(catData);
+            }
+            
             const [forecast, demand, stockout, alerts] = await Promise.all([
               AnalysisApi.getSalesForecast(businessId),
               AnalysisApi.getCategoryDemandForecast(businessId),
@@ -267,11 +294,11 @@ function SalesAnalysis() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top', labels: { color: '#9ca3af', usePointStyle: true, padding: 15 } },
+      legend: { position: 'top', labels: { color: '#6b7280', usePointStyle: true, padding: 15 } },
     },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
-      y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+      x: { grid: { color: 'rgba(0,0,0,0.1)' }, ticks: { color: '#6b7280' } },
+      y: { grid: { color: 'rgba(0,0,0,0.1)' }, ticks: { color: '#6b7280' } },
     },
   };
 
@@ -371,23 +398,23 @@ function SalesAnalysis() {
   // KPI Card Component with proper Tailwind color mapping
   const KPICard = ({ title, value, subtitle, color = 'blue', icon }) => {
     const colorClasses = {
-      blue: 'from-blue-900/50 border-blue-700/30 text-blue-400',
-      green: 'from-green-900/50 border-green-700/30 text-green-400',
-      red: 'from-red-900/50 border-red-700/30 text-red-400',
-      orange: 'from-orange-900/50 border-orange-700/30 text-orange-400',
-      purple: 'from-purple-900/50 border-purple-700/30 text-purple-400',
-      yellow: 'from-yellow-900/50 border-yellow-700/30 text-yellow-400',
+      blue: 'from-blue-100 border-blue-300 text-blue-600',
+      green: 'from-green-100 border-green-300 text-green-600',
+      red: 'from-red-100 border-red-300 text-red-600',
+      orange: 'from-orange-100 border-orange-300 text-orange-600',
+      purple: 'from-purple-100 border-purple-300 text-purple-600',
+      yellow: 'from-yellow-100 border-yellow-300 text-yellow-600',
     };
     const classes = colorClasses[color] || colorClasses.blue;
     const [bgClass, borderClass, textClass] = classes.split(' ');
     
     return (
-      <div className={`bg-gradient-to-br ${bgClass} to-slate-800 rounded-xl p-5 shadow-lg border ${borderClass}`}>
+      <div className={`bg-gradient-to-br ${bgClass} to-white rounded-xl p-5 shadow-lg border ${borderClass}`}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-gray-400 text-xs uppercase tracking-wide">{title}</div>
+            <div className="text-gray-600 text-xs uppercase tracking-wide">{title}</div>
             <div className={`${textClass} text-2xl font-bold mt-1`}>{value}</div>
-            {subtitle && <div className="text-gray-500 text-xs mt-1">{subtitle}</div>}
+            {subtitle && <div className="text-gray-700 text-xs mt-1">{subtitle}</div>}
           </div>
           {icon && <div className="text-3xl opacity-50">{icon}</div>}
         </div>
@@ -399,25 +426,33 @@ function SalesAnalysis() {
   const DataTable = ({ data, columns, maxHeight = '400px' }) => (
     <div className="mt-6 overflow-x-auto" style={{ maxHeight, overflowY: 'auto' }}>
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-slate-800">
-          <tr className="border-b border-slate-600">
+        <thead className="sticky top-0 bg-gray-100">
+          <tr className="border-b border-gray-300">
             {columns.map(col => (
-              <th key={col.key} className="text-left text-gray-400 font-medium py-3 px-4">
+              <th key={col.key} className="text-left text-gray-600 font-medium py-3 px-4">
                 {col.label}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {data.map((row, idx) => (
-            <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/50">
-              {columns.map(col => (
-                <td key={col.key} className="py-3 px-4 text-white">
-                  {col.format ? col.format(row[col.key], row) : row[col.key]}
-                </td>
-              ))}
+          {data && Array.isArray(data) && data.length > 0 ? (
+            data.map((row, idx) => (
+              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+                {columns.map(col => (
+                  <td key={col.key} className="py-3 px-4 text-black">
+                    {col.format ? col.format(row[col.key], row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={columns.length} className="py-4 px-4 text-gray-500 text-center">
+                No data available
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
@@ -428,11 +463,11 @@ function SalesAnalysis() {
     <div className="flex flex-wrap gap-3 mb-4">
       {showTimePeriod && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Period:</label>
+          <label className="text-gray-600 text-sm">Period:</label>
           <select
             value={timePeriod}
             onChange={(e) => setTimePeriod(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value="today">Today</option>
             <option value="7days">Last 7 Days</option>
@@ -445,32 +480,32 @@ function SalesAnalysis() {
       {showDateFilter && timePeriod === 'custom' && (
         <>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 text-sm">From:</label>
+            <label className="text-gray-600 text-sm">From:</label>
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+              className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 text-sm">To:</label>
+            <label className="text-gray-600 text-sm">To:</label>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+              className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
             />
           </div>
         </>
       )}
       {showGroupBy && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Group:</label>
+          <label className="text-gray-600 text-sm">Group:</label>
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value="day">Daily</option>
             <option value="week">Weekly</option>
@@ -480,11 +515,11 @@ function SalesAnalysis() {
       )}
       {showLimit && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Show:</label>
+          <label className="text-gray-600 text-sm">Show:</label>
           <select
             value={productLimit}
             onChange={(e) => setProductLimit(Number(e.target.value))}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value={5}>Top 5</option>
             <option value={10}>Top 10</option>
@@ -494,11 +529,11 @@ function SalesAnalysis() {
       )}
       {showIngredientLimit && (
         <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-sm">Show:</label>
+          <label className="text-gray-600 text-sm">Show:</label>
           <select
             value={ingredientLimit}
             onChange={(e) => setIngredientLimit(Number(e.target.value))}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value={5}>Top 5</option>
             <option value={10}>Top 10</option>
@@ -509,11 +544,11 @@ function SalesAnalysis() {
       )}
       {showSort && (
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-gray-400 text-sm">Sort:</label>
+          <label className="text-gray-600 text-sm">Sort:</label>
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-1.5 text-black text-sm"
           >
             <option value="desc">Highest First</option>
             <option value="asc">Lowest First</option>
@@ -527,7 +562,7 @@ function SalesAnalysis() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-red-400 text-xl">{error}</div>
+          <div className="text-red-600 text-xl">{error}</div>
         </div>
       </DashboardLayout>
     );
@@ -535,7 +570,7 @@ function SalesAnalysis() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-white text-3xl font-extrabold mb-6">Key Performance Indicators</h1>
+      <h1 className="text-black text-3xl font-extrabold mb-6">Key Performance Indicators</h1>
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -546,7 +581,7 @@ function SalesAnalysis() {
             className={`px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:text-black'
             }`}
           >
             <span>{tab.icon}</span>
@@ -556,17 +591,17 @@ function SalesAnalysis() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 min-h-[500px]">
+      <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-300 min-h-[500px]">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-white text-lg">Loading...</div>
+            <div className="text-black text-lg">Loading...</div>
           </div>
         ) : (
           <>
             {/* Overview Tab */}
             {activeTab === 'overview' && kpiSummary && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Sales Overview</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Sales Overview</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <KPICard
                     title="Total Sales"
@@ -597,15 +632,15 @@ function SalesAnalysis() {
 
                 {/* Peak Hour */}
                 {peakHour && (
-                  <div className="bg-gradient-to-r from-purple-900/30 to-slate-800 rounded-xl p-4 mb-6 border border-purple-700/30">
+                  <div className="bg-gradient-to-r from-purple-100 to-white rounded-xl p-4 mb-6 border border-purple-300">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">🕐</span>
                       <div>
-                        <div className="text-gray-400 text-sm">Peak Sales Hour</div>
-                        <div className="text-purple-400 text-xl font-bold">
+                        <div className="text-gray-600 text-sm">Peak Sales Hour</div>
+                        <div className="text-purple-600 text-xl font-bold">
                           {peakHour.hour}:00 - {peakHour.hour + 1}:00
                         </div>
-                        <div className="text-gray-500 text-xs">
+                        <div className="text-gray-700 text-xs">
                           {peakHour.transaction_count} transactions • ₱{Number(peakHour.total_revenue).toLocaleString()}
                         </div>
                       </div>
@@ -614,7 +649,7 @@ function SalesAnalysis() {
                 )}
 
                 {/* Hourly Distribution Chart */}
-                <h3 className="text-white text-lg font-bold mb-3">Hourly Sales Distribution</h3>
+                <h3 className="text-black text-lg font-bold mb-3">Hourly Sales Distribution</h3>
                 <div className="h-[250px]">
                   <Bar data={hourlyChartData} options={{ ...chartOptions, plugins: { legend: { display: false } } }} />
                 </div>
@@ -624,13 +659,13 @@ function SalesAnalysis() {
             {/* Time-based Sales Tab */}
             {activeTab === 'time' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Sales by Time Period</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Sales by Time Period</h2>
                 <FilterControls showTimePeriod showDateFilter showGroupBy showSort={false} />
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   {/* Sales Trend */}
                   <div>
-                    <h3 className="text-white text-lg font-bold mb-3">Sales Trend ({groupBy})</h3>
+                    <h3 className="text-black text-lg font-bold mb-3">Sales Trend ({groupBy})</h3>
                     <div className="h-[300px]">
                       <Line data={salesByDateChart} options={chartOptions} />
                     </div>
@@ -638,7 +673,7 @@ function SalesAnalysis() {
 
                   {/* Hourly */}
                   <div>
-                    <h3 className="text-white text-lg font-bold mb-3">Hourly Distribution</h3>
+                    <h3 className="text-black text-lg font-bold mb-3">Hourly Distribution</h3>
                     <div className="h-[300px]">
                       <Bar data={hourlyChartData} options={{ ...chartOptions, plugins: { legend: { display: false } } }} />
                     </div>
@@ -662,13 +697,13 @@ function SalesAnalysis() {
             {/* Products Tab */}
             {activeTab === 'products' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Product Performance</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Product Performance</h2>
                 <FilterControls showTimePeriod showDateFilter showLimit showSort />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   {/* Fastest Moving */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h3 className="text-green-400 text-lg font-bold mb-3 flex items-center gap-2">
+                  <div className="bg-gray-100 rounded-xl p-4">
+                    <h3 className="text-green-600 text-lg font-bold mb-3 flex items-center gap-2">
                       🚀 Fastest-Moving Products
                     </h3>
                     <div className="h-[250px]">
@@ -677,8 +712,8 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Slowest Moving */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <h3 className="text-red-400 text-lg font-bold mb-3 flex items-center gap-2">
+                  <div className="bg-gray-100 rounded-xl p-4">
+                    <h3 className="text-red-600 text-lg font-bold mb-3 flex items-center gap-2">
                       🐢 Slowest-Moving Products
                     </h3>
                     <div className="h-[250px]">
@@ -688,7 +723,7 @@ function SalesAnalysis() {
                 </div>
 
                 {/* Full Product Table */}
-                <h3 className="text-white text-lg font-bold mb-3">All Products Sales</h3>
+                <h3 className="text-black text-lg font-bold mb-3">All Products Sales</h3>
                 {salesByProduct.length > 0 && (
                   <DataTable
                     data={sortData(salesByProduct, 'total_revenue')}
@@ -707,7 +742,7 @@ function SalesAnalysis() {
             {/* Categories Tab */}
             {activeTab === 'categories' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Sales by Category</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Sales by Category</h2>
                 <FilterControls showTimePeriod showDateFilter showSort />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -720,7 +755,7 @@ function SalesAnalysis() {
                           responsive: true,
                           maintainAspectRatio: false,
                           plugins: {
-                            legend: { position: 'right', labels: { color: '#9ca3af', padding: 15 } },
+                            legend: { position: 'right', labels: { color: '#6b7280', padding: 15 } },
                           },
                         }}
                       />
@@ -761,7 +796,7 @@ function SalesAnalysis() {
             {/* Ingredients Tab */}
             {activeTab === 'ingredients' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Ingredient Consumption</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Ingredient Consumption</h2>
                 <FilterControls showTimePeriod showDateFilter showIngredientLimit showSort />
 
                 {ingredientData.length > 0 ? (
@@ -796,12 +831,12 @@ function SalesAnalysis() {
             {/* Operations Tab */}
             {activeTab === 'operations' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Operations & Inventory Metrics</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Operations & Inventory Metrics</h2>
                 <FilterControls showTimePeriod showDateFilter showSort={false} />
 
                 {/* Transaction Duration KPIs */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     ⏱️ Checkout/Transaction Duration
                   </h3>
                   {transactionDuration && transactionDuration.total_transactions > 0 ? (
@@ -829,13 +864,13 @@ function SalesAnalysis() {
                       />
                     </div>
                   ) : (
-                    <div className="text-gray-400 bg-slate-700/50 rounded-lg p-4">No transaction duration data available. Duration is tracked when transactions have both start and finish timestamps.</div>
+                    <div className="text-gray-600 bg-gray-100 rounded-lg p-4">No transaction duration data available. Duration is tracked when transactions have both start and finish timestamps.</div>
                   )}
                 </div>
 
                 {/* Cancelled/Returned Transactions */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     ❌ Cancelled/Voided Transactions
                   </h3>
                   {cancelledTransactions ? (
@@ -863,13 +898,13 @@ function SalesAnalysis() {
                       />
                     </div>
                   ) : (
-                    <div className="text-gray-400 bg-slate-700/50 rounded-lg p-4">No transaction data available</div>
+                    <div className="text-gray-600 bg-gray-100 rounded-lg p-4">No transaction data available</div>
                   )}
                 </div>
 
                 {/* Inventory Turnover */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     🔄 Inventory Turnover
                   </h3>
                   {inventoryTurnover.length > 0 ? (
@@ -1113,7 +1148,7 @@ function SalesAnalysis() {
                 {/* Segmentation Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {/* Basket Size Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-purple-400 text-sm font-bold mb-3">🛒 Basket Size</h3>
                     {basketSizeSegmentation.map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1124,7 +1159,7 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Basket Value Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-green-400 text-sm font-bold mb-3">💰 Spend Level</h3>
                     {basketValueSegmentation.map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1135,7 +1170,7 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Time-based Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-orange-400 text-sm font-bold mb-3">⏰ Peak Hours</h3>
                     {timeBasedSegmentation?.segments?.map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1148,7 +1183,7 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Category Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-blue-400 text-sm font-bold mb-3">🏷️ Top Categories</h3>
                     {categorySegmentation.slice(0, 4).map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1239,13 +1274,308 @@ function SalesAnalysis() {
             {/* =============== FORECAST TAB =============== */}
             {activeTab === 'forecast' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Forecasting & Predictions</h2>
+                <h2 className="text-black text-xl font-bold mb-4">🔮 Forecasting & Predictions (AI-Powered)</h2>
+                
+                <div className="mb-4 bg-blue-500/20 border border-blue-700/30 rounded-lg p-3">
+                  <p className="text-black-300 text-sm">
+                    ℹ️ Using SARIMA/ARIMA models to predict future trends. Click the buttons below to generate forecasts.
+                  </p>
+                </div>
 
-                {/* Sales Forecast Overview */}
-                {salesForecast && salesForecast.metrics && (
+                {/* Forecast Actions - Using Real Data */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  <button
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        const businessId = getBusinessId();
+                        if (!businessId) {
+                          alert('No business selected. Please select a business to generate a forecast.');
+                          setLoading(false);
+                          return;
+                        }
+                        // Fetch real revenue forecast from backend
+                        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/revenue/${businessId}?days=30&steps=7`);
+                        if (!response.ok) {
+                          const error = await response.json();
+                          alert(error.message || 'Failed to generate forecast');
+                          return;
+                        }
+                        const result = await response.json();
+                        setRevenueForecastData(result);
+                      } catch (err) {
+                        console.error('Forecast error:', err);
+                        alert('Failed to generate revenue forecast: ' + err.message);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg font-medium transition"
+                  >
+                    📊 Forecast Revenue (Next 7 Days)
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        const businessId = localStorage.getItem('selectedBusinessId');
+                        
+                        // Fetch reorder alerts from backend
+                        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/reorder-alerts/${businessId}?leadTime=3&safetyStock=20`);
+                        
+                        if (!response.ok) {
+                          const error = await response.json();
+                          alert(error.message || 'Failed to get alerts');
+                          return;
+                        }
+                        
+                        const alerts = await response.json();
+                        setMicroserviceReorderAlerts(alerts);
+                      } catch (err) {
+                        console.error('Reorder alert error:', err);
+                        alert('Failed to get reorder alerts: ' + err.message);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg font-medium transition"
+                  >
+                    🔔 Check Reorder Alerts
+                  </button>
+                  
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={selectedCategoryForForecast}
+                      onChange={(e) => setSelectedCategoryForForecast(e.target.value)}
+                      className="bg-gray-700 text-white px-3 py-3 rounded-lg border border-gray-600 flex-1"
+                    >
+                      <option value="">Select a category...</option>
+                      {salesByCategory?.map((cat) => (
+                        <option key={cat.category_id} value={cat.category_id}>
+                          {cat.category_name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={async () => {
+                        if (!selectedCategoryForForecast) {
+                          alert('Please select a category first');
+                          return;
+                        }
+                        try {
+                          setLoading(true);
+                          const businessId = localStorage.getItem('selectedBusinessId');
+                          
+                          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/category/${businessId}/${selectedCategoryForForecast}?days=30&steps=14`);
+                          
+                          if (!response.ok) {
+                            const error = await response.json();
+                            alert(error.message || 'Failed to forecast category demand');
+                            return;
+                          }
+                          
+                          const result = await response.json();
+                          setCategoryForecastData(result);
+                        } catch (err) {
+                          console.error('Category forecast error:', err);
+                          alert('Failed to forecast category demand: ' + err.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading || !selectedCategoryForForecast}
+                      className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg font-medium transition whitespace-nowrap"
+                    >
+                      📈 Forecast Category
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category Demand Forecast Results */}
+                {categoryForecastData && (
                   <div className="mb-6">
                     <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                      📊 Sales Forecast
+                      📈 Category Demand Forecast (Next 14 Days)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <KPICard
+                        title="Total Forecasted Demand"
+                        value={categoryForecastData.total_forecasted_demand?.toFixed(0) ?? 'N/A'}
+                        subtitle="Next 14 days"
+                        color="orange"
+                      />
+                      <KPICard
+                        title="Average Daily Demand"
+                        value={(categoryForecastData.total_forecasted_demand / 14)?.toFixed(1) ?? 'N/A'}
+                        subtitle="Predicted average"
+                        color="yellow"
+                      />
+                      <KPICard
+                        title="Trend"
+                        value={categoryForecastData.trend_analysis?.trend ?? 'N/A'}
+                        subtitle={`${categoryForecastData.trend_analysis?.percentage_change > 0 ? '+' : ''}${categoryForecastData.trend_analysis?.percentage_change?.toFixed(1) ?? 'N/A'}%`}
+                        color={categoryForecastData.trend_analysis?.trend === 'growing' ? 'green' : 'red'}
+                      />
+                    </div>
+                    {categoryForecastData.forecast && categoryForecastData.forecast.length > 0 && (
+                      <DataTable
+                        data={categoryForecastData.forecast}
+                        columns={[
+                          { key: 'date', label: 'Date' },
+                          { key: 'value', label: 'Forecasted Demand', format: v => Number(v).toFixed(1) },
+                        ]}
+                        maxHeight="300px"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Revenue Forecast Results */}
+                {revenueForecastData && (
+                  <div className="mb-6">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
+                      💰 Revenue Forecast (Next 7 Days)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <KPICard
+                        title="Total Forecasted Revenue"
+                        value={`₱${revenueForecastData.total_forecasted_revenue?.toLocaleString() ?? 'N/A'}`}
+                        subtitle="Next 7 days"
+                        color="purple"
+                      />
+                      <KPICard
+                        title="Average Daily Revenue"
+                        value={`₱${revenueForecastData.average_monthly_revenue?.toLocaleString() ?? 'N/A'}`}
+                        subtitle="Predicted average"
+                        color="blue"
+                      />
+                      <KPICard
+                        title="Growth Rate"
+                        value={`${revenueForecastData.growth_rate > 0 ? '+' : ''}${revenueForecastData.growth_rate?.toFixed(2) ?? 'N/A'}%`}
+                        subtitle={revenueForecastData.growth_rate > 0 ? '📈 Growing' : '📉 Declining'}
+                        color={revenueForecastData.growth_rate > 0 ? 'green' : 'red'}
+                      />
+                    </div>
+                    <DataTable
+                      data={revenueForecastData.forecast}
+                      columns={[
+                        { key: 'date', label: 'Date' },
+                        { key: 'value', label: 'Forecasted Revenue', format: v => `₱${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}` },
+                      ]}
+                      maxHeight="300px"
+                    />
+                  </div>
+                )}
+
+                {/* Ingredient Usage Forecasts */}
+                {ingredientForecasts.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                      🥗 Ingredient Usage Forecasts
+                    </h3>
+                    {ingredientForecasts.map((forecast, idx) => (
+                      <div key={idx} className="mb-4 bg-slate-700/50 rounded-lg p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                          <div>
+                            <div className="text-gray-400 text-sm">Ingredient ID</div>
+                            <div className="text-white font-bold">{forecast.ingredient_id ?? 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400 text-sm">Total 7-Day Usage</div>
+                            <div className="text-white font-bold">{forecast.total_forecasted_usage?.toFixed(2) ?? 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400 text-sm">Average Daily</div>
+                            <div className="text-white font-bold">{forecast.average_daily_usage?.toFixed(2) ?? 'N/A'}</div>
+                          </div>
+                        </div>
+                        <div className="mb-2">
+                          <div className="text-gray-400 text-sm">Peak Usage Day</div>
+                          <div className="text-orange-400 font-medium">
+                            {forecast.peak_usage_day?.date ?? 'N/A'} - {forecast.peak_usage_day?.value?.toFixed(2) ?? 'N/A'} units
+                          </div>
+                        </div>
+                        <DataTable
+                          data={forecast.forecast}
+                          columns={[
+                            { key: 'date', label: 'Date' },
+                            { key: 'value', label: 'Forecasted Usage', format: v => Number(v).toFixed(2) },
+                          ]}
+                          maxHeight="200px"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Microservice Reorder Alerts */}
+                {microserviceReorderAlerts.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                      🔔 AI Reorder Alerts ({microserviceReorderAlerts.length} products)
+                    </h3>
+                    {microserviceReorderAlerts.map((alert, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`p-4 rounded-lg border mb-3 ${
+                          alert.alert_status === 'CRITICAL' ? 'bg-red-900/30 border-red-700/50' :
+                          alert.alert_status === 'WARNING' ? 'bg-yellow-900/30 border-yellow-700/50' :
+                          alert.alert_status === 'ATTENTION' ? 'bg-blue-900/30 border-blue-700/50' :
+                          alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? 'bg-gray-900/30 border-gray-700/50' :
+                          'bg-green-900/30 border-green-700/50'
+                        }`}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <div className={`font-bold text-lg mb-2 ${
+                              alert.alert_status === 'CRITICAL' ? 'text-red-400' :
+                              alert.alert_status === 'WARNING' ? 'text-yellow-400' :
+                              alert.alert_status === 'ATTENTION' ? 'text-blue-400' :
+                              alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? 'text-gray-400' :
+                              'text-green-400'
+                            }`}>
+                              {alert.alert_status} - {alert.product_name || alert.ingredient_id}
+                            </div>
+                            {alert.message && (
+                              <div className="text-gray-400 text-sm mb-2 italic">
+                                {alert.message}
+                              </div>
+                            )}
+                            <div className="text-gray-300 text-sm space-y-1">
+                              <div>Current Stock: {alert.current_stock ?? 'N/A'}</div>
+                              {alert.reorder_point && <div>Reorder Point: {alert.reorder_point?.toFixed(0) ?? 'N/A'}</div>}
+                              {alert.projected_stock && <div>Projected Stock (in {alert.lead_time_days ?? 0} days): {alert.projected_stock?.toFixed(2) ?? 'N/A'}</div>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {alert.should_reorder ? (
+                              <>
+                                <div className="text-white font-bold text-2xl">{alert.recommended_order_quantity?.toFixed(0) ?? 'N/A'}</div>
+                                <div className="text-gray-400 text-sm">Recommended Order Qty</div>
+                                <div className="text-orange-400 mt-2">
+                                  ⚠️ Reorder in {alert.days_until_reorder ?? 'N/A'} days
+                                </div>
+                              </>
+                            ) : alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? (
+                              <div className="text-gray-400 font-medium">ℹ️ Cannot Predict</div>
+                            ) : (
+                              <div className="text-green-400 font-medium">✅ Stock Sufficient</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Legacy Forecast Data (if available from old API) */}
+                {salesForecast && salesForecast.metrics && (
+                  <div className="mb-6 ">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
+                      📊 Legacy Sales Forecast
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                       <KPICard
@@ -1273,127 +1603,8 @@ function SalesAnalysis() {
                         color="orange"
                       />
                     </div>
-
-                    {/* Next 7 Days Forecast Table */}
-                    {salesForecast.next_7_days && (
-                      <DataTable
-                        data={salesForecast.next_7_days}
-                        columns={[
-                          { key: 'date', label: 'Date' },
-                          { key: 'day_name', label: 'Day' },
-                          { key: 'forecasted_revenue', label: 'Forecasted Revenue', format: v => `₱${Number(v || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}` },
-                        ]}
-                        maxHeight="250px"
-                      />
-                    )}
                   </div>
                 )}
-
-                {/* Category Demand Forecast */}
-                <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                    📦 Category Demand Forecast
-                  </h3>
-                  {categoryDemand.length > 0 ? (
-                    <DataTable
-                      data={sortData(categoryDemand, 'forecasted_weekly_demand')}
-                      columns={[
-                        { key: 'category_name', label: 'Category' },
-                        { key: 'avg_daily_demand', label: 'Avg Daily', format: v => Number(v || 0).toFixed(1) },
-                        { key: 'recent_daily_demand', label: 'Recent Daily', format: v => Number(v || 0).toFixed(1) },
-                        { key: 'trend', label: 'Trend', format: v => {
-                          const icons = { increasing: '📈', decreasing: '📉', stable: '➡️' };
-                          const colors = { increasing: 'text-green-400', decreasing: 'text-red-400', stable: 'text-blue-400' };
-                          return <span className={colors[v]}>{icons[v]} {v}</span>;
-                        }},
-                        { key: 'forecasted_weekly_demand', label: 'Weekly Forecast', format: v => Number(v || 0).toLocaleString() },
-                      ]}
-                      maxHeight="250px"
-                    />
-                  ) : (
-                    <div className="text-gray-400 bg-slate-700/50 rounded-lg p-4">No category demand data available.</div>
-                  )}
-                </div>
-
-                {/* Stockout Predictions */}
-                <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                    ⚠️ Stock-out Predictions
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-3">Products predicted to run out based on consumption rate</p>
-                  {stockoutPrediction.length > 0 ? (
-                    <DataTable
-                      data={stockoutPrediction.filter(p => p.days_until_stockout !== null).sort((a, b) => (a.days_until_stockout || 999) - (b.days_until_stockout || 999))}
-                      columns={[
-                        { key: 'product_name', label: 'Product' },
-                        { key: 'current_stock', label: 'Stock', format: v => Number(v || 0).toLocaleString() },
-                        { key: 'avg_daily_consumption', label: 'Daily Use', format: v => Number(v || 0).toFixed(1) },
-                        { key: 'days_until_stockout', label: 'Days Left', format: v => {
-                          if (v === null) return <span className="text-gray-500">N/A</span>;
-                          const color = v <= 3 ? 'text-red-400 font-bold' : v <= 7 ? 'text-yellow-400' : 'text-green-400';
-                          return <span className={color}>{v} days</span>;
-                        }},
-                        { key: 'predicted_stockout_date', label: 'Stockout Date', format: v => v ? new Date(v).toLocaleDateString() : 'N/A' },
-                        { key: 'urgency', label: 'Status', format: v => {
-                          const badges = {
-                            critical: 'bg-red-500/20 text-red-400',
-                            warning: 'bg-yellow-500/20 text-yellow-400',
-                            monitor: 'bg-blue-500/20 text-blue-400',
-                            safe: 'bg-green-500/20 text-green-400',
-                          };
-                          return <span className={`px-2 py-1 rounded text-xs ${badges[v]}`}>{v?.toUpperCase()}</span>;
-                        }},
-                      ]}
-                      maxHeight="300px"
-                    />
-                  ) : (
-                    <div className="text-gray-400 bg-slate-700/50 rounded-lg p-4">No stockout predictions available.</div>
-                  )}
-                </div>
-
-                {/* Reorder Alerts */}
-                <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
-                    🔔 Reorder Alerts
-                  </h3>
-                  {reorderAlerts.length > 0 ? (
-                    <div className="space-y-3">
-                      {reorderAlerts.map((alert, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`p-4 rounded-lg border ${
-                            alert.urgency === 'critical' ? 'bg-red-900/30 border-red-700/50' :
-                            alert.urgency === 'warning' ? 'bg-yellow-900/30 border-yellow-700/50' :
-                            'bg-blue-900/30 border-blue-700/50'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className={`font-bold ${
-                                alert.urgency === 'critical' ? 'text-red-400' :
-                                alert.urgency === 'warning' ? 'text-yellow-400' :
-                                'text-blue-400'
-                              }`}>
-                                {alert.alert_message}
-                              </div>
-                              <div className="text-gray-400 text-sm mt-1">
-                                Current: {alert.current_stock} | Daily use: {alert.avg_daily_consumption}/day
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-medium">Order: {alert.recommended_order_qty}</div>
-                              <div className="text-gray-400 text-xs">Recommended qty</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-green-400 bg-green-900/20 border border-green-700/30 rounded-lg p-4">
-                      ✅ All products are well-stocked! No reorder alerts.
-                    </div>
-                  )}
-                </div>
               </>
             )}
 

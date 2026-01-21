@@ -1,0 +1,239 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║                    FORECAST SERVICE API REFERENCE                     ║
+║                          Quick Reference Card                         ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+BASE URL: http://localhost:8000
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                        CORE FORECASTING ENDPOINTS                     ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 1. AUTO FORECAST                                                      │
+│    POST /forecast/auto                                                │
+│                                                                       │
+│    • Automatic SARIMA/ARIMA parameter selection                      │
+│    • Returns: forecast, confidence intervals, model metrics          │
+│    • Parameters: series, steps, seasonal, seasonal_period            │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 2. MANUAL FORECAST                                                    │
+│    POST /forecast/manual                                              │
+│                                                                       │
+│    • User-specified ARIMA/SARIMA parameters                          │
+│    • Returns: forecast with custom model parameters                  │
+│    • Parameters: series, steps, order, seasonal_order                │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 3. MODEL EVALUATION                                                   │
+│    POST /evaluate                                                     │
+│                                                                       │
+│    • Train-test split evaluation                                     │
+│    • Returns: MAE, RMSE, MAPE, predictions vs actual                 │
+│    • Parameters: series, test_size, seasonal                         │
+└───────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                   BUSINESS-SPECIFIC ENDPOINTS                         ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 4. INGREDIENT USAGE FORECAST            📦                            │
+│    POST /business/ingredient-usage                                    │
+│                                                                       │
+│    Purpose: Predict daily ingredient consumption                     │
+│                                                                       │
+│    Input:                                                             │
+│    • ingredient_id                                                    │
+│    • usage_history (30+ days recommended)                            │
+│    • steps (days to forecast, default: 7)                            │
+│    • seasonal (weekly patterns, default: true)                       │
+│                                                                       │
+│    Output:                                                            │
+│    • daily_usage_forecast                                            │
+│    • total_forecasted_usage                                          │
+│    • average_daily_usage                                             │
+│    • peak_usage_day                                                  │
+│                                                                       │
+│    Use Cases:                                                         │
+│    ✓ Weekly ingredient ordering                                      │
+│    ✓ Prevent stockouts during busy periods                           │
+│    ✓ Reduce waste                                                    │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 5. CATEGORY DEMAND FORECAST             📊                            │
+│    POST /business/category-demand                                     │
+│                                                                       │
+│    Purpose: Forecast product category sales                          │
+│                                                                       │
+│    Input:                                                             │
+│    • category_id                                                      │
+│    • sales_history (60+ days recommended)                            │
+│    • steps (days to forecast, default: 30)                           │
+│    • seasonal (default: true)                                        │
+│                                                                       │
+│    Output:                                                            │
+│    • demand_forecast                                                 │
+│    • total_forecasted_demand                                         │
+│    • trend (direction & percentage)                                  │
+│                                                                       │
+│    Use Cases:                                                         │
+│    ✓ Stock allocation                                                │
+│    ✓ Promotional planning                                            │
+│    ✓ Identify growth opportunities                                   │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 6. REVENUE FORECAST                     💰                            │
+│    POST /business/revenue                                             │
+│                                                                       │
+│    Purpose: Predict monthly business revenue                         │
+│                                                                       │
+│    Input:                                                             │
+│    • business_id                                                      │
+│    • revenue_history (12-18 months recommended)                      │
+│    • steps (months to forecast, default: 6)                          │
+│    • seasonal (default: true)                                        │
+│                                                                       │
+│    Output:                                                            │
+│    • revenue_forecast                                                │
+│    • total_forecasted_revenue                                        │
+│    • average_monthly_revenue                                         │
+│    • growth_rate                                                     │
+│    • trend                                                           │
+│                                                                       │
+│    Use Cases:                                                         │
+│    ✓ Financial planning & budgeting                                  │
+│    ✓ Investor presentations                                          │
+│    ✓ Business expansion planning                                     │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────┐
+│ 7. REORDER ALERTS                       🔔                            │
+│    POST /business/reorder-alert                                       │
+│                                                                       │
+│    Purpose: Intelligent inventory reorder system                     │
+│                                                                       │
+│    Input:                                                             │
+│    • ingredient_id                                                    │
+│    • current_stock                                                    │
+│    • usage_history (30 days recommended)                             │
+│    • reorder_point                                                   │
+│    • lead_time_days (default: 3)                                     │
+│    • safety_stock (default: 0)                                       │
+│                                                                       │
+│    Output:                                                            │
+│    • alert_status (CRITICAL/WARNING/ATTENTION/OK)                    │
+│    • should_reorder (boolean)                                        │
+│    • days_until_reorder                                              │
+│    • days_until_stockout                                             │
+│    • recommended_order_quantity                                      │
+│    • forecasted_usage (7, 14, 30 days)                               │
+│    • priority (HIGH/MEDIUM/LOW/NONE)                                 │
+│    • alert_message                                                   │
+│                                                                       │
+│    Alert Levels:                                                      │
+│    🔴 CRITICAL - Order immediately (at/below reorder point)          │
+│    🟡 WARNING  - Order now (will hit within lead time)               │
+│    🟠 ATTENTION - Monitor closely                                    │
+│    🟢 OK - Healthy stock levels                                      │
+│                                                                       │
+│    Use Cases:                                                         │
+│    ✓ Prevent stockouts                                               │
+│    ✓ Optimize order timing                                           │
+│    ✓ Automated inventory management                                  │
+│    ✓ Reduce emergency orders                                         │
+└───────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                         COMMON PARAMETERS                             ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+series: [{"date": "YYYY-MM-DD", "value": float}, ...]
+steps: int (number of periods to forecast)
+seasonal: boolean (use SARIMA vs ARIMA)
+seasonal_period: int (12=monthly, 7=weekly, 4=quarterly)
+confidence_level: float (0.90, 0.95, 0.99)
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                         RESPONSE METRICS                              ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+AIC  - Akaike Information Criterion (lower = better)
+BIC  - Bayesian Information Criterion (lower = better)
+MAE  - Mean Absolute Error
+RMSE - Root Mean Squared Error
+MAPE - Mean Absolute Percentage Error
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                         QUICK EXAMPLES                                ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+# Check ingredient reorder
+curl -X POST "http://localhost:8000/business/reorder-alert" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ingredient_id": "ING-001",
+    "current_stock": 150,
+    "usage_history": [...],
+    "reorder_point": 100,
+    "lead_time_days": 3
+  }'
+
+# Forecast revenue
+curl -X POST "http://localhost:8000/business/revenue" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "business_id": "BUS-123",
+    "revenue_history": [...],
+    "steps": 6
+  }'
+
+# Forecast ingredient usage
+curl -X POST "http://localhost:8000/business/ingredient-usage" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ingredient_id": "ING-FLOUR",
+    "usage_history": [...],
+    "steps": 7,
+    "seasonal": true
+  }'
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                           INTEGRATION                                 ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+Backend Integration:  See INTEGRATION.md
+Business Features:    See BUSINESS_FEATURES.md
+Full Documentation:   See README.md
+Quick Setup:          See QUICKSTART.md
+Code Examples:        See business_examples.py
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                         MINIMUM DATA REQUIREMENTS                     ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+Ingredient Usage:  7+ days (30 days recommended)
+Category Demand:   14+ days (60 days recommended)
+Revenue Forecast:  12+ months (18 months recommended)
+Reorder Alerts:    7+ days (30 days recommended)
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                              TESTING                                  ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+Interactive Docs:  http://localhost:8000/docs
+Alternative Docs:  http://localhost:8000/redoc
+Health Check:      http://localhost:8000/
+Test Script:       python test_forecast.py
+Business Tests:    python business_examples.py
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                        SUPPORT & DOCUMENTATION                        ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+GitHub Copilot Assistant ready to help with integration questions!

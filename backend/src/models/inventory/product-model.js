@@ -285,9 +285,11 @@ export const getProductsByBusiness = async (businessId) => {
 }
 
 export const updateProductStatus = async (productId, isActive) => {
+  // Convert boolean to 1/0 for MySQL
+  const statusValue = isActive ? 1 : 0;
   const [result] = await pool.execute(
     `UPDATE product_table SET is_active = ? WHERE product_id = ?`,
-    [isActive, productId]
+    [statusValue, productId]
   );
   return result;
 };
@@ -346,7 +348,7 @@ export const getActiveInventoryWithProductDetailsByBusiness = async (businessId)
        FROM product_table p
        LEFT JOIN inventory_table i ON p.product_id = i.product_id
        LEFT JOIN unit_table u ON i.unit_id = u.unit_id
-       WHERE p.is_active = 0 AND p.business_id = ?`,
+       WHERE p.is_active = 1 AND p.business_id = ?`,
       [businessId]
     );
     

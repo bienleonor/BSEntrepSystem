@@ -38,14 +38,32 @@ function getBusinessId(req) {
 
 async function ensureOwnership(req, res, businessId) {
   try {
-    const owned = await findBusinessByUserId(req.user.user_id)
-    const owns = owned.some(b => String(b.business_id) === String(businessId))
-    if (!owns) {
+    const userId = req.user.user_id || req.user.userId || req.user.id
+    
+    // First check if user belongs to the business via position
+    const owned = await findBusinessByUserId(userId)
+    const belongs = owned.some(b => String(b.business_id) === String(businessId))
+    
+    // Also check if user is the owner of the business (even without a position assigned)
+    const isOwner = owned.some(b => String(b.business_id) === String(businessId) && b.is_owner === 1)
+    
+    // If user doesn't belong via position, do a direct owner check
+    if (!belongs) {
+      const [ownerCheck] = await import('../../config/pool.js').then(m => 
+        m.default.execute(
+          'SELECT 1 FROM business_table WHERE business_id = ? AND owner_id = ?',
+          [businessId, userId]
+        )
+      )
+      if (ownerCheck.length > 0) {
+        return true // User is the owner
+      }
       res.status(403).json({ error: 'Not authorized for this business' })
       return false
     }
     return true
   } catch (e) {
+    console.error('ensureOwnership error:', e)
     res.status(500).json({ error: 'Ownership check failed' })
     return false
   }
@@ -402,16 +420,19 @@ export async function addPermissionOverride(req, res) {
   
   try {
     const { positionId } = req.params
-    const { feature_action_id, override_type } = req.body
+    // Accept both snake_case and camelCase from clients
+    let { feature_action_id, override_type, featureActionId, overrideType } = req.body
+    const faId = feature_action_id ?? featureActionId
+    const oType = (override_type ?? overrideType ?? '').toString().toUpperCase()
     
-    if (!feature_action_id) {
+    if (!faId) {
       return res.status(400).json({ error: 'feature_action_id is required' })
     }
-    if (!override_type || !['ADD', 'REMOVE'].includes(override_type)) {
+    if (!oType || !['ADD', 'REMOVE'].includes(oType)) {
       return res.status(400).json({ error: 'override_type must be ADD or REMOVE' })
     }
     
-    const result = await addOverride(businessId, positionId, feature_action_id, override_type)
+    const result = await addOverride(businessId, positionId, faId, oType)
     
     // Invalidate permission cache for all users in this business
     invalidateBusinessPermissionCache(businessId)

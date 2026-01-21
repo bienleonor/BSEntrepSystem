@@ -1,4 +1,22 @@
 import { getCachedPermissions } from '../services/permissionService.js'
+import pool from '../config/pool.js'
+
+/**
+ * Check if user is the owner of a business
+ */
+async function isBusinessOwner(userId, businessId) {
+  if (!userId || !businessId) return false
+  try {
+    const [rows] = await pool.execute(
+      'SELECT 1 FROM business_table WHERE business_id = ? AND owner_id = ?',
+      [businessId, userId]
+    )
+    return rows.length > 0
+  } catch (e) {
+    console.error('isBusinessOwner check failed:', e)
+    return false
+  }
+}
 
 /**
  * RBAC Middleware - requirePermission
@@ -7,8 +25,9 @@ import { getCachedPermissions } from '../services/permissionService.js'
  * 
  * HOW IT WORKS:
  * 1. Superadmin bypasses all checks (no DB query)
- * 2. Gets cached permissions (system role + business position + overrides)
- * 3. Checks if permissionKey exists in user's permissions
+ * 2. Business owners bypass checks for their own business
+ * 3. Gets cached permissions (system role + business position + overrides)
+ * 4. Checks if permissionKey exists in user's permissions
  * 
  * OVERRIDE FLOW (handled in permissionRepository):
  * - User's position has preset permissions from business_permission_table
@@ -35,10 +54,16 @@ export function requirePermission(permissionKey) {
         || req.body?.business_id 
         || null
       
+      // BYPASS for business owner - they have full access to their own business
+      const userId = req.user.user_id || req.user.userId || req.user.id
+      if (businessId && await isBusinessOwner(userId, businessId)) {
+        return next()
+      }
+      
       // Get cached permissions (includes overrides automatically)
       const { permissions, isSuperAdmin } = await getCachedPermissions({
         systemRoleName: req.user.system_role,
-        userId: req.user.user_id || req.user.id,
+        userId: userId,
         businessId
       })
 
@@ -46,7 +71,7 @@ export function requirePermission(permissionKey) {
         return next()
       }
       
-      return res.status(403).json({ error: 'Forbidden: Missing permission ' + permissionKey })
+      return res.status(403).json({ error: 'Forbidden: Missing permission '})
     } catch (err) {
       console.error('requirePermission error:', err)
       return res.status(500).json({ error: 'Internal server error' })
@@ -64,4 +89,28 @@ export function requireSystemRole(...allowedRoles) {
     if (allowedRoles.map(r => r.toLowerCase()).includes(role)) return next()
     return res.status(403).json({ error: 'Forbidden: Requires role ' + allowedRoles.join(' or ') })
   }
+}
+
+/**
+ * Allow users to access their own resource OR require superadmin for others
+ * Use for routes where users need to access their own data (e.g., for business creation/self-promotion)
+ */
+export function allowSelfOrSuperadmin(req, res, next) {
+  const userRole = (req.user?.system_role || '').toLowerCase()
+  const userId = req.user?.user_id || req.user?.userId || req.user?.id
+  const requestedId = req.params.id
+  
+  // Allow if superadmin
+  if (userRole === 'superadmin') {
+    return next()
+  }
+  
+  // Allow if accessing their own resource
+  if (userId && requestedId && String(userId) === String(requestedId)) {
+    return next()
+  }
+  
+  return res.status(403).json({ 
+    error: 'Forbidden: Can only access your own details or requires superadmin role' 
+  })
 }

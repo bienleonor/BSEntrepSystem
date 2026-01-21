@@ -6,7 +6,7 @@ import {
     getUserDetailsController,
 } from '../controllers/users-details-controller.js';
 import { authenticateToken } from '../middlewares/auth-middleware.js';
-import { requireSystemRole } from '../middlewares/permission-middleware.js';
+import { requireSystemRole, allowSelfOrSuperadmin } from '../middlewares/permission-middleware.js';
 
 const router = Router();
 
@@ -31,10 +31,10 @@ router.get("/",
   getUserDetailsController
 );
 
-// Get specific user details - superadmin only
+// Get specific user details - allow self access (for business creation/promotion) or superadmin
 router.get("/:id", 
   authenticateToken, 
-  requireSystemRole('superadmin'), 
+  allowSelfOrSuperadmin, 
   getUserDetailsByIdController
 );
 

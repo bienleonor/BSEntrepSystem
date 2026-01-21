@@ -76,8 +76,8 @@ export default function UserDashboard() {
     maintainAspectRatio: true,
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#9ca3af" } },
-      y: { grid: { color: "rgba(255,255,255,0.1)" }, ticks: { color: "#9ca3af" } },
+      x: { grid: { color: "rgba(0,0,0,0.1)" }, ticks: { color: "#6b7280" } },
+      y: { grid: { color: "rgba(0,0,0,0.1)" }, ticks: { color: "#6b7280" } },
     },
   };
 
@@ -85,7 +85,7 @@ export default function UserDashboard() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-white text-xl">Loading dashboard...</div>
+          <div className="text-gray-900 text-xl">Loading dashboard...</div>
         </div>
       </DashboardLayout>
     );
@@ -93,26 +93,26 @@ export default function UserDashboard() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-4xl font-bold text-white mb-6">DASHBOARD</h1>
+      <h1 className="text-4xl font-bold text-White-900 mb-6">DASHBOARD</h1>
 
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl p-5 shadow-lg border border-slate-600">
-            <div className="text-gray-400 text-xs uppercase tracking-wide">Transactions</div>
-            <div className="text-white text-3xl font-bold mt-2">{summary.total_transactions || 0}</div>
+          <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 shadow-sm border border-gray-200">
+            <div className="text-gray-600 text-xs uppercase tracking-wide">Transactions</div>
+            <div className="text-gray-900 text-3xl font-bold mt-2">{summary.total_transactions || 0}</div>
           </div>
-          <div className="bg-gradient-to-br from-green-900/50 to-slate-800 rounded-xl p-5 shadow-lg border border-green-700/30">
-            <div className="text-gray-400 text-xs uppercase tracking-wide">Revenue</div>
-            <div className="text-green-400 text-3xl font-bold mt-2">₱{Number(summary.total_revenue || 0).toLocaleString()}</div>
+          <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-5 shadow-sm border border-green-200">
+            <div className="text-gray-600 text-xs uppercase tracking-wide">Revenue</div>
+            <div className="text-green-700 text-3xl font-bold mt-2">₱{Number(summary.total_revenue || 0).toLocaleString()}</div>
           </div>
-          <div className="bg-gradient-to-br from-red-900/50 to-slate-800 rounded-xl p-5 shadow-lg border border-red-700/30">
-            <div className="text-gray-400 text-xs uppercase tracking-wide">Cost</div>
-            <div className="text-red-400 text-3xl font-bold mt-2">₱{Number(summary.total_cost || 0).toLocaleString()}</div>
+          <div className="bg-gradient-to-br from-red-50 to-white rounded-xl p-5 shadow-sm border border-red-200">
+            <div className="text-gray-600 text-xs uppercase tracking-wide">Cost</div>
+            <div className="text-red-700 text-3xl font-bold mt-2">₱{Number(summary.total_cost || 0).toLocaleString()}</div>
           </div>
-          <div className="bg-gradient-to-br from-blue-900/50 to-slate-800 rounded-xl p-5 shadow-lg border border-blue-700/30">
-            <div className="text-gray-400 text-xs uppercase tracking-wide">Profit</div>
-            <div className="text-blue-400 text-3xl font-bold mt-2">₱{Number(summary.total_profit || 0).toLocaleString()}</div>
+          <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 shadow-sm border border-blue-200">
+            <div className="text-gray-600 text-xs uppercase tracking-wide">Profit</div>
+            <div className="text-blue-700 text-3xl font-bold mt-2">₱{Number(summary.total_profit || 0).toLocaleString()}</div>
           </div>
         </div>
       )}
@@ -121,8 +121,8 @@ export default function UserDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Selling Products */}
         {topProducts.length > 0 && (
-          <div className="bg-slate-800 rounded-xl p-5 shadow-lg border border-slate-700">
-            <h2 className="text-white text-lg font-bold mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+            <h2 className="text-gray-900 text-lg font-bold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
               Top Selling Products
             </h2>
@@ -132,8 +132,8 @@ export default function UserDashboard() {
 
         {/* Profit by Category */}
         {profitData.length > 0 && (
-          <div className="bg-slate-800 rounded-xl p-5 shadow-lg border border-slate-700">
-            <h2 className="text-white text-lg font-bold mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+            <h2 className="text-gray-900 text-lg font-bold mb-4 flex items-center gap-2">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
               Profit by Category
             </h2>
@@ -144,8 +144,8 @@ export default function UserDashboard() {
 
       {/* Quick Stats or Empty State */}
       {!summary && !loading && (
-        <div className="bg-slate-800 rounded-xl p-8 text-center">
-          <p className="text-gray-400 text-lg">No sales data available yet.</p>
+        <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
+          <p className="text-gray-600 text-lg">No sales data available yet.</p>
           <p className="text-gray-500 text-sm mt-2">Start making sales to see your dashboard analytics!</p>
         </div>
       )}

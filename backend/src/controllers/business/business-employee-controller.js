@@ -6,6 +6,7 @@ import {
 } from "../../models/business/business-employee-model.js";
 import { logBusinessAction } from '../../services/business-logs-service.js';
 import { MODULES, ACTIONS } from '../../constants/modules-actions.js';
+import { invalidateUserPermissionCache } from '../../services/permissionService.js'
 
 // Get employees for a business
 export const getEmployeesByBusiness = async (req, res) => {
@@ -78,6 +79,10 @@ export const assignPosition = async (req, res) => {
 		try {
 			const result = await updateEmployeePositionModel(user_id, business_id, safeBusPosId);
 			res.status(200).json({ success: true, data: result, message: "Position updated" });
+				// Invalidate permission cache for that user in this business
+				try {
+					invalidateUserPermissionCache(user_id, business_id)
+				} catch (e) { /* silent */ }
 		} catch (dbErr) {
 			// Handle MySQL FK errors gracefully (ER_NO_REFERENCED_ROW_2 / 1452)
 			if (dbErr && (dbErr.code === 'ER_NO_REFERENCED_ROW_2' || dbErr.errno === 1452)) {
