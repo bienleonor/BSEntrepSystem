@@ -1148,7 +1148,7 @@ function SalesAnalysis() {
                 {/* Segmentation Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   {/* Basket Size Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-purple-400 text-sm font-bold mb-3">🛒 Basket Size</h3>
                     {basketSizeSegmentation.map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1159,7 +1159,7 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Basket Value Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-green-400 text-sm font-bold mb-3">💰 Spend Level</h3>
                     {basketValueSegmentation.map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1170,7 +1170,7 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Time-based Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-orange-400 text-sm font-bold mb-3">⏰ Peak Hours</h3>
                     {timeBasedSegmentation?.segments?.map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1183,7 +1183,7 @@ function SalesAnalysis() {
                   </div>
 
                   {/* Category Distribution */}
-                  <div className="bg-slate-700/50 rounded-xl p-4">
+                  <div className="bg-bronze rounded-xl p-4">
                     <h3 className="text-blue-400 text-sm font-bold mb-3">🏷️ Top Categories</h3>
                     {categorySegmentation.slice(0, 4).map((seg, idx) => (
                       <div key={idx} className="flex justify-between items-center mb-2">
@@ -1274,10 +1274,10 @@ function SalesAnalysis() {
             {/* =============== FORECAST TAB =============== */}
             {activeTab === 'forecast' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">🔮 Forecasting & Predictions (AI-Powered)</h2>
+                <h2 className="text-black text-xl font-bold mb-4">🔮 Forecasting & Predictions (AI-Powered)</h2>
                 
-                <div className="mb-4 bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
-                  <p className="text-blue-300 text-sm">
+                <div className="mb-4 bg-blue-500/20 border border-blue-700/30 rounded-lg p-3">
+                  <p className="text-black-300 text-sm">
                     ℹ️ Using SARIMA/ARIMA models to predict future trends. Click the buttons below to generate forecasts.
                   </p>
                 </div>
@@ -1436,7 +1436,7 @@ function SalesAnalysis() {
                 {/* Revenue Forecast Results */}
                 {revenueForecastData && (
                   <div className="mb-6">
-                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                       💰 Revenue Forecast (Next 7 Days)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -1573,8 +1573,8 @@ function SalesAnalysis() {
 
                 {/* Legacy Forecast Data (if available from old API) */}
                 {salesForecast && salesForecast.metrics && (
-                  <div className="mb-6 opacity-60">
-                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <div className="mb-6 ">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                       📊 Legacy Sales Forecast
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
