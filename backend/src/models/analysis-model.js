@@ -713,72 +713,69 @@ export const getProductLifecycle = async (businessId) => {
       p.name AS product_name,
       pc.name AS category_name,
       p.created_at AS product_created,
-      DATEDIFF(NOW(), p.created_at) AS days_since_launch,
+      DATEDIFF(NOW(), p.created_at) AS days_since_created,
       -- Last 14 days sales
       COALESCE(SUM(CASE 
-        WHEN t.created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) 
-        THEN pit.quantity 
+        WHEN pu.purchase_date >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) 
+        THEN pi.quantity 
       END), 0) AS recent_sales,
       -- 14-28 days ago sales
       COALESCE(SUM(CASE 
-        WHEN t.created_at >= DATE_SUB(CURDATE(), INTERVAL 28 DAY) 
-          AND t.created_at < DATE_SUB(CURDATE(), INTERVAL 14 DAY)
-        THEN pit.quantity 
+        WHEN pu.purchase_date >= DATE_SUB(CURDATE(), INTERVAL 28 DAY) 
+          AND pu.purchase_date < DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+        THEN pi.quantity 
       END), 0) AS previous_sales,
       -- Total all-time sales
-      COALESCE(SUM(pit.quantity), 0) AS total_sales
+      COALESCE(SUM(pi.quantity), 0) AS total_sold
     FROM product_table p
     LEFT JOIN product_category_table pc ON pc.category_id = p.category_id
-    LEFT JOIN purchase_items_table pit ON pit.product_id = p.product_id
-    LEFT JOIN transaction_table t ON t.purchase_id = pit.purchase_id AND t.stat_id = 1
+    LEFT JOIN purchase_items_table pi ON pi.product_id = p.product_id
+    LEFT JOIN purchases_table pu ON pu.purchase_id = pi.purchase_id AND pu.status_id != 3
     WHERE p.business_id = ?
     GROUP BY p.product_id, p.name, pc.name, p.created_at
+    HAVING total_sold > 0
     ORDER BY recent_sales DESC
   `;
 
   const [rows] = await pool.query(query, [businessId]);
   
   return rows.map(row => {
-    const daysSinceLaunch = row.days_since_launch || 0;
+    const daysSinceCreated = row.days_since_created || 0;
     const recentSales = parseFloat(row.recent_sales) || 0;
     const previousSales = parseFloat(row.previous_sales) || 0;
-    const totalSales = parseFloat(row.total_sales) || 0;
+    const totalSold = parseFloat(row.total_sold) || 0;
+    
+    // Calculate average daily sales
+    const avgDailySales = daysSinceCreated > 0 ? totalSold / daysSinceCreated : 0;
+    
+    // Calculate recent trend (last 14 days avg - previous 14 days avg)
+    const recentAvg = recentSales / 14;
+    const previousAvg = previousSales / 14;
+    const recentTrend = recentAvg - previousAvg;
     
     let lifecycle_stage = 'stagnant';
-    let stage_color = 'gray';
     
-    if (daysSinceLaunch <= 14) {
+    if (daysSinceCreated <= 14) {
       lifecycle_stage = 'new';
-      stage_color = 'blue';
-    } else if (recentSales === 0 && previousSales === 0) {
+    } else if (recentSales === 0 && previousSales === 0 && totalSold <= 5) {
       lifecycle_stage = 'stagnant';
-      stage_color = 'gray';
     } else if (recentSales > previousSales * 1.2) {
       lifecycle_stage = 'growing';
-      stage_color = 'green';
-    } else if (recentSales < previousSales * 0.8) {
+    } else if (recentSales < previousSales * 0.8 && previousSales > 0) {
       lifecycle_stage = 'declining';
-      stage_color = 'red';
     } else if (recentSales > 0) {
       lifecycle_stage = 'peak';
-      stage_color = 'purple';
     }
-    
-    const velocity_change = previousSales > 0 
-      ? ((recentSales - previousSales) / previousSales * 100).toFixed(1)
-      : (recentSales > 0 ? '100.0' : '0.0');
     
     return {
       product_id: row.product_id,
       product_name: row.product_name,
-      category_name: row.category_name,
-      days_since_launch: daysSinceLaunch,
-      recent_sales: recentSales,
-      previous_sales: previousSales,
-      total_sales: totalSales,
-      velocity_change,
+      category_name: row.category_name || 'Uncategorized',
+      days_since_created: daysSinceCreated,
+      total_sold: totalSold,
+      avg_daily_sales: avgDailySales,
+      recent_trend: recentTrend,
       lifecycle_stage,
-      stage_color,
     };
   });
 };

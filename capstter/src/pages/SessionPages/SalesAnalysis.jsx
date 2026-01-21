@@ -424,23 +424,23 @@ function SalesAnalysis() {
 
   // Data Table Component
   const DataTable = ({ data, columns, maxHeight = '400px' }) => (
-    <div className="mt-6 overflow-x-auto" style={{ maxHeight, overflowY: 'auto' }}>
+    <div className="mt-6 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200" style={{ maxHeight, overflowY: 'auto' }}>
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-gray-100">
+        <thead className="sticky top-0 bg-gray-100 z-10">
           <tr className="border-b border-gray-300">
             {columns.map(col => (
-              <th key={col.key} className="text-left text-gray-600 font-medium py-3 px-4">
+              <th key={col.key} className="text-left text-gray-700 font-semibold py-3 px-4">
                 {col.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-white">
           {data && Array.isArray(data) && data.length > 0 ? (
             data.map((row, idx) => (
-              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+              <tr key={idx} className="border-b border-gray-200 hover:bg-blue-50 transition-colors">
                 {columns.map(col => (
-                  <td key={col.key} className="py-3 px-4 text-black">
+                  <td key={col.key} className="py-3 px-4 text-gray-900">
                     {col.format ? col.format(row[col.key], row) : row[col.key]}
                   </td>
                 ))}
@@ -448,7 +448,7 @@ function SalesAnalysis() {
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-4 px-4 text-gray-500 text-center">
+              <td colSpan={columns.length} className="py-8 px-4 text-gray-500 text-center italic">
                 No data available
               </td>
             </tr>
@@ -930,7 +930,7 @@ function SalesAnalysis() {
 
                 {/* Stock Aging */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     📅 Stock Aging (Days Since Last Restock)
                   </h3>
                   {stockAging.length > 0 ? (
@@ -969,15 +969,15 @@ function SalesAnalysis() {
             {/* =============== TRENDS TAB =============== */}
             {activeTab === 'trends' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Trends & Lifecycle Analysis</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Trends & Lifecycle Analysis</h2>
                 <FilterControls showSort />
 
                 {/* Category Performance Trends */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     📊 Category Performance Trends
                   </h3>
-                  <p className="text-gray-400 text-sm mb-3">Comparing last 30 days vs previous 30 days</p>
+                  <p className="text-gray-600 text-sm mb-3">Comparing last 30 days vs previous 30 days</p>
                   {categoryTrends.length > 0 ? (
                     <DataTable
                       data={sortData(categoryTrends, 'growth_rate')}
@@ -1012,10 +1012,10 @@ function SalesAnalysis() {
 
                 {/* Product Lifecycle Tracking */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     🔄 Product Lifecycle Tracking
                   </h3>
-                  <p className="text-gray-400 text-sm mb-3">Product stage classification based on sales velocity and time in market</p>
+                  <p className="text-gray-600 text-sm mb-3">Product stage classification based on sales velocity and time in market</p>
                   
                   {/* Lifecycle Stage Summary */}
                   {productLifecycle.length > 0 && (
@@ -1034,7 +1034,7 @@ function SalesAnalysis() {
                           <div key={stage} className={`bg-gradient-to-br ${config.bg} to-slate-800/50 rounded-lg p-3 border ${config.border} text-center`}>
                             <div className="text-2xl mb-1">{config.emoji}</div>
                             <div className="text-xl font-bold text-white">{count}</div>
-                            <div className="text-xs text-gray-400">{config.label}</div>
+                            <div className="text-xs text-gray-900">{config.label}</div>
                           </div>
                         );
                       })}
@@ -1076,10 +1076,10 @@ function SalesAnalysis() {
 
                 {/* Stock Replenishment Performance */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     📦 Stock Replenishment Performance
                   </h3>
-                  <p className="text-gray-400 text-sm mb-3">How efficiently inventory is being restocked</p>
+                  <p className="text-gray-600 text-sm mb-3">How efficiently inventory is being restocked</p>
                   
                   {/* Replenishment Summary KPIs */}
                   {replenishmentPerformance.length > 0 && (
@@ -1142,7 +1142,7 @@ function SalesAnalysis() {
             {/* =============== INSIGHTS TAB =============== */}
             {activeTab === 'insights' && (
               <>
-                <h2 className="text-white text-xl font-bold mb-4">Customer & Basket Insights</h2>
+                <h2 className="text-black text-xl font-bold mb-4">Customer & Basket Insights</h2>
                 <FilterControls showTimePeriod showDateFilter showSort />
 
                 {/* Segmentation Summary Cards */}
@@ -1196,10 +1196,10 @@ function SalesAnalysis() {
 
                 {/* Basket Size Details */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     🛒 Basket Size Segmentation
                   </h3>
-                  <p className="text-gray-400 text-sm mb-3">Small: 1-2 items | Medium: 3-5 items | Large: 6+ items</p>
+                  <p className="text-gray-600 text-sm mb-3">Small: 1-2 items | Medium: 3-5 items | Large: 6+ items</p>
                   {basketSizeSegmentation.length > 0 ? (
                     <DataTable
                       data={basketSizeSegmentation}
@@ -1220,10 +1220,10 @@ function SalesAnalysis() {
 
                 {/* Basket Value Details */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     💰 Basket Value Segmentation
                   </h3>
-                  <p className="text-gray-400 text-sm mb-3">Low: ≤₱100 | Medium: ₱101-500 | High: &gt;₱500</p>
+                  <p className="text-gray-600 text-sm mb-3">Low: ≤₱100 | Medium: ₱101-500 | High: &gt;₱500</p>
                   {basketValueSegmentation.length > 0 ? (
                     <DataTable
                       data={basketValueSegmentation}
@@ -1244,10 +1244,10 @@ function SalesAnalysis() {
 
                 {/* Product Affinity / Market Basket Analysis */}
                 <div className="mb-6">
-                  <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                     🔗 Product Affinity (Frequently Bought Together)
                   </h3>
-                  <p className="text-gray-400 text-sm mb-3">Products that are commonly purchased together</p>
+                  <p className="text-gray-600 text-sm mb-3">Products that are commonly purchased together</p>
                   {productAffinity.length > 0 ? (
                     <DataTable
                       data={productAffinity}
@@ -1296,12 +1296,32 @@ function SalesAnalysis() {
                         }
                         // Fetch real revenue forecast from backend
                         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/revenue/${businessId}?days=30&steps=7`);
+                        
+                        console.log('Revenue forecast response status:', response.status);
+                        
                         if (!response.ok) {
                           const error = await response.json();
+                          console.error('Revenue forecast error:', error);
                           alert(error.message || 'Failed to generate forecast');
                           return;
                         }
+                        
                         const result = await response.json();
+                        console.log('Revenue forecast data received:', result);
+                        
+                        // Transform the data to match expected format
+                        if (result.revenue_forecast && Array.isArray(result.revenue_forecast)) {
+                          const today = new Date();
+                          result.forecast = result.revenue_forecast.map((value, index) => {
+                            const forecastDate = new Date(today);
+                            forecastDate.setDate(today.getDate() + index + 1);
+                            return {
+                              date: forecastDate.toISOString().split('T')[0],
+                              value: value
+                            };
+                          });
+                        }
+                        
                         setRevenueForecastData(result);
                       } catch (err) {
                         console.error('Forecast error:', err);
@@ -1369,15 +1389,52 @@ function SalesAnalysis() {
                           setLoading(true);
                           const businessId = localStorage.getItem('selectedBusinessId');
                           
+                          console.log('Category forecast - businessId:', businessId, 'categoryId:', selectedCategoryForForecast);
+                          
                           const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/forecast/category/${businessId}/${selectedCategoryForForecast}?days=30&steps=14`);
+                          
+                          console.log('Category forecast response status:', response.status);
                           
                           if (!response.ok) {
                             const error = await response.json();
-                            alert(error.message || 'Failed to forecast category demand');
+                            console.error('Category forecast error:', error);
+                            
+                            // Show user-friendly error message
+                            let errorMsg = 'Failed to forecast category demand';
+                            if (error.message && error.message.includes('Insufficient data')) {
+                              errorMsg = `Not enough sales data for this category. ${error.message}`;
+                            } else if (error.details?.detail) {
+                              errorMsg = `Forecast calculation failed: ${error.details.detail}. This might be because the category has inconsistent sales data or not enough variation in sales patterns.`;
+                            } else {
+                              errorMsg = error.message || errorMsg;
+                            }
+                            
+                            alert(errorMsg);
                             return;
                           }
                           
                           const result = await response.json();
+                          console.log('Category forecast data received:', result);
+                          
+                          // Transform the data if needed
+                          if (result.demand_forecast && Array.isArray(result.demand_forecast)) {
+                            // Check if forecast items have date and value
+                            if (result.demand_forecast.length > 0 && typeof result.demand_forecast[0] === 'number') {
+                              // Transform array of numbers to array of objects
+                              const today = new Date();
+                              result.forecast = result.demand_forecast.map((value, index) => {
+                                const forecastDate = new Date(today);
+                                forecastDate.setDate(today.getDate() + index + 1);
+                                return {
+                                  date: forecastDate.toISOString().split('T')[0],
+                                  value: value
+                                };
+                              });
+                            } else {
+                              result.forecast = result.demand_forecast;
+                            }
+                          }
+                          
                           setCategoryForecastData(result);
                         } catch (err) {
                           console.error('Category forecast error:', err);
@@ -1397,7 +1454,7 @@ function SalesAnalysis() {
                 {/* Category Demand Forecast Results */}
                 {categoryForecastData && (
                   <div className="mb-6">
-                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                       📈 Category Demand Forecast (Next 14 Days)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -1415,9 +1472,9 @@ function SalesAnalysis() {
                       />
                       <KPICard
                         title="Trend"
-                        value={categoryForecastData.trend_analysis?.trend ?? 'N/A'}
-                        subtitle={`${categoryForecastData.trend_analysis?.percentage_change > 0 ? '+' : ''}${categoryForecastData.trend_analysis?.percentage_change?.toFixed(1) ?? 'N/A'}%`}
-                        color={categoryForecastData.trend_analysis?.trend === 'growing' ? 'green' : 'red'}
+                        value={categoryForecastData.trend?.direction ?? 'N/A'}
+                        subtitle={`${categoryForecastData.trend?.percentage > 0 ? '+' : ''}${categoryForecastData.trend?.percentage?.toFixed(1) ?? 'N/A'}%`}
+                        color={categoryForecastData.trend?.direction === 'growing' ? 'green' : 'red'}
                       />
                     </div>
                     {categoryForecastData.forecast && categoryForecastData.forecast.length > 0 && (
@@ -1459,21 +1516,27 @@ function SalesAnalysis() {
                         color={revenueForecastData.growth_rate > 0 ? 'green' : 'red'}
                       />
                     </div>
-                    <DataTable
-                      data={revenueForecastData.forecast}
-                      columns={[
-                        { key: 'date', label: 'Date' },
-                        { key: 'value', label: 'Forecasted Revenue', format: v => `₱${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}` },
-                      ]}
-                      maxHeight="300px"
-                    />
+                    {revenueForecastData.forecast && revenueForecastData.forecast.length > 0 ? (
+                      <DataTable
+                        data={revenueForecastData.forecast}
+                        columns={[
+                          { key: 'date', label: 'Date' },
+                          { key: 'value', label: 'Forecasted Revenue', format: v => `₱${Number(v).toLocaleString(undefined, {minimumFractionDigits: 2})}` },
+                        ]}
+                        maxHeight="300px"
+                      />
+                    ) : (
+                      <div className="bg-gray-100 rounded-lg p-4 text-center text-gray-600">
+                        No forecast data available
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Ingredient Usage Forecasts */}
                 {ingredientForecasts.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                       🥗 Ingredient Usage Forecasts
                     </h3>
                     {ingredientForecasts.map((forecast, idx) => (
@@ -1514,7 +1577,7 @@ function SalesAnalysis() {
                 {/* Microservice Reorder Alerts */}
                 {microserviceReorderAlerts.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="text-white text-lg font-bold mb-3 flex items-center gap-2">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
                       🔔 AI Reorder Alerts ({microserviceReorderAlerts.length} products)
                     </h3>
                     {microserviceReorderAlerts.map((alert, idx) => (
@@ -1531,20 +1594,20 @@ function SalesAnalysis() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <div className={`font-bold text-lg mb-2 ${
-                              alert.alert_status === 'CRITICAL' ? 'text-red-400' :
+                              alert.alert_status === 'CRITICAL' ? 'text-red-600' :
                               alert.alert_status === 'WARNING' ? 'text-yellow-400' :
                               alert.alert_status === 'ATTENTION' ? 'text-blue-400' :
-                              alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? 'text-gray-400' :
+                              alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? 'text-gray-800' :
                               'text-green-400'
                             }`}>
                               {alert.alert_status} - {alert.product_name || alert.ingredient_id}
                             </div>
                             {alert.message && (
-                              <div className="text-gray-400 text-sm mb-2 italic">
+                              <div className="text-gray-500 text-sm mb-2 italic">
                                 {alert.message}
                               </div>
                             )}
-                            <div className="text-gray-300 text-sm space-y-1">
+                            <div className="text-gray-700 text-sm space-y-1">
                               <div>Current Stock: {alert.current_stock ?? 'N/A'}</div>
                               {alert.reorder_point && <div>Reorder Point: {alert.reorder_point?.toFixed(0) ?? 'N/A'}</div>}
                               {alert.projected_stock && <div>Projected Stock (in {alert.lead_time_days ?? 0} days): {alert.projected_stock?.toFixed(2) ?? 'N/A'}</div>}
@@ -1554,13 +1617,13 @@ function SalesAnalysis() {
                             {alert.should_reorder ? (
                               <>
                                 <div className="text-white font-bold text-2xl">{alert.recommended_order_quantity?.toFixed(0) ?? 'N/A'}</div>
-                                <div className="text-gray-400 text-sm">Recommended Order Qty</div>
-                                <div className="text-orange-400 mt-2">
+                                <div className="text-gray-700 text-sm">Recommended Order Qty</div>
+                                <div className="text-orange-500 mt-2">
                                   ⚠️ Reorder in {alert.days_until_reorder ?? 'N/A'} days
                                 </div>
                               </>
                             ) : alert.alert_status === 'ERROR' || alert.alert_status === 'INSUFFICIENT_DATA' ? (
-                              <div className="text-gray-400 font-medium">ℹ️ Cannot Predict</div>
+                              <div className="text-gray-800 font-medium">ℹ️ Cannot Predict</div>
                             ) : (
                               <div className="text-green-400 font-medium">✅ Stock Sufficient</div>
                             )}

@@ -7,19 +7,33 @@ import pool from '../config/pool.js';
  */
 export const getDailyRevenueHistory = async (businessId, days = 30) => {
   const query = `
+    WITH RECURSIVE date_range AS (
+      SELECT DATE_SUB(CURDATE(), INTERVAL ? DAY) as date
+      UNION ALL
+      SELECT DATE_ADD(date, INTERVAL 1 DAY)
+      FROM date_range
+      WHERE date < CURDATE()
+    ),
+    daily_revenue AS (
+      SELECT 
+        DATE(p.purchase_date) as sale_date,
+        SUM(p.total_amount) as daily_total
+      FROM purchases_table p
+      JOIN business_user_position_table bup ON p.user_id = bup.user_id
+      WHERE bup.business_id = ?
+      AND p.status_id != 3
+      AND p.purchase_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      GROUP BY DATE(p.purchase_date)
+    )
     SELECT 
-      DATE(p.purchase_date) as date,
-      SUM(p.total_amount) as value
-    FROM purchases_table p
-    JOIN business_user_position_table bup ON p.user_id = bup.user_id
-    WHERE bup.business_id = ?
-    AND p.status_id != 3
-    AND p.purchase_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-    GROUP BY DATE(p.purchase_date)
-    ORDER BY date ASC
+      dr.date,
+      COALESCE(rev.daily_total, 0) as value
+    FROM date_range dr
+    LEFT JOIN daily_revenue rev ON dr.date = rev.sale_date
+    ORDER BY dr.date ASC
   `;
   
-  const [rows] = await pool.query(query, [businessId, days]);
+  const [rows] = await pool.query(query, [days - 1, businessId, days]);
   return rows.map(row => ({
     date: row.date.toISOString().split('T')[0],
     value: parseFloat(row.value)
@@ -31,21 +45,35 @@ export const getDailyRevenueHistory = async (businessId, days = 30) => {
  */
 export const getCategorySalesHistory = async (businessId, categoryId, days = 30) => {
   const query = `
+    WITH RECURSIVE date_range AS (
+      SELECT DATE_SUB(CURDATE(), INTERVAL ? DAY) as date
+      UNION ALL
+      SELECT DATE_ADD(date, INTERVAL 1 DAY)
+      FROM date_range
+      WHERE date < CURDATE()
+    ),
+    category_sales AS (
+      SELECT 
+        DATE(pu.purchase_date) as sale_date,
+        SUM(pi.quantity) as daily_total
+      FROM purchases_table pu
+      JOIN purchase_items_table pi ON pu.purchase_id = pi.purchase_id
+      JOIN product_table p ON pi.product_id = p.product_id
+      WHERE p.business_id = ?
+      AND p.category_id = ?
+      AND pu.status_id != 3
+      AND pu.purchase_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      GROUP BY DATE(pu.purchase_date)
+    )
     SELECT 
-      DATE(pu.purchase_date) as date,
-      SUM(pi.quantity) as value
-    FROM purchases_table pu
-    JOIN purchase_items_table pi ON pu.purchase_id = pi.purchase_id
-    JOIN product_table p ON pi.product_id = p.product_id
-    WHERE p.business_id = ?
-    AND p.category_id = ?
-    AND pu.status_id != 3
-    AND pu.purchase_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-    GROUP BY DATE(pu.purchase_date)
-    ORDER BY date ASC
+      dr.date,
+      COALESCE(cs.daily_total, 0) as value
+    FROM date_range dr
+    LEFT JOIN category_sales cs ON dr.date = cs.sale_date
+    ORDER BY dr.date ASC
   `;
   
-  const [rows] = await pool.query(query, [businessId, categoryId, days]);
+  const [rows] = await pool.query(query, [days - 1, businessId, categoryId, days]);
   return rows.map(row => ({
     date: row.date.toISOString().split('T')[0],
     value: parseFloat(row.value)
