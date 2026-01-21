@@ -26,7 +26,6 @@ export const requireBusinessAccess = async (req, res, next) => {
       if (bizIdRaw) {
         req.businessId = Number(bizIdRaw);
       }
-      
       return next();
     }
 

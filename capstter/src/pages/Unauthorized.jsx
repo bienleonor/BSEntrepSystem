@@ -13,7 +13,6 @@ export default function Unauthorized() {
           <h1 className="text-3xl font-bold text-gray-800 mb-4">NOT AUTHORIZED.</h1>
           <p className="text-lg text-gray-600 mb-8">
             This page is not publicly available.<br />
-            To access it please log in first.
           </p>
           <Link
             to="/"

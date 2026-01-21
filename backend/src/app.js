@@ -25,6 +25,7 @@ import businessLogsRoute from './routes/business/business-logs-route.js';
 import businessPositionsRoute from './routes/business/business-positions-route.js';
 import auditLogsRoute from './routes/admin/audit-logs-route.js';
 import auditRequestMiddleware from './middlewares/audit-request-middleware.js';
+import forecastRoute from './routes/forecast-route.js';
 
 
 
@@ -69,6 +70,9 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/admin/metrics', adminMetricsRoute);
 app.use('/api/rbac', rbacRoute);
+
+// Forecast service routes
+app.use('/api/forecast', forecastRoute);
 
 app.use('/api', rbacRoute);
 

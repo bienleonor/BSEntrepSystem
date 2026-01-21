@@ -123,13 +123,15 @@ export default function Sidebar() {
 
           {/* Buttons included in scroll */}
           <div className="mt-6">
-            <Link to="/busmanage">
-              <button className="flex items-center gap-2 w-full px-3 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition justify-center mb-2">
-                <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
-                  Manage other business
-                </span>
-              </button>
-            </Link>
+            {isOwner && (
+              <Link to="/busmanage">
+                <button className="flex items-center gap-2 w-full px-3 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition justify-center mb-2">
+                  <span className={`${isOpen ? "block" : "hidden sm:block"}`}>
+                    Manage other business
+                  </span>
+                </button>
+              </Link>
+            )}
 
             <button
               onClick={handleLogout}

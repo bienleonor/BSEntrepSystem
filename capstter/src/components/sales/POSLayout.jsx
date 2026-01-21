@@ -59,7 +59,7 @@ const submitSaleHandler = async () => {
   }
 
   const paymentMethod = "Cash"; // make dynamic later
-  const statId = 2; // example status ID
+  const statId = 1; // 1 = Completed (for instant cash sales)
 
   const saleData = {
     business_id: businessId,

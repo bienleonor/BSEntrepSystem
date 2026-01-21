@@ -1,9 +1,11 @@
 import pool from '../../config/pool.js';
 import { recordTransactionWithDetails } from './inventory-model.js';
 
-
-// Create a stock-in record
- 
+/**
+ * Create a stock-in record
+ * @param {Object} data - { businessId, userId, totalAmount }
+ * @returns {Number} stockinId
+ */
 export const createStockIn = async ({ businessId, userId, totalAmount }) => {
   const [result] = await pool.execute(
     `INSERT INTO stockin_table (business_id, user_id, total_amount, created_at)
@@ -165,74 +167,47 @@ export const insertStockInItemsUnsafe = async (stockinId, items, { businessId = 
 //  Get all stock-in records for a business
 
 export const getStockInsByBusiness = async (businessId) => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT 
-         si.stockin_id,
-         si.business_id,
-         si.user_id,
-         si.total_amount,
-         si.created_at,
-         u.username
-       FROM stockin_table si
-       LEFT JOIN user_table u ON si.user_id = u.user_id
-       WHERE si.business_id = ?
-       ORDER BY si.created_at DESC`,
-      [businessId]
-    );
-    return rows;
-  } catch (err) {
-    console.error("getStockInsByBusiness error:", err);
-    throw err;
-  }
+  const [rows] = await pool.execute(
+    `SELECT 
+       si.stockin_id,
+       si.business_id,
+       si.user_id,
+       si.total_amount,
+       si.created_at,
+       u.username
+     FROM stockin_table si
+     LEFT JOIN user_table u ON si.user_id = u.user_id
+     WHERE si.business_id = ?
+     ORDER BY si.created_at DESC`,
+    [businessId]
+  );
+  return rows;
 };
 
+/**
+ * Get stock-in details with items
+ * @param {Number} stockinId
+ */
 export const getStockInDetails = async (stockinId) => {
-  try {
-    const [header] = await pool.execute(
-      `SELECT 
-         si.stockin_id,
-         si.business_id,
-         si.user_id,
-         si.total_amount,
-         si.created_at,
-         u.username,
-         b.business_name
-       FROM stockin_table si
-       LEFT JOIN user_table u ON si.user_id = u.user_id
-       LEFT JOIN business_table b ON si.business_id = b.business_id
-       WHERE si.stockin_id = ?`,
-      [stockinId]
-    );
+  // Get stock-in header
+  const [header] = await pool.execute(
+    `SELECT 
+       si.stockin_id,
+       si.business_id,
+       si.user_id,
+       si.total_amount,
+       si.created_at,
+       u.username,
+       b.business_name
+     FROM stockin_table si
+     LEFT JOIN user_table u ON si.user_id = u.user_id
+     LEFT JOIN business_table b ON si.business_id = b.business_id
+     WHERE si.stockin_id = ?`,
+    [stockinId]
+  );
 
-    if (header.length === 0) {
-      return null;
-    }
-
-    const [items] = await pool.execute(
-      `SELECT 
-         sii.stockin_item_id,
-         sii.product_id,
-         sii.quantity,
-         sii.unit_price,
-         sii.total_price,
-         p.name AS product_name,
-         p.product_type,
-         u.name AS unit_name
-       FROM stockin_item_table sii
-       LEFT JOIN product_table p ON sii.product_id = p.product_id
-       LEFT JOIN unit_table u ON p.unit_id = u.unit_id
-       WHERE sii.stockin_id = ?`,
-      [stockinId]
-    );
-
-    return {
-      ...header[0],
-      items
-    };
-  } catch (err) {
-    console.error("getStockInDetails error:", err);
-    throw err;
+  if (header.length === 0) {
+    return null;
   }
 
   // Get stock-in items with product types
@@ -262,8 +237,13 @@ export const getStockInDetails = async (stockinId) => {
   };
 };
 
+/**
+ * Delete a stock-in record (cascade deletes items)
+ * @param {Number} stockinId
+ */
 export const deleteStockIn = async (stockinId) => {
   const connection = await pool.getConnection();
+  
   try {
     await connection.beginTransaction();
 
@@ -293,11 +273,10 @@ export const deleteStockIn = async (stockinId) => {
     await connection.commit();
     return result;
   } catch (err) {
-    console.error("deleteStockIn error:", err);
-    try { await connection.rollback(); } catch (e) { /* ignore */ }
+    await connection.rollback();
     throw err;
   } finally {
-    try { connection.release(); } catch (e) { /* ignore */ }
+    connection.release();
   }
 };
 

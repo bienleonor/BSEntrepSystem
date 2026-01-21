@@ -1,8 +1,13 @@
 import { BusinessRegister, GetBusinessCategories, findBusinessByUserId,Getallbusinesses,deleteBusinessById } from "../../models/business/business-model.js"
+import pool from '../../config/pool.js'
 import { generateToken } from "../../utils/generate-token.js";
 import { addEmployeeModel } from "../../models/business/business-employee-model.js";
-import { findAccessCodeByBusiness } from "../../models/access-codes-model.js";
+import { findAccessCodeByBusiness, findExistingBusinessByUserGroup } from "../../models/access-codes-model.js";
+import { fetchUserDetailsById } from "../../models/user-details-model.js";
 import { MODULES, ACTIONS } from "../../constants/modules-actions.js";
+import { findRoleByUserId as findUserRoleId } from '../../models/business/business-model.js'
+import { findRoleByName, assignRoleToUser, findRoleByUserId as getUserRoleMap } from '../../models/sys-role-model.js'
+import { invalidateUserPermissionCache } from '../../services/permissionService.js'
 import { logAuditBusinessAction } from "../../services/audit-logs-service.js";
 
 
@@ -16,12 +21,57 @@ export const registerBusiness = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
+    // Get user details to check section and group
+    const userDetails = await fetchUserDetailsById(owner_id);
+    
+    if (!userDetails || !userDetails.section_id || !userDetails.group_id) {
+      return res.status(400).json({ 
+        error: "Please complete your profile with section and group information before registering a business." 
+      });
+    }
+
+    // Check if a business already exists with the same section and group combination
+    const existingBusiness = await findExistingBusinessByUserGroup(
+      userDetails.section_id, 
+      userDetails.group_id
+    );
+
+    if (existingBusiness) {
+      return res.status(409).json({ 
+        error: `A business already exists for your section and group: "${existingBusiness.business_name}". Only one business is allowed per section-group combination.`,
+        existing_business: {
+          business_id: existingBusiness.business_id,
+          business_name: existingBusiness.business_name,
+          access_code: existingBusiness.code
+        }
+      });
+    }
+
     // Register business
     const insertedId = await BusinessRegister({ business_name, business_cat_id, owner_id });
 
     const OWNER_POSITION_ID = 1; // Change this if your Owner = different ID
 
     await addEmployeeModel(owner_id, insertedId, OWNER_POSITION_ID);
+
+    // Promote owner to 'superuser' if not already
+    try {
+      const currentRoleMap = await getUserRoleMap(owner_id)
+      const superuserRole = await findRoleByName('superuser')
+      if (superuserRole && (!currentRoleMap || currentRoleMap.system_role_id !== superuserRole.system_role_id)) {
+        if (currentRoleMap) {
+          // Update existing mapping
+          await pool.query('UPDATE user_sys_role_table SET system_role_id = ? WHERE user_id = ?', [superuserRole.system_role_id, owner_id])
+        } else {
+          // Insert new mapping
+          await assignRoleToUser(owner_id, superuserRole.system_role_id)
+        }
+        // Invalidate owner permission cache so new role takes effect immediately
+        invalidateUserPermissionCache(owner_id)
+      }
+    } catch (e) {
+      console.warn('Failed to promote owner to superuser:', e?.message)
+    }
 
     // Audit log for business registration (explicit commit ensures business_id present)
     try {

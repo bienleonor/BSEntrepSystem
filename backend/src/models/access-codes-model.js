@@ -60,6 +60,48 @@ export const findAccessCodeByBusiness = async (businessId) => {
   return rows[0] || null;
 };
 
+/**
+ * Check if a business already exists with the same section and group combination
+ * Access code pattern: YYYY-{section}{group} e.g. 2425-3AG1
+ * This prevents multiple businesses from being created under the same access code
+ * @param {number} section_id 
+ * @param {number} group_id 
+ * @returns {object|null} - Returns existing business info or null if none exists
+ */
+export const findBusinessBySectionAndGroup = async (section_id, group_id) => {
+  const [rows] = await pool.execute(
+    `SELECT ac.business_id, b.business_name, ac.code
+     FROM access_codes_table ac
+     INNER JOIN business_table b ON b.business_id = ac.business_id
+     WHERE ac.code LIKE CONCAT('____-', 
+       (SELECT sec_name FROM section_table WHERE sec_id = ?),
+       (SELECT UPPER(REPLACE(REPLACE(group_name, ' ', ''), '-', '')) FROM group_table WHERE group_id = ?))
+     AND ac.is_active = 1
+     LIMIT 1`,
+    [section_id, group_id]
+  );
+  return rows[0] || null;
+};
+
+/**
+ * Alternative: Check by parsing existing codes for section+group match
+ * More reliable approach using user_details to find conflicts
+ */
+export const findExistingBusinessByUserGroup = async (section_id, group_id) => {
+  const [rows] = await pool.execute(
+    `SELECT DISTINCT b.business_id, b.business_name, ac.code
+     FROM business_table b
+     INNER JOIN access_codes_table ac ON ac.business_id = b.business_id AND ac.is_active = 1
+     INNER JOIN business_user_position_table bup ON bup.business_id = b.business_id
+     INNER JOIN user_details_table ud ON ud.user_id = bup.user_id
+     WHERE ud.section_id = ? AND ud.group_id = ?
+     AND bup.bus_pos_id = 1
+     LIMIT 1`,
+    [section_id, group_id]
+  );
+  return rows[0] || null;
+};
+
 // Add employee to business
 export const addEmployeeToBusiness = async (user_id, business_id) => {
   const [result] = await pool.execute(
