@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import DHOLogo from '../../assets/DHO-DashboardLogo.png';
 
 const NavBar = () => {
   return (
@@ -8,6 +9,7 @@ const NavBar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="text-2xl font-bold text-gray-800">
+              <img src={DHOLogo} alt="DHO Logo" className="h-15 w-15 inline-block mr-3" />
               DHO - Business Dashboard
             </Link>
           </div>  
