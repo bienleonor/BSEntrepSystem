@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Home, ClipboardList, BarChart2, List, Package, ShoppingCart, PackageOpen, NotebookText, Settings, UserRoundCog, Users, LogOut, Menu, X,Book,BookOpenText,Notebook  } from "lucide-react";
 import { Link } from "react-router-dom";
+import DHOLogo from "../../assets/DHO-DashboardLogo.png";
+
 
 // Base menu items available to everyone
 const baseMenuItems = [
@@ -30,6 +32,7 @@ const ownerOnlyMenuItems = [
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [businessName, setBusinessName] = useState("Business Name");
 
   useEffect(() => {
     // Check if user is owner of current business or superadmin
@@ -43,20 +46,25 @@ export default function Sidebar() {
         const role = (user.role || user.system_role || "").toLowerCase();
         if (role === "superadmin") {
           setIsOwner(true);
-          return;
         }
 
-        // Check if user is owner of the selected business
+        // Check if user is owner of the selected business and get business name
         if (selectedBusinessId && businesses.length > 0) {
           const currentBusiness = businesses.find(
             (b) => String(b.business_id) === String(selectedBusinessId)
           );
-          // is_owner comes from the backend query
-          setIsOwner(currentBusiness?.is_owner === 1 || currentBusiness?.is_owner === true);
+          
+          if (currentBusiness) {
+            // is_owner comes from the backend query
+            setIsOwner(currentBusiness?.is_owner === 1 || currentBusiness?.is_owner === true);
+            // Set the business name
+            setBusinessName(currentBusiness.business_name || currentBusiness.name || "Business Name");
+          }
         }
       } catch (e) {
         console.error("Error checking ownership:", e);
         setIsOwner(false);
+        setBusinessName("Business Name");
       }
     };
 
@@ -98,10 +106,10 @@ export default function Sidebar() {
 
         {/* TOP (not scrollable) */}
         <div className="p-4">
-          <div className="flex items-center gap-2 mb-8">
+          <div className="flex items-center gap-2">
             <Link to="/UserDashboard" className="flex items-center gap-2">
-              <Home className="text-white" />
-              <span className="text-lg font-bold hidden sm:block">DHO</span>
+              <img src={DHOLogo} alt="DHO Logo" className="h-15 w-15" />
+              <span className="text-lg font-bold hidden sm:block">{businessName}</span>
             </Link>
           </div>
         </div>

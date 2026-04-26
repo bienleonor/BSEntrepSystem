@@ -14,7 +14,7 @@ const LandingPage = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
             <div className="max-w-4xl mx-auto text-center text-white">
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-8">
-                Interactive Sales Dashboard
+                DHO - Dashboard
                 <span className="block text-2xl sm:text-3xl md:text-4xl mt-4 text-blue-400">
                   Real-Time KPI Tracking for Small Businesses
                 </span>

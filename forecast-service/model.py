@@ -187,20 +187,42 @@ def forecast_ingredient_usage(series, steps=7, seasonal=True, seasonal_period=7)
 
 def forecast_category_demand(series, steps=30, seasonal=True):
     """Forecast demand for a product category"""
+    # Validate input data
+    if len(series) < 7:
+        raise ValueError(f"Insufficient data: need at least 7 observations, got {len(series)}")
+    
+    # Check for data quality issues
+    if series.isnull().any():
+        raise ValueError("Data contains NaN values")
+    
+    if (series < 0).any():
+        raise ValueError("Data contains negative values")
+    
+    # Check for variance (ARIMA needs variation in data)
+    if series.std() == 0:
+        raise ValueError("Data has no variance (all values are the same)")
+    
+    if series.std() < 0.01:
+        raise ValueError(f"Data has very low variance (std={series.std():.4f}). ARIMA requires more variation in sales patterns.")
+    
     seasonal_period = 7 if len(series) >= 14 else None
     if not seasonal_period:
         seasonal = False
     
     m_value = int(seasonal_period) if seasonal and seasonal_period else 1
     
-    model = auto_arima(
-        series,
-        seasonal=seasonal,
-        m=m_value,
-        suppress_warnings=True,
-        error_action='ignore',
-        stepwise=True
-    )
+    try:
+        model = auto_arima(
+            series,
+            seasonal=seasonal,
+            m=m_value,
+            suppress_warnings=True,
+            error_action='ignore',
+            stepwise=True,
+            maxiter=50
+        )
+    except Exception as e:
+        raise ValueError(f"ARIMA model fitting failed: {str(e)}")
     
     forecast, conf_int = model.predict(n_periods=steps, return_conf_int=True)
     trend_direction = "growing" if forecast[-1] > forecast[0] else "declining"

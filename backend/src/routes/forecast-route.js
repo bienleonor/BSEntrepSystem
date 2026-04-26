@@ -63,12 +63,22 @@ router.get('/category/:businessId/:categoryId', async (req, res) => {
     // Fetch real category sales history
     const salesHistory = await forecastDataModel.getCategorySalesHistory(businessId, categoryId, days);
     
+    console.log(`Category ${categoryId} sales history for business ${businessId}: ${salesHistory.length} days`);
+    
     if (salesHistory.length < 7) {
       return res.status(400).json({
         error: 'Insufficient data',
-        message: 'Need at least 7 days of sales data for category forecasting'
+        message: `Need at least 7 days of sales data for category forecasting. Found ${salesHistory.length} days.`
       });
     }
+    
+    // Log the data being sent
+    console.log('Sending to forecast service:', {
+      category_id: categoryId,
+      data_points: salesHistory.length,
+      steps: forecastSteps,
+      sample: salesHistory.slice(0, 3)
+    });
     
     // Call forecast microservice
     const response = await fetch(`${FORECAST_SERVICE_URL}/business/category-demand`, {
@@ -84,6 +94,17 @@ router.get('/category/:businessId/:categoryId', async (req, res) => {
     });
     
     const data = await response.json();
+    
+    // Check if forecast service returned an error
+    if (!response.ok) {
+      console.error('Forecast service error:', data);
+      return res.status(response.status).json({
+        error: 'Forecast service error',
+        message: data.detail || data.message || 'Unknown error from forecast service',
+        details: data
+      });
+    }
+    
     res.json(data);
   } catch (error) {
     console.error('Category forecast error:', error.message);
