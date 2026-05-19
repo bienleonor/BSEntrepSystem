@@ -4,6 +4,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import pandas as pd
 import model
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(
     title="Forecast Service",
@@ -11,12 +16,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware for frontend integration
+# CORS middleware - configure for production
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -460,3 +467,29 @@ def forecast(payload: dict):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============================================
+# APPLICATION ENTRY POINT
+# ============================================
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    # Get configuration from environment variables
+    HOST = os.getenv("HOST", "0.0.0.0")
+    PORT = int(os.getenv("PORT", 8000))
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+    RELOAD = ENVIRONMENT == "development"
+    
+    print(f"Starting Forecast Service on {HOST}:{PORT}")
+    print(f"Environment: {ENVIRONMENT}")
+    print(f"Docs available at: http://localhost:{PORT}/docs")
+    
+    uvicorn.run(
+        "app:app",
+        host=HOST,
+        port=PORT,
+        reload=RELOAD,
+        log_level="info"
+    )
