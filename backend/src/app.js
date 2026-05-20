@@ -78,11 +78,12 @@ app.use('/api/forecast', forecastRoute);
 
 app.use('/api', rbacRoute);
 
+// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// ✅ Debug middleware to see incoming requests (avoid 'undefined' body for GET)
+// Debug middleware to see incoming requests (avoid 'undefined' body for GET)
 app.use((req, res, next) => {
   const businessId = req.headers['x-business-id'] || null;
   const payload = {
