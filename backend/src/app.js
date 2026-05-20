@@ -78,6 +78,9 @@ app.use('/api/forecast', forecastRoute);
 
 app.use('/api', rbacRoute);
 
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 // ✅ Debug middleware to see incoming requests (avoid 'undefined' body for GET)
 app.use((req, res, next) => {
