@@ -6,8 +6,5 @@
       "source": "/:path((?!_next/static|_next/image|favicon.ico).*)",
       "destination": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_API_URL": "@vite_api_url"
-  }
+  ]
 }
