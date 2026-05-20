@@ -970,13 +970,15 @@ function SalesAnalysis() {
             {activeTab === 'trends' && (
               <>
                 <h2 className="text-black text-xl font-bold mb-4">Trends & Lifecycle Analysis</h2>
-                <FilterControls showSort />
 
                 {/* Category Performance Trends */}
                 <div className="mb-6">
-                  <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
-                    📊 Category Performance Trends
-                  </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-black text-lg font-bold mb-3 flex items-center gap-2">
+                      📊 Category Performance Trends
+                    </h3>
+                  <FilterControls showSort />
+                  </div>
                   <p className="text-gray-600 text-sm mb-3">Comparing last 30 days vs previous 30 days</p>
                   {categoryTrends.length > 0 ? (
                     <DataTable
