@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import SuperAdminLayout from '../../components/layout/SuperAdminLayout';
 import axiosInstance from '../../utils/axiosInstance';
-import { AdminPopup } from '../../components/common/AdminPopUp';
+import { AdminPopup } from '../../components/common/AdminPopup';
 
 // Mobile card used for small screens
 const MobileCard = ({ biz, index, onView, onEdit, onDelete, deletingId }) => (
