@@ -43,11 +43,16 @@
 
 In Vercel Dashboard → Project Settings → Environment Variables:
 
+Click **+ Add New Environment Variable** and add:
+
 ```
-VITE_API_URL = https://your-backend-api.com/api
+Name: VITE_API_URL
+Value: https://bsentrepsystem-production.up.railway.app/api
 ```
 
-Replace `https://your-backend-api.com/api` with your actual backend URL.
+Replace `bsentrepsystem-production.up.railway.app` with your actual Railway backend domain.
+
+Verify it includes `/api` at the end!
 
 ## Step 4: Redeploy
 
