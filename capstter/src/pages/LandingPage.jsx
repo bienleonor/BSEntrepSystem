@@ -1,5 +1,5 @@
 import NavBar from '../components/layout/NavBar';
-import landingImage from '../assets/Landing.png';
+import landingImage from '../assets/landing.png';
 import { Link } from 'react-router-dom';
 
 const LandingPage = () => {
