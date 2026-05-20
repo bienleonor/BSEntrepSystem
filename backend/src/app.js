@@ -33,9 +33,11 @@ import forecastRoute from './routes/forecast-route.js';
 
 const app = express();
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:5173', // or '*' if you want to allow all
+  origin: FRONTEND_URL,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   // include common capitalizations for custom header to avoid preflight issues
   allowedHeaders: ['Content-Type','Authorization','X-Business-Id','X-Business-ID','x-business-id'],

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import axiosInstance from '../../utils/axiosInstance.js';
+import axiosInstance from '../../utils/axiosInstance.jsx';
 import { deleteProductCategory as deleteCategoryApi } from '../../services/inventoryApi.js';
 
 // Allowed characters for category name / description: letters, numbers, space, hyphen, underscore, period
