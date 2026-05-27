@@ -164,7 +164,8 @@ export const getAllOrdersByBusiness = async (businessId, opts = {}) => {
     JOIN product_table pr ON i.product_id = pr.product_id
     WHERE t.business_id = ? AND p.status_id = 2
     ORDER BY t.purchase_id ASC
-    LIMIT ? OFFSET ?`,
+    LIMIT ? OFFSET ?
+    `,
     [bizId, pageSize, offset]
   );
 
